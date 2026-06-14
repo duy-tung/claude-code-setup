@@ -2,7 +2,7 @@ metadata:
   title: "Skills Catalog"
   description: "Auto-generated catalog of all available skills in ClaudeKit Engineer"
   last_updated: '2026-06-14'
-  total_skills: 43
+  total_skills: 40
 categories:
   dev-tools: "Development Tools"
   multimedia: "Multimedia & Processing"
@@ -12,14 +12,6 @@ legend:
   has_references: "Has reference documentation"
 skills:
   dev-tools:
-  - name: "agentize"
-    path: "agentize/SKILL.md"
-    description: "Convert a codebase, feature, or module into an AI-agent-friendly CLI and/or MCP server. Covers npm packaging, stdio/SSE/Streamable HTTP surfaces, credential resolution, docs, tests, CI, and a companion Claude skill for users who need an existing capability exposed as a reusable agent tool."
-    category: "dev-tools"
-    has_scripts: false
-    has_references: true
-    argument_hint: "[feature-or-module] [--both|--mcp|--cli] [--auto|--ask]"
-    keywords: ["agentize", "mcp", "cli", "monorepo", "npm", "cloudflare", "docker", "agent-tool"]
   - name: "find-skills"
     path: "find-skills/SKILL.md"
     description: "Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill."
@@ -44,14 +36,6 @@ skills:
     has_references: true
     argument_hint: "[audit|create] [--target DIR] [--json]"
     keywords: ["harness", "agent-readiness", "AGENTS.md", "feature-list", "verification", "scaffold", "audit"]
-  - name: "mcp-builder"
-    path: "mcp-builder/SKILL.md"
-    description: "Build MCP servers for LLM-external service integration. Use for FastMCP (Python), MCP SDK (Node/TypeScript), tool design, API integration, resource providers."
-    category: "dev-tools"
-    has_scripts: true
-    has_references: false
-    argument_hint: "[service or API to integrate]"
-    keywords: ["MCP", "server", "tools", "integration"]
   - name: "plans-kanban"
     path: "plans-kanban/SKILL.md"
     description: "Open the ClaudeKit plans dashboard in the CLI config UI. Use for plan kanban views, progress tracking, timeline checks, and quick navigation into plan files."
@@ -108,14 +92,6 @@ skills:
     has_references: true
     argument_hint: "[diagram-type or system description]"
     keywords: ["diagrams", "architecture", "flowchart", "sequence", "svg", "png", "agent", "memory", "visualization"]
-  - name: "use-mcp"
-    path: "use-mcp/SKILL.md"
-    description: "Discover and execute MCP server tools. Two execution paths: Gemini CLI (LLM-driven, all tasks) or direct scripts (deterministic, specific tool/server). Use for MCP integrations, tool execution, capability discovery, persistent tool catalog."
-    category: "dev-tools"
-    has_scripts: true
-    has_references: true
-    argument_hint: "[task]"
-    keywords: ["MCP", "tools", "execute", "discovery", "gemini", "mcp-client"]
   - name: "worktree"
     path: "worktree/SKILL.md"
     description: "Create, inspect, and clean isolated git worktrees. Use for feature isolation, worktree health audits, stale cleanup, and monorepo or submodule workflows."

@@ -33,15 +33,6 @@ User wants to...
 └── Learn the autoresearch pattern / find the right family member → /ck:autoresearch
 ```
 
-## MCP (Model Context Protocol)
-
-```
-User wants to...
-├── Build a new MCP server                       → /ck:mcp-builder
-├── Convert existing code into CLI/MCP server    → /ck:agentize
-└── Discover and execute MCP tools               → /ck:use-mcp
-```
-
 ## Testing
 
 ```

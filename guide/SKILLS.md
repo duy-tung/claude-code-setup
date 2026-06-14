@@ -4,7 +4,7 @@ Auto-generated catalog of all available skills in ClaudeKit Engineer.
 
 **Last Updated**: 2026-06-14
 
-**Total Skills**: 43
+**Total Skills**: 40
 
 ## Categories
 
@@ -18,12 +18,6 @@ Auto-generated catalog of all available skills in ClaudeKit Engineer.
 - 📚 Has reference documentation
 
 ## Development Tools
-
-### 📚 `agentize`
-
-Convert a codebase, feature, or module into an AI-agent-friendly CLI and/or MCP server. Covers npm packaging, stdio/SSE/Streamable HTTP surfaces, credential resolution, docs, tests, CI, and a companion Claude skill for users who need an existing capability exposed as a reusable agent tool.
-
-**Location**: `.claude/skills/agentize/SKILL.md`
 
 ### `find-skills`
 
@@ -42,12 +36,6 @@ Git operations with conventional commits. Use for staging, committing, pushing, 
 Build, audit, and improve a Claude Code harness for any repo — AGENTS.md/CLAUDE.md instructions, machine-readable feature-list state, a fail-fast verification entrypoint, scope boundaries, and session handoff. Scores a project across five harness subsystems and scaffolds the missing primitives.
 
 **Location**: `.claude/skills/ck-harness/SKILL.md`
-
-### 📦 `mcp-builder`
-
-Build MCP servers for LLM-external service integration. Use for FastMCP (Python), MCP SDK (Node/TypeScript), tool design, API integration, resource providers.
-
-**Location**: `.claude/skills/mcp-builder/SKILL.md`
 
 ### 📦 `plans-kanban`
 
@@ -90,12 +78,6 @@ Orchestrate Agent Teams for parallel multi-session collaboration. Use for resear
 Generate production-quality SVG+PNG technical diagrams — architecture, data flow, flowchart, sequence, agent/memory, or concept maps — across 7 visual styles. Use when user wants "generate diagram", "draw diagram", "visualize", "architecture diagram", "flowchart", or any system/flow they want illustrated. Pairs with /ck:preview --diagram for visual self-review; this skill is the publish-grade output mode.
 
 **Location**: `.claude/skills/tech-graph/SKILL.md`
-
-### 📦 📚 `use-mcp`
-
-Discover and execute MCP server tools. Two execution paths: Gemini CLI (LLM-driven, all tasks) or direct scripts (deterministic, specific tool/server). Use for MCP integrations, tool execution, capability discovery, persistent tool catalog.
-
-**Location**: `.claude/skills/use-mcp/SKILL.md`
 
 ### 📦 `worktree`
 

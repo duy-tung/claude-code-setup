@@ -182,7 +182,10 @@
     "skills/gkg/**",
     "skills/ck-graphify/**",
     "skills/problem-solving/**",
-    "skills/watzup/**"
+    "skills/watzup/**",
+    "skills/agentize/**",
+    "skills/mcp-builder/**",
+    "skills/use-mcp/**"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",
