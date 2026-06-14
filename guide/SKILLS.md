@@ -2,9 +2,9 @@
 
 Auto-generated catalog of all available skills in ClaudeKit Engineer.
 
-**Last Updated**: 2026-06-13
+**Last Updated**: 2026-06-14
 
-**Total Skills**: 48
+**Total Skills**: 43
 
 ## Categories
 
@@ -36,18 +36,6 @@ Helps users discover and install agent skills when they ask questions like "how 
 Git operations with conventional commits. Use for staging, committing, pushing, PRs, merges. Auto-splits commits by type/scope. Security scans for secrets.
 
 **Location**: `.claude/skills/git/SKILL.md`
-
-### 📚 `gkg`
-
-Semantic code analysis with GitLab Knowledge Graph. Use for go-to-definition, find-usages, impact analysis, architecture visualization. Supports Ruby, Java, Kotlin, Python, TypeScript/JavaScript.
-
-**Location**: `.claude/skills/gkg/SKILL.md`
-
-### `graphify`
-
-Build queryable knowledge graphs from code, docs, papers, and images. Use for codebase understanding, architecture analysis, cross-file relationship discovery, token-efficient navigation.
-
-**Location**: `.claude/skills/ck-graphify/SKILL.md`
 
 ### 📦 📚 `harness`
 
@@ -245,12 +233,6 @@ View files or generate visual explanations, slides, and diagrams. Use for code w
 
 **Location**: `.claude/skills/preview/SKILL.md`
 
-### 📚 `problem-solving`
-
-Apply systematic problem-solving techniques when stuck. Use for complexity spirals, innovation blocks, recurring patterns, assumption constraints, simplification cascades, scale uncertainty.
-
-**Location**: `.claude/skills/problem-solving/SKILL.md`
-
 ### 📚 `project-management`
 
 Track progress, update plan statuses, manage Claude Tasks, generate reports, coordinate docs updates. Use for project oversight, status checks, plan completion, task hydration, cross-session continuity.
@@ -287,12 +269,6 @@ STRIDE + OWASP-based security audit with optional red-team persona discovery loo
 
 **Location**: `.claude/skills/ck-security/SKILL.md`
 
-### 📚 `security-scan`
-
-Scan codebase for security vulnerabilities, hardcoded secrets, dependency issues, and OWASP patterns. Use when asked to 'security scan', 'check for secrets', 'audit security', or before major releases.
-
-**Location**: `.claude/skills/security-scan/SKILL.md`
-
 ### 📦 📚 `sequential-thinking`
 
 Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction.
@@ -304,9 +280,3 @@ Apply step-by-step analysis for complex problems with revision capability. Use f
 Run unit, integration, e2e, and UI tests. Use for test execution, coverage analysis, build verification, visual regression, and QA reports.
 
 **Location**: `.claude/skills/test/SKILL.md`
-
-### 📦 `watzup`
-
-Generate short handoff reports from Git branches, remote refs, worktrees, and unfinished plans. Use when the user asks what's in flight, wants progress/next steps, is in a fresh worktree or detached checkout, or needs end-of-session status.
-
-**Location**: `.claude/skills/watzup/SKILL.md`

@@ -1,8 +1,8 @@
 metadata:
   title: "Skills Catalog"
   description: "Auto-generated catalog of all available skills in ClaudeKit Engineer"
-  last_updated: '2026-06-13'
-  total_skills: 48
+  last_updated: '2026-06-14'
+  total_skills: 43
 categories:
   dev-tools: "Development Tools"
   multimedia: "Multimedia & Processing"
@@ -36,24 +36,6 @@ skills:
     has_references: true
     argument_hint: "cm|cp|pr|merge [args]"
     keywords: ["git", "commits", "staging", "PR", "merge"]
-  - name: "gkg"
-    path: "gkg/SKILL.md"
-    description: "Semantic code analysis with GitLab Knowledge Graph. Use for go-to-definition, find-usages, impact analysis, architecture visualization. Supports Ruby, Java, Kotlin, Python, TypeScript/JavaScript."
-    category: "dev-tools"
-    has_scripts: false
-    has_references: true
-    argument_hint: "[symbol or query]"
-    keywords: ["code-analysis", "knowledge-graph", "gitlab"]
-  - name: "graphify"
-    path: "ck-graphify/SKILL.md"
-    description: "Build queryable knowledge graphs from code, docs, papers, and images. Use for codebase understanding, architecture analysis, cross-file relationship discovery, token-efficient navigation."
-    category: "dev-tools"
-    has_scripts: false
-    has_references: false
-    argument_hint: "[path] [--mcp|--report|--watch]"
-    maturity: "beta"
-    keywords: ["knowledge-graph", "code-analysis", "tree-sitter", "codebase-understanding", "ast"]
-    related: ["ck:repomix", "ck:scout", "ck:gkg"]
   - name: "harness"
     path: "ck-harness/SKILL.md"
     description: "Build, audit, and improve a Claude Code harness for any repo — AGENTS.md/CLAUDE.md instructions, machine-readable feature-list state, a fail-fast verification entrypoint, scope boundaries, and session handoff. Scores a project across five harness subsystems and scaffolds the missing primitives."
@@ -308,14 +290,6 @@ skills:
     has_references: true
     argument_hint: "[path] OR [--html] --explain|--slides|--diagram|--ascii [topic] OR --html --diff|--plan-review|--recap"
     keywords: ["preview", "visual", "slides", "diagrams", "HTML"]
-  - name: "problem-solving"
-    path: "problem-solving/SKILL.md"
-    description: "Apply systematic problem-solving techniques when stuck. Use for complexity spirals, innovation blocks, recurring patterns, assumption constraints, simplification cascades, scale uncertainty."
-    category: "utilities"
-    has_scripts: false
-    has_references: true
-    argument_hint: "[problem description]"
-    keywords: ["problem-solving", "stuck", "patterns", "simplify"]
   - name: "project-management"
     path: "project-management/SKILL.md"
     description: "Track progress, update plan statuses, manage Claude Tasks, generate reports, coordinate docs updates. Use for project oversight, status checks, plan completion, task hydration, cross-session continuity."
@@ -364,14 +338,6 @@ skills:
     has_references: true
     argument_hint: "<scope glob or 'full'> [--fix] [--red-team] [--iterations N]"
     keywords: ["security", "STRIDE", "OWASP", "audit", "red-team", "penetration-testing", "vulnerability-discovery"]
-  - name: "security-scan"
-    path: "security-scan/SKILL.md"
-    description: "Scan codebase for security vulnerabilities, hardcoded secrets, dependency issues, and OWASP patterns. Use when asked to 'security scan', 'check for secrets', 'audit security', or before major releases."
-    category: "utilities"
-    has_scripts: false
-    has_references: true
-    argument_hint: "[scope] [--secrets-only] [--deps-only] [--full]"
-    keywords: ["security", "secrets", "vulnerabilities", "OWASP"]
   - name: "sequential-thinking"
     path: "sequential-thinking/SKILL.md"
     description: "Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction."
@@ -388,10 +354,3 @@ skills:
     has_references: true
     argument_hint: "[context] OR ui [url]"
     keywords: ["test", "unit", "integration", "e2e", "coverage"]
-  - name: "watzup"
-    path: "watzup/SKILL.md"
-    description: "Generate short handoff reports from Git branches, remote refs, worktrees, and unfinished plans. Use when the user asks what's in flight, wants progress/next steps, is in a fresh worktree or detached checkout, or needs end-of-session status."
-    category: "utilities"
-    has_scripts: true
-    has_references: false
-    keywords: ["session", "wrap-up", "changes", "review", "worktree", "branches", "plans"]

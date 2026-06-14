@@ -7,9 +7,7 @@ When a user's task involves a specific domain, use these decision trees to pick 
 ```
 User wants to...
 ├── Quick file search, locate specific code     → /ck:scout
-├── Onboard a new repo / dump codebase for LLM  → /ck:repomix
-├── Semantic go-to-definition, find-usages      → /ck:gkg
-└── Build a queryable knowledge graph from code → /ck:graphify
+└── Onboard a new repo / dump codebase for LLM  → /ck:repomix
 ```
 
 ## Agent Harness (project agent-readiness)
@@ -24,8 +22,7 @@ User wants to...
 
 ```
 User wants to...
-├── STRIDE/OWASP security audit with auto-fix    → /ck:security
-└── Scan for secrets, vulnerabilities, OWASP patterns → /ck:security-scan
+└── STRIDE/OWASP security audit with auto-fix    → /ck:security
 ```
 
 ## AI / LLM
@@ -59,7 +56,6 @@ User wants to...
 ├── Update project docs (codebase-summary, PDR)   → /ck:docs
 ├── Discover skills by capability / "is there a skill" → /ck:find-skills
 ├── Publish-grade SVG/PNG diagrams (architecture) → /ck:tech-graph
-├── Generate session hand-off / EOD summary       → /ck:watzup
 └── Sprint retrospective from git history         → /ck:retro
 ```
 

@@ -5,7 +5,7 @@ Harness self-audit — score THIS repo as a Claude Code harness.
 Adapts the five-subsystem harness rubric from
 walkinglabs/learn-harness-engineering (skills/harness-creator, MIT) to the
 claudekit-engineer layout (rules/CLAUDE.md instead of AGENTS.md, plans/ as
-state, eval/ + validators as verification, watzup/retro as lifecycle).
+state, eval/ + validators as verification, project-management/retro as lifecycle).
 
 This is INSTRUMENTATION, not a behavior change: it produces a repeatable
 harness-health score so each future kit improvement can be tracked. It does
@@ -101,7 +101,7 @@ CHECKS: dict[str, list[tuple[str, callable]]] = {
          lambda: any_exists("feature_list.json", "feature-list.json",
                             "claude/templates/feature-list.json")),  # known gap
         ("progress / handoff mechanism",
-         lambda: exists("claude/skills/watzup/SKILL.md")
+         lambda: exists("claude/skills/project-management/SKILL.md")
                  or any_exists("progress.md", "claude-progress.md")),
     ],
     "verification": [
@@ -132,8 +132,8 @@ CHECKS: dict[str, list[tuple[str, callable]]] = {
     "lifecycle": [
         ("session init hook",
          lambda: exists("claude/hooks/session-init.cjs")),
-        ("session handoff skill (watzup)",
-         lambda: exists("claude/skills/watzup/SKILL.md")),
+        ("session handoff skill (project-management)",
+         lambda: exists("claude/skills/project-management/SKILL.md")),
         ("retrospective skill",
          lambda: exists("claude/skills/retro/SKILL.md")),
         ("session-state lifecycle hook",

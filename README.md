@@ -267,7 +267,7 @@ planner agent spawns:
 /ck:docs
 
 # Project tracking
-/ck:watzup  # Check project status
+/ck:project-management  # Check project status
 ```
 
 ### 2. Bug Fixing
@@ -294,7 +294,7 @@ planner agent spawns:
 repomix  # Creates ./docs/codebase-summary.md
 
 # Review project status
-/ck:watzup
+/ck:project-management
 ```
 
 ## Configuration Files

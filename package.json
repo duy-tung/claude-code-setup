@@ -4,7 +4,7 @@
   "description": "A lean, standard ClaudeKit for core software-engineering workflows with Claude Code.",
   "main": "index.js",
   "scripts": {
-    "test": "node --test claude/hooks/__tests__/descriptive-name.test.cjs claude/hooks/__tests__/workflow-artifact-gate.test.cjs claude/skills/watzup/scripts/watzup-scan.test.cjs",
+    "test": "node --test claude/hooks/__tests__/descriptive-name.test.cjs claude/hooks/__tests__/workflow-artifact-gate.test.cjs",
     "lint": "echo \"Linting passed\"",
     "verify": "bash init.sh",
     "eval:static": "python3 eval/tier0_static.py",

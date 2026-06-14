@@ -177,7 +177,12 @@
     "skills/web-testing/**",
     "agents/ui-ux-designer.md",
     "agents/fullstack-developer.md",
-    "scripts/resolve_env.py"
+    "scripts/resolve_env.py",
+    "skills/security-scan/**",
+    "skills/gkg/**",
+    "skills/ck-graphify/**",
+    "skills/problem-solving/**",
+    "skills/watzup/**"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",
