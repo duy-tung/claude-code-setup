@@ -173,4 +173,4 @@ guide/
 **Rules:**
 - Evergreen naming (no dates)
 - Flat structure unless 5+ files warrant categorization
-- Self-documenting names: `SKILLS.md`, `COMMANDS.md`, `ENVIRONMENT_RESOLVER.md`
+- Self-documenting names: `SKILLS.md`, `MEMORY.md`, `INDEX.md`

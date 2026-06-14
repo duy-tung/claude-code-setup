@@ -1,118 +1,23 @@
 # Claude Code Scripts
 
-Centralized utility scripts for Claude Code skills.
+Maintainer utility scripts for the kit's skill catalog and validation gates.
+These are **not** shipped to end users — they support contributors working in this repo.
 
 ## Installation
 
-Install required dependencies:
-
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt   # pyyaml (used by the skill scanners)
 ```
 
-## resolve_env.py
+## Scripts
 
-Centralized environment variable resolver that follows Claude Code's hierarchy.
+| Script | Purpose |
+|--------|---------|
+| `scan_skills.py` | Scan `claude/skills/` and regenerate the checked-in catalogs (`guide/SKILLS.md`, `guide/SKILLS.yaml`). Run after any `SKILL.md` description change. |
+| `score-skill-description.py` | Score `SKILL.md` descriptions on 5 structural-format criteria and flag confusable pairs / dependency cycles. Invoked by `scan_skills.py`. |
+| `validate-skill-crossrefs.py` | Build the skill registry from frontmatter and audit every `/ck:` reference for broken refs, orphans, hubs, and workflow-chain gaps. |
+| `validate-skill-frontmatter.py` | Validate every `SKILL.md` frontmatter against `claude/schemas/skill-schema.json` (requires `user-invocable: true`). |
+| `scan_commands.py` | Legacy command scanner (deprecated). Commands were migrated to skills; this now writes an empty commands dataset. |
+| `win_compat.py` | Windows UTF-8 console helper. Import early in scripts that print Unicode. |
 
-### Priority Order (Highest to Lowest)
-
-1. **process.env** - Runtime environment variables (HIGHEST)
-2. **PROJECT/.claude/skills/\<skill\>/.env** - Project skill-specific
-3. **PROJECT/.claude/skills/.env** - Project shared across skills
-4. **PROJECT/.claude/.env** - Project global defaults
-5. **~/.claude/skills/\<skill\>/.env** - User skill-specific
-6. **~/.claude/skills/.env** - User shared across skills
-7. **~/.claude/.env** - User global defaults (LOWEST)
-
-### CLI Usage
-
-```bash
-# Resolve a variable for a specific skill
-python ~/.claude/scripts/resolve_env.py GEMINI_API_KEY --skill ai-multimodal
-
-# With verbose output
-python ~/.claude/scripts/resolve_env.py GEMINI_API_KEY --skill ai-multimodal --verbose
-
-# Find all locations where variable is defined
-python ~/.claude/scripts/resolve_env.py GEMINI_API_KEY --find-all
-
-# Show hierarchy for a skill
-python ~/.claude/scripts/resolve_env.py --show-hierarchy --skill ai-multimodal
-
-# Export format for shell sourcing
-eval $(python ~/.claude/scripts/resolve_env.py GEMINI_API_KEY --export)
-```
-
-### Python API Usage
-
-```python
-# Add to sys.path if needed
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path.home() / '.claude' / 'scripts'))
-
-from resolve_env import resolve_env, find_all, show_hierarchy
-
-# Simple resolution
-api_key = resolve_env('GEMINI_API_KEY', skill='ai-multimodal')
-
-# With default value
-api_key = resolve_env('GEMINI_API_KEY', skill='ai-multimodal', default='fallback-key')
-
-# With verbose output
-api_key = resolve_env('GEMINI_API_KEY', skill='ai-multimodal', verbose=True)
-
-# Find all locations
-locations = find_all('GEMINI_API_KEY', skill='ai-multimodal')
-for description, value, path in locations:
-    print(f"{description}: {value}")
-
-# Show hierarchy
-show_hierarchy(skill='ai-multimodal')
-```
-
-### Integration Pattern
-
-Skills should use this script instead of implementing their own resolution logic:
-
-```python
-#!/usr/bin/env python3
-import sys
-from pathlib import Path
-
-# Import centralized resolver
-sys.path.insert(0, str(Path.home() / '.claude' / 'scripts'))
-from resolve_env import resolve_env
-
-# Resolve API key
-api_key = resolve_env('GEMINI_API_KEY', skill='ai-multimodal')
-
-if not api_key:
-    print("Error: GEMINI_API_KEY not found")
-    print("Run: python ~/.claude/scripts/resolve_env.py --show-hierarchy --skill ai-multimodal")
-    sys.exit(1)
-
-# Use api_key...
-```
-
-### Benefits
-
-- **Consistent**: All skills use the same resolution logic
-- **Maintainable**: Single source of truth for hierarchy
-- **Debuggable**: Built-in verbose mode and find-all functionality
-- **Flexible**: Supports both project-local and user-global configs
-- **Clear**: Shows exactly where each value comes from
-
-### Testing
-
-```bash
-# Test without any config files
-python ~/.claude/scripts/resolve_env.py TEST_VAR --verbose
-
-# Test with environment variable
-export TEST_VAR=from-runtime
-python ~/.claude/scripts/resolve_env.py TEST_VAR --verbose
-
-# Test with skill context
-python ~/.claude/scripts/resolve_env.py GEMINI_API_KEY --skill ai-multimodal --find-all
-```
+See `.claude/rules/quality-gates.md` for when to run each validator.
