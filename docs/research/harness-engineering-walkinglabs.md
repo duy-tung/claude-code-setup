@@ -54,7 +54,7 @@ Chấm (a) harness score + (b) **eval coverage**: đòi ≥10 eval case trải c
 | **State** | plans/ + plan format + `session-state.cjs` | **Thiếu `feature_list.json`** máy-đọc-được (status+deps+evidence) |
 | **Verification** | eval/ (mới) + validators + `ck:test` | Thiếu **1 entrypoint `init.sh`/`npm run verify`** + quy ước Evidence |
 | Scope | skills · `scout-block` · `workflow-artifact-gate` | Thiếu dependency-tracking + "one-feature" tường minh |
-| **Lifecycle** | `ck:watzup` · `session-init` · `ck:retro` | Thiếu artifact chuẩn `session-handoff.md` |
+| **Lifecycle** | `session-init` · `ck:retro` | Thiếu artifact chuẩn `session-handoff.md` |
 
 → Kit mạnh Instructions/Lifecycle; **yếu State (primitive máy-đọc) + Verification entrypoint** — đúng 2 chỗ harness engineering nhấn mạnh nhất.
 

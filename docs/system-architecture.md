@@ -1,7 +1,7 @@
 # System Architecture
 
-**Last Updated**: 2026-05-13
-**Version**: 2.18.1-beta.3
+**Last Updated**: 2026-06-16
+**Version**: 2.19.1
 **Project**: ClaudeKit Engineer
 
 ## Overview
@@ -420,104 +420,18 @@ is reported by field path only.
 - Break down complex problems
 - Reflective analysis
 
-#### 6.3 Preview Dashboard System (COMPLETE - Phase 6)
+#### 6.3 Preview & Plans Dashboard
 
-**Purpose**: Interactive web-based visualization of implementation plans and project progress
+**`ck:preview` skill** — a static HTML-artifact generator (no HTTP server, no `scripts/`). It produces visual explanations, slide decks, architecture diagrams, and file/diff/plan-recap views from `references/` HTML patterns and `templates/` (`architecture.html`, `data-table.html`, `mermaid-flowchart.html`, `slide-deck.html`). For publish-grade SVG/PNG diagrams it hands off to the `ck:tech-graph` skill.
 
-**Architecture**:
 ```
 .claude/skills/preview/
-├── scripts/
-│   ├── server.cjs              # HTTP server & request handler
-│   ├── lib/
-│   │   ├── plan-scanner.cjs    # Plan discovery & metadata extraction
-│   │   ├── dashboard-renderer.cjs  # Plan cards & dashboard rendering
-│   │   ├── plan-navigator.cjs  # Plan file parsing & traversal
-│   │   ├── markdown-renderer.cjs  # Markdown to HTML conversion
-│   │   ├── http-server.cjs     # HTTP server utilities
-│   │   ├── port-finder.cjs     # Available port detection
-│   │   └── process-mgr.cjs     # Process management
-│   ├── tests/                  # Test suites
-│   └── ...                     # Other modules
-├── assets/
-│   ├── dashboard-template.html # Dashboard UI template
-│   ├── dashboard.css           # Dashboard styles + theme
-│   └── dashboard.js            # Interactive dashboard logic
-└── SKILL.md                    # Skill documentation
+├── SKILL.md          # Operations: (view), --explain, --slides, --diagram, --ascii, --diff, --plan-review, --recap
+├── references/       # html-css-patterns, html-slide-patterns, html-responsive-nav, view-mode, generation-modes, ...
+└── templates/        # architecture.html, data-table.html, mermaid-flowchart.html, slide-deck.html
 ```
 
-**Core Components** (All 6 Phases Complete):
-
-**Phase 1-2: Infrastructure**
-- Plan Scanner, HTTP Server, Port detection utilities
-- Real-time plan discovery & metadata extraction
-- Security validation (path traversal prevention)
-
-**Phase 3-4: API & Data**
-- `/dashboard` route with HTML UI
-- `/api/dashboard` JSON API endpoint
-- Comprehensive metadata extraction (name, progress, status, phases, timestamps)
-
-**Phase 5-6: UI & Features** (COMPLETE)
-1. **Dashboard Renderer** (`dashboard-renderer.cjs`):
-   - Generates plan cards with progress visualization
-   - Calculates progress rings and status bars
-   - Supports sorting: by date, alphabetically, by progress
-   - Real-time filtering by status (all/pending/active/completed)
-   - Full-text search across plan names and descriptions
-
-2. **Dashboard Template** (`dashboard-template.html`):
-   - Responsive grid layout (auto-fit cards)
-   - Sticky header with controls
-   - Search bar with debounced input
-   - Sort/filter dropdowns
-   - Plan cards with metadata
-
-3. **Dashboard Styles** (`dashboard.css`):
-   - Dark/light theme support with CSS variables
-   - WCAG 2.1 AA color contrast compliance
-   - Progress ring visualization (SVG-based)
-   - Responsive design (mobile-first)
-   - Smooth transitions and animations
-
-4. **Dashboard Logic** (`dashboard.js`):
-   - Client-side filtering and sorting
-   - Theme toggle (persisted in localStorage)
-   - Real-time search with regex support
-   - Accessibility features (keyboard navigation, ARIA labels)
-   - Plan card interactions and detail views
-
-**Data Flow**:
-```
-User Request (/dashboard)
-    ↓
-HTTP Server
-    ↓
-Plan Scanner (discovers plans in ./plans)
-    ↓
-Dashboard Renderer (generates cards with progress)
-    ↓
-Dashboard Template (renders HTML with cards)
-    ↓
-Dashboard JS (enables interactivity)
-    ↓
-User sees sorted/filtered plan grid
-```
-
-**Features Complete**:
-- Real-time plan discovery (no manual updates)
-- Interactive card-based grid layout
-- Progress tracking with percentage calculation & rings
-- Status derivation (pending/in-progress/completed)
-- Sorting: date (newest first), alphabetical, progress %
-- Filtering: all, pending, active, completed
-- Full-text search with highlighting
-- Dark/light theme toggle with persistence
-- WCAG 2.1 AA accessibility compliance
-- Responsive mobile-friendly design
-- Phase breakdown with status indicators
-- Timestamp tracking for plan modifications
-- Security-validated path traversal
+**Plans dashboard** — the interactive plan / kanban dashboard is no longer bundled as a preview HTTP server. It now lives in the external **claudekit CLI** (`ck config ui`, launched by `claude/skills/plans-kanban/scripts/open-dashboard.cjs`) and is invoked on demand through the `ck:plans-kanban` skill. Plan discovery and table parsing for that dashboard are shared via `claude/skills/_shared/lib/plan-table-parser.cjs`.
 
 #### 6.4 External Service Integration
 

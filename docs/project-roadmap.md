@@ -1,8 +1,8 @@
 # ClaudeKit Engineer - Project Roadmap
 
-**Last Updated:** 2026-05-14
-**Current Version:** 2.18.1-beta.4
-**Repository:** https://github.com/claudekit/claudekit-engineer
+**Last Updated:** 2026-06-16
+**Current Version:** 2.19.1
+**Repository:** https://github.com/duy-tung/claude-code-setup
 
 ## Executive Summary
 
@@ -24,7 +24,7 @@ Established core agent orchestration framework, slash command system, automated 
 - Multi-agent orchestration engine
 - Initial slash-command surface (plan, cook, test, ask, bootstrap, debug, fix:*) — since migrated to skills (Phase 2)
 - Semantic versioning & automated releases
-- Foundational skills library (planning, research, debugging, review, etc.) — now a focused catalog of 43 shipped skills
+- Foundational skills library (planning, research, debugging, review, etc.) — now a focused catalog of 40 shipped skills
 - Documentation system with repomix integration
 - Scout Block Hook for cross-platform performance optimization
 - Git workflows with conventional commits enforcement
@@ -182,7 +182,7 @@ Enterprise-grade features and deployment options.
 |-----------|--------|----------|----------|
 | Windows Statusline Support | ✅ Complete | 2025-11-11 | 100% |
 | Preview Dashboard (6 Phases) | ✅ Complete | 2025-12-11 | 100% |
-| Skills Library Expansion + Catalog Slimming | ✅ Complete | — | 100% (slimmed to a focused 43-skill catalog) |
+| Skills Library Expansion + Catalog Slimming | ✅ Complete | — | 100% (slimmed to a focused 40-skill catalog) |
 | Enhanced Error Handling | ✅ Complete | — | 100% (scout-first + hook safety gates) |
 
 ### Q1–Q2 2026 Milestones
@@ -230,7 +230,7 @@ Enterprise-grade features and deployment options.
 ### Core Features (COMPLETE)
 - ✅ Multi-agent orchestration system
 - ✅ Skill-based routing (post-v2.17 migration replaces the original slash-command surface)
-- ✅ Focused 43-skill catalog (lean, technology-agnostic SWE core)
+- ✅ Focused 40-skill catalog (lean, technology-agnostic SWE core)
 - ✅ Development workflow automation
 - ✅ Documentation system with repomix
 - ✅ Cross-platform performance optimization (scout-first gates, Windows hook safety)
@@ -383,7 +383,7 @@ Enterprise-grade features and deployment options.
 
 ## Changelog
 
-### Version 2.18.1-beta.4 (Current — 2026-05-14)
+### Version 2.18.1-beta.4 (2026-05-14)
 
 Per-release history lives in git tags and commit messages (the standalone `CHANGELOG.md` was dropped in the lean refactor). Headline themes since v2.2:
 
@@ -391,10 +391,10 @@ Per-release history lives in git tags and commit messages (the standalone `CHANG
 - **Lean refactor** (current fork): CI workflows, semantic-release, and the root `scripts/` JS linters were removed; skill integrity is now checked locally via `claude/scripts/validate-skill-frontmatter.py` and `validate-skill-crossrefs.py`
 - **Hook safety** (v2.18.x): Windows SessionStart crash-loop fixed; scout-first/no-side-effects gates enforced; generated-context hooks disabled by default
 - **Review harness** (next): `ck:fix`/`ck:cook` move from score-only approval to artifact-gated review with high-risk auto stops
-- **Skills library**: 43 shipped skills (47 `SKILL.md` files incl. document sub-skills), all carrying `user-invocable: true`
+- **Skills library**: 40 shipped skills (40 `SKILL.md` files: 36 top-level + 4 document sub-skills), all carrying `user-invocable: true`
 
 #### Current Metrics (approximate)
-- 43 shipped skills under `claude/skills/` (47 `SKILL.md` files incl. document sub-skills)
+- 40 shipped skills under `claude/skills/` (40 `SKILL.md` files: 36 top-level + 4 document sub-skills)
 - Active hooks: 4 wired by default (~20 available in the kit, opt-in)
 - 5 MCP integrations (context7, memory, human-mcp, chrome-devtools, sequential-thinking)
 

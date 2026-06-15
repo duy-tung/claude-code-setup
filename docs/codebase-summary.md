@@ -1,8 +1,8 @@
 # Codebase Summary
 
-**Last Updated**: 2026-01-28
-**Version**: 2.9.0-beta.2
-**Repository**: [claudekit/claudekit-engineer](https://github.com/claudekit/claudekit-engineer)
+**Last Updated**: 2026-06-16
+**Version**: 2.19.1
+**Repository**: [duy-tung/claude-code-setup](https://github.com/duy-tung/claude-code-setup)
 
 ## Overview
 
@@ -156,7 +156,7 @@ claudekit-engineer/
 
 ### For Users
 - **README.md**: Project overview and quick start
-- **guide/SKILLS.md**: Comprehensive skills reference (7,073 tokens)
+- **guide/SKILLS.md**: Comprehensive skills reference
 - **claude/rules/CLAUDE.md**: Development instructions and workflows installed by the CK CLI
 
 ### For Developers
@@ -258,13 +258,8 @@ Node.js test runner (`node --test`).
 
 ## File Statistics
 
-**Total Files**: 48 files (in repomix output)
-**Total Tokens**: 38,868 tokens
-**Total Characters**: 173,077 chars
-
-**Largest Files by Token Count**:
-1. `guide/SKILLS.md` - 7,073 tokens
-2. `README.md` - 3,261 tokens
+Point-in-time repomix metrics are not tracked here (they drift every release).
+Run `npx repomix` (or `/ck:repomix`) for current file/token counts.
 
 ## Integration Capabilities
 
@@ -304,10 +299,10 @@ Purpose: Send project updates to Discord channels
 
 ## Version History
 
-**Current**: v2.9.0-beta.2 (released 2026-01-28)
+**Current**: v2.19.1
 **License**: MIT
 **Author**: Duy Nguyen
-**Repository**: https://github.com/claudekit/claudekit-engineer
+**Repository**: https://github.com/duy-tung/claude-code-setup
 
 ## Unresolved Questions
 

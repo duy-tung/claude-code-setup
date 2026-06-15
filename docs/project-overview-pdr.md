@@ -1,10 +1,10 @@
 # Project Overview & Product Development Requirements (PDR)
 
 **Project Name**: ClaudeKit Engineer
-**Version**: 2.18.1-beta.4
-**Last Updated**: 2026-05-14
+**Version**: 2.19.1
+**Last Updated**: 2026-06-16
 **Status**: Active Development
-**Repository**: https://github.com/claudekit/claudekit-engineer
+**Repository**: https://github.com/duy-tung/claude-code-setup
 
 ## Executive Summary
 
@@ -455,7 +455,7 @@ Command behavior is implemented via skill directories:
 - ✅ Documentation system
 
 ### Phase 2: Enhancement + Commands→Skills Migration (Complete - v2.x through v2.18)
-- ✅ Skills expansion, later slimmed to a focused 43-skill catalog
+- ✅ Skills expansion, later slimmed to a focused 40-skill catalog
 - ✅ Commands→Skills migration (v2.17)
 - ✅ Skill CI gates: cross-ref, description, routing coverage (v2.18)
 - ✅ Windows parity + hook safety (v2.18.x)
@@ -549,9 +549,9 @@ Command behavior is implemented via skill directories:
 - [Keep a Changelog](https://keepachangelog.com/)
 
 ### Support & Community
-- GitHub Issues: https://github.com/claudekit/claudekit-engineer/issues
-- Discussions: https://github.com/claudekit/claudekit-engineer/discussions
-- Repository: https://github.com/claudekit/claudekit-engineer
+- GitHub Issues: https://github.com/duy-tung/claude-code-setup/issues
+- Discussions: https://github.com/duy-tung/claude-code-setup/discussions
+- Repository: https://github.com/duy-tung/claude-code-setup
 
 ## Unresolved Questions
 

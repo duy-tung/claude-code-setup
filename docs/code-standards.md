@@ -1,7 +1,7 @@
 # Code Standards & Codebase Structure
 
-**Last Updated**: 2025-12-28
-**Version**: 2.2.0-beta.4
+**Last Updated**: 2026-06-16
+**Version**: 2.19.1
 **Applies To**: All code within ClaudeKit Engineer project
 
 ## Overview
