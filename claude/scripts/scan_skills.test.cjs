@@ -46,11 +46,11 @@ execSync(`python3 "${SCRIPT_PATH}"`, {
 const skillsData = fs.readFileSync(SKILLS_DATA_PATH, 'utf-8');
 const guideYaml = fs.readFileSync(GUIDE_YAML_PATH, 'utf-8');
 
-test('mcp-builder stays in dev-tools', () => {
+test('scout stays in dev-tools', () => {
   assertMatch(
     skillsData,
-    /- name: "mcp-builder"[\s\S]*?category: "dev-tools"/,
-    'mcp-builder should be categorized as dev-tools',
+    /- name: "scout"[\s\S]*?category: "dev-tools"/,
+    'scout should be categorized as dev-tools',
   );
 });
 
@@ -68,11 +68,6 @@ test('block frontmatter descriptions are flattened', () => {
     guideYaml,
     /name: "context-engineering"[\s\S]*?description: "Check context usage limits,/,
     'context-engineering description should be flattened',
-  );
-  assertMatch(
-    guideYaml,
-    /name: "excalidraw"[\s\S]*?description: "Create Excalidraw diagrams/,
-    'excalidraw description should be flattened',
   );
 });
 

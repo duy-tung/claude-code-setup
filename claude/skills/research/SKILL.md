@@ -1,6 +1,6 @@
 ---
 name: ck:research
-description: "Research technical solutions, analyze architectures, gather requirements thoroughly. Use for technology evaluation, best practices research, solution design, scalability/security/maintainability analysis."
+description: "Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis."
 user-invocable: true
 when_to_use: "Invoke for deep technical research before implementation."
 category: utilities
@@ -45,7 +45,7 @@ You will employ a multi-source research strategy:
    - **IMPORTANT:** You are allowed to perform at most **5 researches (max 5 tool calls)**, user might request less than this amount, **strictly respect it**, think carefully based on the task before performing each related research topic.
 
 2. **Deep Content Analysis**:
-   - When you found a potential Github repository URL, use `ck:docs-seeker` skill to find read it.
+   - When you found a potential Github repository URL, use Context7 MCP to read its docs.
    - Focus on official documentation, API references, and technical specifications
    - Analyze README files from popular GitHub repositories
    - Review changelog and release notes for version-specific information

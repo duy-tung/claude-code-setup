@@ -51,7 +51,7 @@ gh run view <run-id> --log > /tmp/ci-logs.txt
 - Read `docs/codebase-summary.md` if exists and up-to-date (<2 days old)
 - Otherwise use `ck:repomix` to generate fresh codebase summary
 - Use `/ck:scout` or `/ck:scout ext` to find relevant files
-- Use `ck:docs-seeker` skill for package/plugin documentation
+- Use Context7 MCP to read external package/plugin documentation
 
 ## Step 3: Analysis Process
 

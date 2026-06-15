@@ -15,7 +15,7 @@
 - Enables multi-step reasoning with revision capability
 
 ### Documentation Research
-- Use `ck:docs-seeker` skill to read and understand documentation
+- Use Context7 MCP to read and understand documentation
 - Research plugins, packages, and frameworks
 - Find latest technical documentation using llms.txt standard
 

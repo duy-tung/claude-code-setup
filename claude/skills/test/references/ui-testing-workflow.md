@@ -1,6 +1,6 @@
 # UI Testing Workflow
 
-Use `ck:agent-browser` for live browser testing when a fresh/tool-managed browser is enough. Use `ck:chrome-profile` only when the test needs the user's real Chrome profile, cookies, or already-logged-in state. Use `ck:web-testing` or project-native Playwright/Vitest/k6 commands for repeatable test runs.
+Use Chrome MCP for live browser testing, including when the test needs your real Chrome profile, cookies, or already-logged-in state. Use project-native Playwright/Vitest/k6 commands for repeatable test runs.
 
 ## Purpose
 Run comprehensive UI tests on a website and generate a detailed report.
@@ -17,30 +17,17 @@ Instruct the user to:
 2. Log in manually with their credentials
 3. Open browser DevTools (F12) → Application tab → Cookies/Storage
 
-### Step 2: Select the Chrome Profile
-Prefer project-native auth helpers for repeatable tests. For ad-hoc browser driving with real user auth/cookies, invoke `ck:chrome-profile` and run:
-
-```bash
-chrome-profile doctor
-chrome-profile setup
-chrome-profile list
-```
+### Step 2: Choose the Auth Source
+Prefer project-native auth helpers for repeatable tests. For ad-hoc browser driving with real user auth/cookies, use Chrome MCP with your logged-in Chrome profile so existing session cookies carry over.
 
 ### Step 3: Run Tests
-After auth is available, run tests normally. If real user Chrome state is not needed, use `ck:agent-browser`:
+After auth is available, run tests normally. When real user Chrome state is not needed, drive a fresh browser session with Chrome MCP:
 
-```bash
-agent-browser open https://example.com/dashboard
-agent-browser screenshot -o profile.png
+```
+Navigate to https://example.com/dashboard, then capture a screenshot.
 ```
 
-If real user Chrome state is needed:
-
-```bash
-chrome-profile work https://example.com/dashboard
-```
-
-Then select the MCP page whose URL contains `cdp-profile=work` and capture screenshots or snapshots through the active bridge.
+When real user Chrome state is needed, point Chrome MCP at your logged-in Chrome profile, navigate to the protected route, and capture screenshots or snapshots through the active bridge.
 
 ## Workflow
 - Use `ck:plan` skill to organize the test plan & report
@@ -48,7 +35,7 @@ Then select the MCP page whose URL contains `cdp-profile=work` and capture scree
 - Browse URL, discover all pages, components, endpoints
 - Create test plan based on discovered structure
 - Use multiple `tester` subagents in parallel for: pages, forms, navigation, user flows, accessibility, responsive layouts, performance, security, seo
-- Use `ck:ai-multimodal` to analyze all screenshots
+- Use a vision/multimodal model to analyze all screenshots
 - Generate comprehensive Markdown report
 - Ask user if they want to preview with `/ck:preview`
 

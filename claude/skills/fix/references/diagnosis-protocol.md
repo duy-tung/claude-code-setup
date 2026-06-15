@@ -84,7 +84,7 @@ Symptom (where error appears)
 ### Phase 5: Escalate — When hypotheses fail
 
 If 2+ hypotheses are REFUTED:
-1. Auto-activate `ck:problem-solving` skill
+1. Escalate with `ck:sequential-thinking` skill
 2. Apply Inversion Exercise: "What would CAUSE this bug intentionally?"
 3. Apply Scale Game: "Does this fail with 1 item? 100? 10000?"
 4. Consider environmental factors (timing, concurrency, platform)

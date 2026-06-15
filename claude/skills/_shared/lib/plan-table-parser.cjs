@@ -1,5 +1,5 @@
 /**
- * Shared plan table parser — used by plans-kanban and markdown-novel-viewer.
+ * Shared plan table parser — used by plans-kanban.
  * Supports 7 plan.md formats with alphanumeric phase IDs (e.g. 1a, 2b).
  */
 

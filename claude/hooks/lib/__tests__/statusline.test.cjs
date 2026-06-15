@@ -3,7 +3,7 @@
 
 /**
  * Comprehensive Tests for Statusline Implementation
- * Modules tested: colors, transcript-parser, config-counter, statusline
+ * Modules tested: colors, transcript-parser, statusline
  * Run: node .claude/hooks/lib/__tests__/statusline.test.cjs
  */
 
@@ -34,13 +34,6 @@ const {
   processEntry,
   extractTarget
 } = require('../transcript-parser.cjs');
-
-const {
-  countConfigs,
-  countRulesInDir,
-  countMcpServersInFile,
-  countHooksInFile
-} = require('../config-counter.cjs');
 
 const {
   getGitInfo,
@@ -119,13 +112,6 @@ test('transcript-parser.cjs exports required functions', () => {
   assertTrue(typeof parseTranscript === 'function', 'parseTranscript should be function');
   assertTrue(typeof processEntry === 'function', 'processEntry should be function');
   assertTrue(typeof extractTarget === 'function', 'extractTarget should be function');
-});
-
-test('config-counter.cjs exports required functions', () => {
-  assertTrue(typeof countConfigs === 'function', 'countConfigs should be function');
-  assertTrue(typeof countRulesInDir === 'function', 'countRulesInDir should be function');
-  assertTrue(typeof countMcpServersInFile === 'function', 'countMcpServersInFile should be function');
-  assertTrue(typeof countHooksInFile === 'function', 'countHooksInFile should be function');
 });
 
 // ============================================================================
@@ -497,80 +483,6 @@ test('extractTarget: Unknown tool returns null', () => {
 test('extractTarget: Null input returns null', () => {
   const target = extractTarget('Read', null);
   assertEquals(target, null, 'Should return null for null input');
-});
-
-// ============================================================================
-// TEST 8: Config Counter - Edge Cases
-// ============================================================================
-
-console.log('\n═══════════════════════════════════════════════════════');
-console.log('TEST 8: Config Counter - Edge Cases');
-console.log('═══════════════════════════════════════════════════════\n');
-
-test('countRulesInDir: returns 0 for non-existent directory', () => {
-  const count = countRulesInDir('/tmp/nonexistent-rules-dir-12345');
-  assertEquals(count, 0, 'Should return 0 for non-existent directory');
-});
-
-test('countRulesInDir: handles empty directory', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rules-'));
-  try {
-    const count = countRulesInDir(tmpDir);
-    assertEquals(count, 0, 'Should return 0 for empty directory');
-  } finally {
-    fs.rmdirSync(tmpDir);
-  }
-});
-
-test('countRulesInDir: counts .md files only', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rules-'));
-  try {
-    fs.writeFileSync(path.join(tmpDir, 'rule1.md'), '# Rule 1');
-    fs.writeFileSync(path.join(tmpDir, 'rule2.md'), '# Rule 2');
-    fs.writeFileSync(path.join(tmpDir, 'ignore.txt'), 'ignore');
-    const count = countRulesInDir(tmpDir);
-    assertEquals(count, 2, 'Should count only .md files');
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('countRulesInDir: handles nested directories', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rules-'));
-  try {
-    fs.mkdirSync(path.join(tmpDir, 'nested'));
-    fs.writeFileSync(path.join(tmpDir, 'rule1.md'), '# Rule 1');
-    fs.writeFileSync(path.join(tmpDir, 'nested', 'rule2.md'), '# Rule 2');
-    const count = countRulesInDir(tmpDir);
-    assertEquals(count, 2, 'Should count .md files in nested directories');
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('countConfigs: returns object with expected properties', () => {
-  const result = countConfigs('/tmp');
-  assertTrue(typeof result === 'object', 'Should return object');
-  assertTrue('claudeMdCount' in result, 'Should have claudeMdCount');
-  assertTrue('rulesCount' in result, 'Should have rulesCount');
-  assertTrue('mcpCount' in result, 'Should have mcpCount');
-  assertTrue('hooksCount' in result, 'Should have hooksCount');
-});
-
-test('countConfigs: all counts are numbers', () => {
-  const result = countConfigs('/tmp');
-  assertEquals(typeof result.claudeMdCount, 'number', 'claudeMdCount should be number');
-  assertEquals(typeof result.rulesCount, 'number', 'rulesCount should be number');
-  assertEquals(typeof result.mcpCount, 'number', 'mcpCount should be number');
-  assertEquals(typeof result.hooksCount, 'number', 'hooksCount should be number');
-});
-
-test('countConfigs: handles null/undefined cwd gracefully', () => {
-  const result1 = countConfigs(null);
-  assertEquals(typeof result1, 'object', 'Should handle null cwd');
-
-  const result2 = countConfigs(undefined);
-  assertEquals(typeof result2, 'object', 'Should handle undefined cwd');
 });
 
 // ============================================================================

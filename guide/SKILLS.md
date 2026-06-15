@@ -2,7 +2,7 @@
 
 Auto-generated catalog of all available skills in ClaudeKit Engineer.
 
-**Last Updated**: 2026-06-14
+**Last Updated**: 2026-06-16
 
 **Total Skills**: 40
 
@@ -229,7 +229,7 @@ Organize files, directories, and content structure in any project. Use when crea
 
 ### `research`
 
-Research technical solutions, analyze architectures, gather requirements thoroughly. Use for technology evaluation, best practices research, solution design, scalability/security/maintainability analysis.
+Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis.
 
 **Location**: `.claude/skills/research/SKILL.md`
 

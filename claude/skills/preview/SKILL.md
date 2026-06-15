@@ -26,7 +26,7 @@ If invoked without arguments, use `AskUserQuestion` to present available preview
 | `(view)` | View a file or directory |
 | `--explain` | Generate visual explanation |
 | `--slides` | Generate presentation slides |
-| `--diagram` | Generate architecture diagram |
+| `--diagram` | Generate architecture diagram (draft; use `/ck:tech-graph` for publish-grade SVG/PNG) |
 | `--ascii` | Terminal-friendly diagram |
 | `--stop` | Stop preview server |
 | `--html --explain` | Self-contained HTML explanation (opens in browser) |

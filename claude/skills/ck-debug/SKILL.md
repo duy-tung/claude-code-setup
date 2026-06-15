@@ -86,7 +86,7 @@ Track investigation pipelines via Claude Native Tasks (TaskCreate, TaskUpdate, T
 
 ### 10. Frontend Verification (`references/frontend-verification.md`)
 
-Visual verification of frontend implementations via `ck:agent-browser`, `ck:chrome-profile`, Chrome MCP / `chrome-devtools-mcp`, or project-native browser tests. Detect if frontend-related → check browser tool availability → screenshot + console error check → report. Skip if not frontend.
+Visual verification of frontend implementations via Chrome MCP / `chrome-devtools-mcp` or project-native browser tests. Detect if frontend-related → check browser tool availability → screenshot + console error check → report. Skip if not frontend.
 
 **Load when:** Implementation touches frontend files (tsx/jsx/vue/svelte/html/css), UI bugs, visual regressions
 
@@ -103,17 +103,17 @@ System issue   → investigation-methodology.md (5 steps)
   Slow system    → performance-diagnostics.md
   Need report    → reporting-standards.md
 
-Frontend fix   → frontend-verification.md (agent-browser/chrome-profile/Chrome MCP)
+Frontend fix   → frontend-verification.md (Chrome MCP)
 ```
 
 ## Tools Integration
 
 - **Database:** `psql` for PostgreSQL queries and diagnostics
 - **CI/CD:** `gh` CLI for GitHub Actions logs and pipeline debugging
-- **Codebase:** `ck:docs-seeker` skill for package/plugin docs; `ck:repomix` skill for codebase summary
+- **Codebase:** Context7 MCP for package/plugin docs; `ck:repomix` skill for codebase summary
 - **Scouting:** `/ck:scout` or `/ck:scout ext` for finding relevant files
-- **Frontend:** `ck:agent-browser`, `ck:chrome-profile`, Chrome MCP / `chrome-devtools-mcp`, or project-native browser tests for visual verification
-- **Skills:** Activate `ck:problem-solving` skill when stuck on complex issues
+- **Frontend:** Chrome MCP / `chrome-devtools-mcp` or project-native browser tests for visual verification
+- **Skills:** Activate `ck:sequential-thinking` skill when stuck on complex issues
 
 ## Red Flags
 

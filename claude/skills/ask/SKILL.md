@@ -13,6 +13,8 @@ metadata:
 
 # Technical Consultation
 
+**When NOT to use:** for interactive, iterative exploration with approval gates use `/ck:brainstorm`; once you're ready to write code use `/ck:cook` or `/ck:fix`. Ask is a fast one-shot expert answer — no codebase scout, no back-and-forth.
+
 Technical question or architecture challenge:
 <questions>$ARGUMENTS</questions>
 

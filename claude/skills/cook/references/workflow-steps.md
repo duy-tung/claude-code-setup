@@ -102,8 +102,8 @@ the refactor broke something and must be fixed before the workflow proceeds.
 **All modes:**
 - Use `TaskUpdate` to mark tasks as `in_progress` immediately.
 - Execute phase tasks sequentially (Step 3.1, 3.2, etc.)
-- Use `ui-ux-designer` for frontend
-- Use `ck:ai-multimodal` for image assets
+- Use `fullstack-developer` for frontend
+- Use an image-generation tool for image assets
 - Run type checking after each file
 
 **Parallel mode:**

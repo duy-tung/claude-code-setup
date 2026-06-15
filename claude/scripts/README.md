@@ -17,7 +17,6 @@ pip install -r requirements.txt   # pyyaml (used by the skill scanners)
 | `score-skill-description.py` | Score `SKILL.md` descriptions on 5 structural-format criteria and flag confusable pairs / dependency cycles. Invoked by `scan_skills.py`. |
 | `validate-skill-crossrefs.py` | Build the skill registry from frontmatter and audit every `/ck:` reference for broken refs, orphans, hubs, and workflow-chain gaps. |
 | `validate-skill-frontmatter.py` | Validate every `SKILL.md` frontmatter against `claude/schemas/skill-schema.json` (requires `user-invocable: true`). |
-| `scan_commands.py` | Legacy command scanner (deprecated). Commands were migrated to skills; this now writes an empty commands dataset. |
 | `win_compat.py` | Windows UTF-8 console helper. Import early in scripts that print Unicode. |
 
 See `.claude/rules/quality-gates.md` for when to run each validator.

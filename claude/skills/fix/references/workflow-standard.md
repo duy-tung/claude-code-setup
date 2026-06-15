@@ -44,7 +44,7 @@ See `references/parallel-exploration.md` for patterns.
 2. Activate `ck:debug` skill. Use `debugger` subagent if needed.
 3. Activate `ck:sequential-thinking` — form hypotheses through structured reasoning.
 4. Spawn parallel `Explore` subagents to test hypotheses against codebase evidence.
-5. If 2+ hypotheses fail → auto-activate `ck:problem-solving`.
+5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking`.
 6. Trace backward to root cause (not just symptom location).
 
 See `references/diagnosis-protocol.md` for full methodology.
@@ -57,7 +57,6 @@ See `references/diagnosis-protocol.md` for full methodology.
 
 Fix the ROOT CAUSE per diagnosis findings. Not symptoms.
 
-- Apply `ck:problem-solving` skill if stuck
 - Use `ck:sequential-thinking` for complex logic
 - Minimal changes. Follow existing patterns.
 
@@ -112,12 +111,12 @@ See `references/review-cycle.md` for mode-specific handling.
 | Step | Skills/Subagents |
 |------|------------------|
 | 1 | `ck:scout` OR parallel `Explore` subagents |
-| 2 | `ck:debug`, `ck:sequential-thinking`, `debugger` subagent, parallel `Explore`, (`ck:problem-solving` auto) |
-| 3 | `ck:problem-solving` (if stuck), `ck:sequential-thinking` (complex logic) |
+| 2 | `ck:debug`, `ck:sequential-thinking`, `debugger` subagent, parallel `Explore` |
+| 3 | `ck:sequential-thinking` (complex logic) |
 | 4 | `tester` subagent, parallel `Bash` verification |
 | 5 | `code-reviewer` subagent |
 | 6 | `ck:project-management`, `git-manager`, `docs-manager` subagents |
 
 **Rules:** Don't skip steps. Validate before proceeding. One phase at a time.
-**Frontend:** Use `ck:agent-browser`, `ck:chrome-profile`, Chrome MCP / `chrome-devtools-mcp`, or any relevant project-native browser tests to verify.
-**Visual Assets:** Use `ck:ai-multimodal` for visual assets generation, analysis and verification.
+**Frontend:** Use Chrome MCP / `chrome-devtools-mcp` or any relevant project-native browser tests to verify.
+**Visual Assets:** Use an image-generation tool to generate visual assets, and a vision/multimodal model to analyze and verify them.

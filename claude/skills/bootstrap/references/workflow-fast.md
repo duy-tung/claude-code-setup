@@ -12,19 +12,19 @@ All research happens in parallel, then feeds into planning:
 - 2 `researcher` subagents (max 5 sources each): find best-fit tech stack
 - 2 `researcher` subagents (max 5 sources each): research design style, trends, fonts, colors, spacing, positions
   - Predict Google Fonts name (NOT just Inter/Poppins)
-  - Describe assets for `ck:ai-multimodal` generation
+  - Describe assets for image-generation
 
 Keep all reports ≤150 lines.
 
 ## Step 2: Design
 
-1. `ui-ux-designer` subagent analyzes research, creates:
+1. `fullstack-developer` subagent analyzes research, creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
-2. If no logo provided: generate with `ck:ai-multimodal` skill
-3. Screenshot wireframes with `ck:agent-browser` → save to `./docs/wireframes/`
+2. If no logo provided: generate with an image-generation tool
+3. Screenshot wireframes with Chrome MCP → save to `./docs/wireframes/`
 
-**Image tools:** `ck:ai-multimodal` for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
+**Image tools:** an image-generation/vision tool for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
 
 No design gate in fast mode — proceed directly to planning.
 

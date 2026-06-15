@@ -40,6 +40,21 @@ User wants to...
 └── Run test suites, coverage reports, TDD       → /ck:test
 ```
 
+## Version Control
+
+```
+User wants to...
+├── Stage / commit (conventional, auto-split) / push / open a PR → /ck:git
+└── Full branch → merge → test → review → PR release pipeline    → /ck:ship
+```
+
+## Project Tracking
+
+```
+User wants to...
+└── Open the plans dashboard / kanban view of plan progress → /ck:plans-kanban
+```
+
 ## Documentation
 
 ```
@@ -64,4 +79,4 @@ User wants to...
 
 - Pick ONE skill per distinct user intent
 - Domain skills combine with core workflow: `/ck:plan` → domain skill → `/ck:cook`
-- Skills not listed here are either core workflow skills (see `skill-workflow-routing.md`) or utility skills activated on demand (e.g. `/ck:ask`, `/ck:preview`, `/ck:sequential-thinking`)
+- Skills not listed here are either core workflow skills (see `skill-workflow-routing.md`) or utility skills activated on demand (e.g. `/ck:ask`, `/ck:coding-level`, `/ck:preview`, `/ck:sequential-thinking`)

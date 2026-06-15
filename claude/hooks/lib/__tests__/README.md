@@ -84,7 +84,6 @@ When changing statusline logic:
 - `/.claude/statusline.cjs`
 - `/.claude/hooks/lib/colors.cjs`
 - `/.claude/hooks/lib/transcript-parser.cjs`
-- `/.claude/hooks/lib/config-counter.cjs`
 - `/.claude/hooks/lib/git-info-cache.cjs`
 
 **Last Updated:** 2026-02-26

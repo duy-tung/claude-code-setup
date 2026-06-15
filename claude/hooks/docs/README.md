@@ -14,6 +14,10 @@ This directory contains hooks for Claude Code sessions.
 | **Session Init** | `session-init.cjs` | Session startup initialization |
 | **Dev Rules** | `dev-rules-reminder.cjs` | Development rules injection |
 
+## Enablement vs Registration
+
+The `hooks.<name>` flags in `.claude/.ck.json` (and the defaults in `ck-config-utils.cjs`) only **gate** a hook that is already wired to an event in `.claude/settings.json` — a `true` value does **not** register the hook. Some entry hooks ship enabled-by-default in that gate map but are intentionally NOT registered to any event in the default `settings.json` (e.g. `task-completed-handler`, `teammate-idle-handler`, `usage-context-awareness`, `team-context-inject`); they fire only if you add the matching event entry to `settings.json` yourself. Enabling them in `.ck.json` alone has no effect.
+
 ## Notifications
 
 Unified Node.js notification system with multi-provider support, smart throttling, and zero dependencies.

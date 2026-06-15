@@ -45,7 +45,7 @@ See `references/parallel-exploration.md` for patterns.
 2. Activate `ck:debug` skill (systematic-debugging + root-cause-tracing).
 3. Activate `ck:sequential-thinking` — structured hypothesis formation.
 4. Spawn parallel `Explore` subagents to test each hypothesis.
-5. If 2+ hypotheses fail → auto-activate `ck:problem-solving`.
+5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking`.
 6. Trace backward through call chain to ROOT CAUSE origin.
 
 See `references/diagnosis-protocol.md` for full methodology.
@@ -89,7 +89,7 @@ Use `planner` subagent to create implementation plan.
 
 ### Step 6: Implement
 `TaskUpdate(T6, status="in_progress")`
-Implement per plan. Use `ck:context-engineering`, `ck:sequential-thinking`, `ck:problem-solving`.
+Implement per plan. Use `ck:context-engineering`, `ck:sequential-thinking`.
 
 - Fix ROOT CAUSE per diagnosis — not symptoms
 - Follow plan phases
@@ -143,15 +143,15 @@ See `references/review-cycle.md` for mode-specific handling.
 | Step | Skills/Subagents |
 |------|------------------|
 | 1 | `ck:scout` OR parallel `Explore` subagents |
-| 2 | `ck:debug`, `ck:sequential-thinking`, parallel `Explore`, (`ck:problem-solving` auto) |
+| 2 | `ck:debug`, `ck:sequential-thinking`, parallel `Explore` |
 | 3 | `researcher` (runs parallel with steps 1+2) |
 | 4 | `ck:brainstorm` |
 | 5 | `planner` |
-| 6 | `ck:problem-solving`, `ck:sequential-thinking`, `ck:context-engineering` |
+| 6 | `ck:sequential-thinking`, `ck:context-engineering` |
 | 7 | `tester`, parallel `Bash` verification |
 | 8 | `code-reviewer` |
 | 9 | `ck:project-management`, `docs-manager`, `git-manager` |
 
 **Rules:** Don't skip steps. Validate before proceeding. One phase at a time.
-**Frontend:** Use `ck:agent-browser`, `ck:chrome-profile`, Chrome MCP / `chrome-devtools-mcp`, or any relevant project-native browser tests to verify.
-**Visual Assets:** Use `ck:ai-multimodal` for visual assets generation, analysis and verification.
+**Frontend:** Use Chrome MCP / `chrome-devtools-mcp` or any relevant project-native browser tests to verify.
+**Visual Assets:** Use an image-generation tool to generate visual assets, and a vision/multimodal model to analyze and verify them.

@@ -31,18 +31,18 @@ Spawn multiple `researcher` subagents in parallel:
 ## Step 4: Wireframe & Design
 
 1. Ask user if they want wireframes/design. If no → skip to Step 5.
-2. Use `ui-ux-designer` + `researcher` subagents in parallel:
+2. Use `fullstack-developer` + `researcher` subagents in parallel:
    - Research style, trends, fonts (predict Google Fonts name, NOT just Inter/Poppins), colors, spacing, positions
-   - Describe assets for `ck:ai-multimodal` skill generation
-3. `ui-ux-designer` creates:
+   - Describe assets for image-generation
+3. `fullstack-developer` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
-4. If no logo provided: generate with `ck:ai-multimodal` skill
-5. Screenshot wireframes with `ck:agent-browser` → save to `./docs/wireframes/`
+4. If no logo provided: generate with an image-generation tool
+5. Screenshot wireframes with Chrome MCP → save to `./docs/wireframes/`
 
 **Gate:** User approves design. Repeat if rejected.
 
-**Image tools:** `ck:ai-multimodal` for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
+**Image tools:** an image-generation/vision tool for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
 
 ## Step 5: Planning
 

@@ -16,7 +16,7 @@ Task(subagent_type="researcher", prompt="Research [topic]. Report ≤150 lines."
 
 ## Scout Phase
 ```
-Task(subagent_type="scout", prompt="Find files related to [feature] in codebase", description="Scout [feature]")
+Task(subagent_type="Explore", prompt="Find files related to [feature] in codebase", description="Scout [feature]")
 ```
 - Use `/ck:scout ext` (preferred) or `/ck:scout` (fallback)
 
@@ -29,7 +29,7 @@ Task(subagent_type="planner", prompt="Create implementation plan based on report
 
 ## UI Implementation
 ```
-Task(subagent_type="ui-ux-designer", prompt="Implement [feature] UI per ./docs/design-guidelines.md", description="UI [feature]")
+Task(subagent_type="fullstack-developer", prompt="Implement [feature] UI per ./docs/design-guidelines.md", description="UI [feature]")
 ```
 - For frontend work
 - Follow design guidelines

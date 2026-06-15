@@ -152,7 +152,7 @@ See `references/mode-selection.md` for AskUserQuestion format.
 2. Activate `ck:debug` skill (systematic-debugging + root-cause-tracing techniques).
 3. Activate `ck:sequential-thinking` skill — form hypotheses through structured reasoning, NOT guessing.
 4. Spawn parallel `Explore` subagents to test each hypothesis against codebase evidence.
-5. If 2+ hypotheses fail → auto-activate `ck:problem-solving` skill for alternative approaches.
+5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking` (inversion, scale-game, alternative approaches).
 6. Create diagnosis report: confirmed root cause, evidence chain, affected scope.
 
 See `references/diagnosis-protocol.md` for full methodology.
@@ -228,7 +228,6 @@ See `references/skill-activation-matrix.md` for complete matrix.
 - `ck:project-management` — MANDATORY for sync-back and progress tracking, every fix
 
 **Conditional:**
-- `ck:problem-solving` — auto-triggers when 2+ hypotheses fail in Step 2
 - `ck:brainstorm` — multiple valid approaches, architecture decision (Deep only)
 - `ck:context-engineering` — fixing AI/LLM/agent code
 

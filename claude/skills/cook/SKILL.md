@@ -15,6 +15,8 @@ metadata:
 
 End-to-end implementation with automatic workflow detection.
 
+**When NOT to use:** for a concrete bug, error, test failure, or CI failure use `/ck:fix` (root-cause diagnosis pipeline); for root-cause investigation only use `/ck:debug`. Cook is for features and plan execution.
+
 **Principles:** YAGNI, KISS, DRY | Token efficiency | Concise reports
 
 ## Usage
@@ -208,7 +210,7 @@ Human review required at these checkpoints (skipped with `--auto`):
 | Research | `researcher` | Optional in fast/code |
 | Scout | `ck:scout` | Optional in code |
 | Plan | `planner` | Optional in code |
-| UI Work | `ui-ux-designer` | If frontend work |
+| UI Work | `fullstack-developer` | If frontend work |
 | Testing | `tester`, `debugger` | **MUST** spawn |
 | Review | `code-reviewer` | **MUST** spawn |
 | Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | **MUST** invoke all |

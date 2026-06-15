@@ -228,7 +228,7 @@
   keywords: ["codebase", "pack", "snapshot", "llm-context"]
 - name: "research"
   path: "research/SKILL.md"
-  description: "Research technical solutions, analyze architectures, gather requirements thoroughly. Use for technology evaluation, best practices research, solution design, scalability/security/maintainability analysis."
+  description: "Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis."
   category: "utilities"
   has_scripts: false
   has_references: false

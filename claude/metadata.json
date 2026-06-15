@@ -186,7 +186,11 @@
     "skills/agentize/**",
     "skills/mcp-builder/**",
     "skills/use-mcp/**",
-    "skills/common/**"
+    "skills/common/**",
+    "hooks/lib/config-counter.cjs",
+    "scripts/scan_commands.py",
+    "hooks/tests/test-ckignore.cjs",
+    "skills/agent_skills_spec.md"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",
@@ -194,7 +198,7 @@
   "buildDate": "2026-05-25T18:14:17.696Z",
   "repository": {
     "type": "git",
-    "url": "https://github.com/duy-tung/claudekit-engineer-codex.git"
+    "url": "https://github.com/duy-tung/claude-code-setup.git"
   },
   "download": {
     "lastDownloadedAt": null,

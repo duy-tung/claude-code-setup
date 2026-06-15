@@ -20,19 +20,19 @@ No user gate — proceed automatically.
 
 ## Step 3: Wireframe & Design
 
-1. Use `ui-ux-designer` + `researcher` agents in parallel:
+1. Use `fullstack-developer` + `researcher` agents in parallel:
    - Research style, trends, fonts, colors, spacing, positions
    - Predict Google Fonts name (NOT just Inter/Poppins)
-   - Describe assets for `ck:ai-multimodal` generation
-2. `ui-ux-designer` creates:
+   - Describe assets for image-generation
+2. `fullstack-developer` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
-3. If no logo: generate with `ck:ai-multimodal` skill
-4. Screenshot with `ck:agent-browser` → save to `./docs/wireframes/`
+3. If no logo: generate with an image-generation tool
+4. Screenshot with Chrome MCP → save to `./docs/wireframes/`
 
 **Gate:** Ask user to approve design. Repeat if rejected.
 
-**Image tools:** `ck:ai-multimodal` for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
+**Image tools:** an image-generation/vision tool for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
 
 ## Step 4: Parallel Planning
 
@@ -52,7 +52,7 @@ Activate **ck:cook** skill: `/ck:cook --parallel <plan-path>`
 - Read `plan.md` for dependency graph and execution strategy
 - Launch multiple `fullstack-developer` agents in PARALLEL for concurrent phases
   - Pass: phase file path, environment info
-- Use `ui-ux-designer` for frontend (generate/analyze assets with `ck:ai-multimodal`, edit with `imagemagick`)
+- Use `fullstack-developer` for frontend (generate/analyze assets with an image-generation/vision tool, edit with `imagemagick`)
 - Respect file ownership boundaries
 - Run type checking after implementation
 - Keep cook review gates; `--parallel` controls execution shape, not approval bypass

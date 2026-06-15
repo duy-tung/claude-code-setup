@@ -1,7 +1,7 @@
 metadata:
   title: "Skills Catalog"
   description: "Auto-generated catalog of all available skills in ClaudeKit Engineer"
-  last_updated: '2026-06-14'
+  last_updated: '2026-06-16'
   total_skills: 40
 categories:
   dev-tools: "Development Tools"
@@ -284,7 +284,7 @@ skills:
     keywords: ["files", "directories", "structure", "layout"]
   - name: "research"
     path: "research/SKILL.md"
-    description: "Research technical solutions, analyze architectures, gather requirements thoroughly. Use for technology evaluation, best practices research, solution design, scalability/security/maintainability analysis."
+    description: "Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis."
     category: "utilities"
     has_scripts: false
     has_references: false

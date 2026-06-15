@@ -7,8 +7,8 @@ Cook skill handles most of these — this reference documents bootstrap-specific
 
 Handled by **ck:cook** skill. Bootstrap-specific notes:
 - Use main agent to implement step by step per plan in `./plans`
-- Use `ui-ux-designer` subagent for frontend per `./docs/design-guidelines.md`
-- Asset pipeline: `ck:ai-multimodal` (generate/analyze) → `imagemagick` (crop/resize) → background removal if needed
+- Use `fullstack-developer` subagent for frontend per `./docs/design-guidelines.md`
+- Asset pipeline: an image-generation/vision tool (generate/analyze) → `imagemagick` (crop/resize) → background removal if needed
 - Run type checking and compile after each phase
 
 ## Testing

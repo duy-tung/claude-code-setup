@@ -20,18 +20,18 @@ No user gate — auto-select best option.
 
 ## Step 3: Wireframe & Design
 
-1. Use `ui-ux-designer` + `researcher` subagents in parallel:
+1. Use `fullstack-developer` + `researcher` subagents in parallel:
    - Research style, trends, fonts (predict Google Fonts name, NOT just Inter/Poppins), colors, spacing, positions
-   - Describe assets for `ck:ai-multimodal` skill generation
-2. `ui-ux-designer` creates:
+   - Describe assets for image-generation
+2. `fullstack-developer` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
-3. If no logo provided: generate with `ck:ai-multimodal` skill
-4. Screenshot wireframes with `ck:agent-browser` → save to `./docs/wireframes/`
+3. If no logo provided: generate with an image-generation tool
+4. Screenshot wireframes with Chrome MCP → save to `./docs/wireframes/`
 
 **Gate:** Ask user to approve design. Repeat if rejected.
 
-**Image tools:** `ck:ai-multimodal` for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
+**Image tools:** an image-generation/vision tool for generation/analysis, `imagemagick` for crop/resize, background removal tool as needed.
 
 ## Step 4: Planning
 

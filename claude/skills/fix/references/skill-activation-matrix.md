@@ -26,7 +26,6 @@ Skip Tasks for Quick workflow (< 3 steps). See `references/task-orchestration.md
 
 | Skill | Auto-Trigger Condition |
 |-------|------------------------|
-| `ck:problem-solving` | 2+ hypotheses REFUTED in Step 2 diagnosis |
 | `ck:sequential-thinking` | Always in Step 2 (mandatory for hypothesis formation) |
 
 ## Conditional Activation
@@ -35,7 +34,7 @@ Skip Tasks for Quick workflow (< 3 steps). See `references/task-orchestration.md
 |-------|---------------|
 | `ck:brainstorm` | Multiple valid fix approaches, architecture decision (Deep only) |
 | `ck:context-engineering` | Fixing AI/LLM/agent code, context window issues |
-| `ck:ai-multimodal` | UI issues, screenshots provided, visual bugs |
+| vision/multimodal model | UI issues, screenshots provided, visual bugs |
 
 ## Subagent Usage
 
@@ -69,7 +68,7 @@ See `references/parallel-exploration.md` for detailed patterns.
 | Workflow | Skills Activated |
 |----------|------------------|
 | Quick | `ck:scout` (minimal), `ck:debug`, `ck:sequential-thinking`, `ck:code-review`, `/ck:project-management`, parallel `Bash` verification |
-| Standard | Above + Tasks, `ck:problem-solving` (auto), `ck:project-management`, `tester`, parallel `Explore` |
+| Standard | Above + Tasks, `ck:project-management`, `tester`, parallel `Explore` |
 | Deep | All above + `ck:brainstorm`, `ck:context-engineering`, `researcher`, `planner` |
 | Parallel | Per-issue Task trees + `ck:project-management` + `fullstack-developer` agents + coordination via `TaskList` |
 
@@ -79,7 +78,7 @@ See `references/parallel-exploration.md` for detailed patterns.
 |------|----------------|
 | Step 0: Mode | `AskUserQuestion` (unless auto/quick detected) |
 | Step 1: Scout | `ck:scout` OR 2-3 parallel `Explore` → map files, deps, tests |
-| Step 2: Diagnose | Capture pre-fix state → `ck:debug` → `ck:sequential-thinking` → parallel `Explore` hypotheses → (`ck:problem-solving` if 2+ fail) |
+| Step 2: Diagnose | Capture pre-fix state → `ck:debug` → `ck:sequential-thinking` → parallel `Explore` hypotheses |
 | Step 3: Assess | Classify complexity → create Tasks (moderate+) |
 | Step 4: Fix | Implement per workflow → follow root cause |
 | Step 5: Verify+Prevent | Iron-law verify → regression test → defense-in-depth → parallel `Bash` verify |
@@ -90,8 +89,8 @@ See `references/parallel-exploration.md` for detailed patterns.
 | Keyword/Pattern | Skill to Consider |
 |-----------------|-------------------|
 | "AI", "LLM", "agent", "context" | `ck:context-engineering` |
-| "stuck", "tried everything" | `ck:problem-solving` |
+| "stuck", "tried everything" | `ck:sequential-thinking` |
 | "complex", "multi-step" | `ck:sequential-thinking` |
 | "which approach", "options" | `ck:brainstorm` |
 | "latest docs", "best practice" | `researcher` subagent |
-| Screenshot attached | `ck:ai-multimodal` |
+| Screenshot attached | vision/multimodal model |

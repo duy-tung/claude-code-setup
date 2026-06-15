@@ -1,18 +1,12 @@
 # UI Fix Workflow
 
-For fixing visual/UI issues. Requires design skills. Uses native Claude Tasks for phase tracking.
+For fixing visual/UI issues. Uses native Claude Tasks for phase tracking.
 
 ## Required Skills (activate in order)
-1. `ck:ui-ux-pro-max` - Design database (ALWAYS FIRST)
-2. `ck:ui-ux-pro-max` - Design principles
-3. `ck:frontend-design` - Implementation patterns
+Delegate UI work to the `fullstack-developer` subagent per ./docs/design-guidelines.md.
 
 ## Pre-fix Research
-```bash
-python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<product-type>" --domain product
-python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<style>" --domain style
-python3 .claude/skills/ui-ux-pro-max/scripts/search.py "accessibility" --domain ux
-```
+Read `./docs/design-guidelines.md` for product, style, and accessibility conventions before fixing.
 
 ## Task Setup (Before Starting)
 
@@ -29,7 +23,7 @@ T6 = TaskCreate(subject="Update design docs",       activeForm="Updating design 
 
 ### Step 1: Analyze
 `TaskUpdate(T1, status="in_progress")`
-Analyze screenshots/videos with `ck:ai-multimodal` skill.
+Analyze screenshots/videos with a vision/multimodal model.
 
 - Read `./docs/design-guidelines.md` first
 - Identify exact visual discrepancy
@@ -38,13 +32,13 @@ Analyze screenshots/videos with `ck:ai-multimodal` skill.
 
 ### Step 2: Implement
 `TaskUpdate(T2, status="in_progress")`
-Use `ui-ux-designer` agent.
+Use `fullstack-developer` agent.
 
 `TaskUpdate(T2, status="completed")`
 
 ### Step 3: Verify Visually
 `TaskUpdate(T3, status="in_progress")`
-Screenshot + `ck:ai-multimodal` analysis.
+Screenshot + vision/multimodal model analysis.
 
 - Capture parent container, not whole page
 - Compare to design guidelines
@@ -54,7 +48,7 @@ Screenshot + `ck:ai-multimodal` analysis.
 
 ### Step 4: DevTools Check
 `TaskUpdate(T4, status="in_progress")`
-Use `ck:agent-browser`, `ck:chrome-profile`, Chrome MCP / `chrome-devtools-mcp`, or project-native browser tests.
+Use Chrome MCP / `chrome-devtools-mcp` or project-native browser tests.
 
 `TaskUpdate(T4, status="completed")`
 
@@ -71,5 +65,5 @@ Update `./docs/design-guidelines.md` if needed.
 `TaskUpdate(T6, status="completed")`
 
 ## Tips
-- Use `ck:ai-multimodal` for generating visual assets
+- Use an image-generation tool for generating visual assets
 - Use `ImageMagick` for image editing
