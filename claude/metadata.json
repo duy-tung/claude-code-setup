@@ -185,7 +185,8 @@
     "skills/watzup/**",
     "skills/agentize/**",
     "skills/mcp-builder/**",
-    "skills/use-mcp/**"
+    "skills/use-mcp/**",
+    "skills/common/**"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",
