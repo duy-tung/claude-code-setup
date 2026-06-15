@@ -15,7 +15,7 @@ claudekit-engineer/
 ├── .claude/               # Claude Code configuration
 │   ├── agents/           # Specialized agent definitions (11 agents)
 │   ├── hooks/            # Git hooks and scripts
-│   ├── skills/           # Specialized skills library (43 skills)
+│   ├── skills/           # Specialized skills library (40 skills)
 │   └── rules/            # AI-facing rules and workflows
 ├── docs/                # Project documentation
 │   └── research/        # Research reports directory
@@ -75,18 +75,17 @@ claudekit-engineer/
 - `ck-code-review/` - Code review workflows
 - `test/` - Testing workflows
 
-### 3. Skills Library (43 Skills)
+### 3. Skills Library (40 Skills)
 
-**Current Skills** (43 Total):
-- agentize, ask, bootstrap, brainstorm, ck-autoresearch
-- ck-code-review, ck-debug, ck-graphify, ck-loop, ck-plan
-- ck-predict, ck-scenario, ck-security, coding-level, context-engineering
-- cook, docs, find-skills, fix, git
-- gkg, journal, mcp-builder, plans-kanban, preview
-- problem-solving, project-management, project-organization, repomix, research
-- retro, scout, security-scan, sequential-thinking, ship
-- skill-creator, team, tech-graph, test, use-mcp
-- watzup, worktree, xia
+**Current Skills** (40 Total):
+- ask, bootstrap, brainstorm, ck-autoresearch, ck-code-review
+- ck-debug, ck-harness, ck-loop, ck-plan, ck-predict
+- ck-scenario, ck-security, coding-level, context-engineering, cook
+- docs, find-skills, fix, git, journal
+- plans-kanban, preview, project-management, project-organization, repomix
+- research, retro, scout, sequential-thinking, ship
+- skill-creator, team, tech-graph, test, worktree
+- xia
 - document-skills (office sub-skills: docx, pdf, pptx, xlsx)
 
 ### 4. Hook System

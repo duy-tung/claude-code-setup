@@ -100,7 +100,7 @@ Command behavior is implemented via skill directories:
 - `ck-code-review/` - Code review workflows
 - `test/` - Testing and validation workflows
 
-### 3. Extensive Skills Library (43 Skills)
+### 3. Extensive Skills Library (40 Skills)
 
 **Organized by Domain** (`.claude/skills/`):
 
@@ -108,15 +108,14 @@ Command behavior is implemented via skill directories:
 **Content & Ideation**: brainstorm, ask
 **DevOps & Infrastructure**: git, worktree, ship
 **Documentation**: docs, repomix, document-skills, journal
-**Graph & Visualization**: tech-graph, ck-graphify, gkg
-**MCP Tools**: mcp-builder, use-mcp
+**Graph & Visualization**: tech-graph
 **Planning & Prediction**: ck-plan, plans-kanban, ck-predict, ck-scenario
 **Project Management**: project-management, project-organization, team, retro
 **Research & Discovery**: research, ck-autoresearch, scout, find-skills, context-engineering
-**Security**: ck-security, security-scan
-**Skill Development**: skill-creator, agentize
+**Security**: ck-security
+**Skill Development**: skill-creator, ck-harness
 **Testing & QA**: test
-**Workflow Tools**: cook, ck-loop, fix, preview, watzup, xia, bootstrap, problem-solving
+**Workflow Tools**: cook, ck-loop, fix, preview, xia, bootstrap
 
 ### 4. Automated Release Management
 

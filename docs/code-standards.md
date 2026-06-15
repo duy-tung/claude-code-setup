@@ -74,7 +74,7 @@ project-root/
 - Main file always named `SKILL.md`
 - Supporting files in `references/` or `scripts/`
 - Examples:
-  - `mcp-builder/SKILL.md`
+  - `cook/SKILL.md`
   - `skill-creator/SKILL.md`
   - `research/SKILL.md`
 
