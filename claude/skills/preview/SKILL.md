@@ -8,7 +8,7 @@ keywords: [preview, visual, slides, diagrams, HTML]
 argument-hint: "[path] OR [--html] --explain|--slides|--diagram|--ascii [topic] OR --html --diff|--plan-review|--recap"
 metadata:
   author: claudekit
-  version: "1.2.0"
+  version: "1.3.0"
   attribution: "Visual self-review pattern for diagram output adapted from fireworks-tech-graph by yizhiyanhua-ai (MIT)"
   license: MIT
 ---
@@ -28,7 +28,6 @@ If invoked without arguments, use `AskUserQuestion` to present available preview
 | `--slides` | Generate presentation slides |
 | `--diagram` | Generate architecture diagram (draft; use `/ck:tech-graph` for publish-grade SVG/PNG) |
 | `--ascii` | Terminal-friendly diagram |
-| `--stop` | Stop preview server |
 | `--html --explain` | Self-contained HTML explanation (opens in browser) |
 | `--html --diagram` | Self-contained HTML diagram with zoom controls |
 | `--html --slides` | Magazine-quality HTML slide deck |
@@ -41,9 +40,9 @@ Present as options via `AskUserQuestion` with header "Preview Operation", questi
 ## Usage
 
 ### View Mode
-- `/ck:preview <file.md>` - View markdown file in novel-reader UI
+- `/ck:preview <file.md>` - Render markdown inline, or convert to self-contained HTML and open in browser
+- `/ck:preview <file.html>` - Open directly in browser (no server)
 - `/ck:preview <directory/>` - Browse directory contents
-- `/ck:preview --stop` - Stop running server
 
 ### Generation Mode (Markdown)
 - `/ck:preview --explain <topic>` - Generate visual explanation (ASCII + Mermaid + prose)
@@ -63,15 +62,14 @@ Present as options via `AskUserQuestion` with header "Preview Operation", questi
 
 When processing arguments, follow this priority order:
 
-1. **`--stop`** → Stop server (exit)
-2. **`--html` flag present** → Set HTML output mode flag (continues to next step)
-3. **Generation flags** (`--explain`, `--slides`, `--diagram`, `--ascii`) → Generation mode. Load `references/generation-modes.md`
-4. **HTML-only flags** (`--diff`, `--plan-review`, `--recap`) → Auto-set HTML mode, then generation mode. Load `references/generation-modes.md`
-5. **Resolve path from argument:**
+1. **`--html` flag present** → Set HTML output mode flag (continues to next step)
+2. **Generation flags** (`--explain`, `--slides`, `--diagram`, `--ascii`) → Generation mode. Load `references/generation-modes.md`
+3. **HTML-only flags** (`--diff`, `--plan-review`, `--recap`) → Auto-set HTML mode, then generation mode. Load `references/generation-modes.md`
+4. **Resolve path from argument:**
    - If argument is an explicit path → use directly
    - If argument is a contextual reference → resolve from recent conversation context
-6. **Resolved path exists on filesystem** → View mode. Load `references/view-mode.md`
-7. **Path doesn't exist or can't resolve** → Ask user to clarify
+5. **Resolved path exists on filesystem** → View mode. Load `references/view-mode.md`
+6. **Path doesn't exist or can't resolve** → Ask user to clarify
 
 **Topic-to-slug conversion:**
 - Lowercase the topic
@@ -93,10 +91,9 @@ When processing arguments, follow this priority order:
 | Flag without topic | Ask user: "Please provide a topic: `/ck:preview --explain <topic>`" |
 | Topic becomes empty after sanitization | Ask for topic with alphanumeric characters |
 | File write failure | Report error, suggest checking disk space and permissions |
-| Server startup failure | Check if port in use, try `/ck:preview --stop` first |
 | No generation flag + unresolvable reference | Ask user to clarify which file they meant |
 | Existing file at output path | Overwrite with new content (no prompt) |
-| Server already running | Reuse existing server instance, just open new URL |
+| Browser open command fails (headless/remote) | Report the absolute file path for manual opening |
 | Parent `plans/` dir missing | Create directories recursively before write |
 | `--diff` without git context | Explain: "No git repo detected. Run inside a git repository." |
 | `--plan-review` without plan file or active plan | Explain: "Provide a plan file path or run from a session with an active plan." |

@@ -96,21 +96,17 @@ After rendering a diagram, do not trust syntactic validity alone — load the re
 
 For full SVG layout rules (spacing minimums, arrow connection points, z-index ordering, anti-pattern catalog), read `/ck:tech-graph`'s `references/svg-layout-best-practices.md`. For full publish-grade SVG+PNG diagram generation (7 visual styles, agent/memory primitives), use `/ck:tech-graph` directly.
 
-## Step 3: Save and Preview
+## Step 3: Save and Present
 
 1. Write generated content to determined path
-2. Start preview server with the generated file:
-```bash
-node .claude/skills/markdown-novel-viewer/scripts/server.cjs \
-  --file "<generated-file-path>" --host 0.0.0.0 --open --foreground
-```
+2. Present the generated content (or its key sections, for long output) in the conversation
 
 ## Step 4: Report to User
 
 Report:
 - Generated file path
-- Preview URL (local + network)
 - Remind: file saved in plan's `visuals/` folder for future reference
+- Suggest the `--html` variant if the user wants a browser-quality rendering
 
 ---
 

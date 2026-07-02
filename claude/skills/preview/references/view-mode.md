@@ -1,42 +1,31 @@
 # View Mode
 
-## Execution
+Server-free viewing. Route by what the resolved path is:
 
-**IMPORTANT:** Run server as Claude Code background task using `run_in_background: true` with the Bash tool.
+## HTML file
 
-The skill is located at `.claude/skills/markdown-novel-viewer/`.
+Open directly in the default browser — the file is self-contained:
 
-### Stop Server
+- macOS: `open "<path>"`
+- Linux: `xdg-open "<path>"`
+- Windows: `start "<path>"`
 
-If `--stop` flag is provided:
+Report the file path and confirm the browser opened. If the open command fails (headless/remote session), report the absolute path so the user can open it themselves.
 
-```bash
-node .claude/skills/markdown-novel-viewer/scripts/server.cjs --stop
-```
+## Markdown file
 
-### Start Server
+1. Read the file and present it in the conversation: keep heading structure, render tables and code blocks as-is. For long documents (> ~300 lines), present the heading outline plus the section the user most likely cares about, then offer to show more.
+2. For a browser-quality reading experience, offer to convert: generate a self-contained HTML rendering of the document (same rules as `--html` generation — read `html-design-guidelines.md` and `html-css-patterns.md`, include the mandatory theme toggle), save to `{plan_dir}/visuals/{filename-slug}.html` (or `plans/visuals/` when no active plan), and open it in the browser as above.
 
-Run the `markdown-novel-viewer` server as CC background task with `--foreground` flag:
+## Directory
 
-```bash
-INPUT_PATH="<resolved-path>"
-if [[ -d "$INPUT_PATH" ]]; then
-  node .claude/skills/markdown-novel-viewer/scripts/server.cjs \
-    --dir "$INPUT_PATH" --host 0.0.0.0 --open --foreground
-else
-  node .claude/skills/markdown-novel-viewer/scripts/server.cjs \
-    --file "$INPUT_PATH" --host 0.0.0.0 --open --foreground
-fi
-```
+1. List the contents (one level, names + sizes; note subdirectory counts).
+2. Use `AskUserQuestion` to let the user pick a file, then view it per the rules above.
 
-**Critical:** When calling the Bash tool:
-- Set `run_in_background: true`
-- Set `timeout: 300000` (5 minutes)
-- Parse JSON output and report URL to user
+## Image file
 
-After starting, report:
-- Local URL for browser access
-- Network URL for remote device access
-- Inform user that server is now running as CC background task (visible in `/tasks`)
+Open with the OS default viewer using the same open commands as HTML files.
 
-**CRITICAL:** MUST display the FULL URL including path and query string. NEVER truncate to just `host:port`.
+## Any other text/code file
+
+Read and present in the conversation with the appropriate language context. Same long-file handling as markdown.
