@@ -4,29 +4,36 @@ This guide explains how to install dependencies for Claude Code skills.
 
 ## Overview
 
-Skills are organized into groups with Python utility scripts. Each skill's scripts directory contains a `requirements.txt` file listing dependencies.
+Most skills in this kit are pure instructions (markdown) or use only the Python/Node standard library and need no installation. External dependencies are concentrated in a few skills:
+
+| Skill(s) | Dependency | Kind |
+|----------|------------|------|
+| document-skills (docx, pdf, pptx, xlsx) | `document-skills/requirements.txt` (pypdf, Pillow, openpyxl, python-pptx, defusedxml, lxml, pdf2image, markitdown, pandas, reportlab, ...) | Python (venv) |
+| pdf | Poppler (`pdftoppm`) | System |
+| tech-graph | librsvg (`rsvg-convert`) for PNG export | System |
+| repomix | `repomix` CLI | npm (global) |
+| sequential-thinking, plans-kanban | local `npm install` (dev/test only) | npm (local) |
+| repo tooling (`scan_skills.py` etc.) | `../scripts/requirements.txt` (pyyaml) | Python (venv) |
+
+Some document-skills workflows use additional heavyweight tools that are NOT auto-installed — LibreOffice (PDF conversion, xlsx formula recalculation), pandoc (docx text extraction), and node packages like pptxgenjs/playwright for html2pptx. Each skill's `SKILL.md` Dependencies section is the source of truth; install those only if you use the corresponding workflow.
 
 ## Automated Installation (Recommended)
-
-Use the provided installation scripts for automated setup:
 
 ### Linux/macOS
 
 ```bash
 cd .claude/skills
 chmod +x install.sh
-./install.sh
+./install.sh            # add --with-sudo to allow system package installs
 ```
 
 The script will:
-- Detect your OS (Linux or macOS)
-- Install package managers (Homebrew for macOS, apt-get for Linux)
-- Install system dependencies (FFmpeg, ImageMagick)
-- Install Node.js and global packages (rmbg-cli, pnpm, wrangler, repomix)
-- Create Python virtual environment
-- Install Python packages for all skills
-- Install test dependencies
-- Verify all installations
+- Detect your OS and package manager (apt/dnf/pacman/apk/brew)
+- Install system dependencies (librsvg, Poppler)
+- Install Node.js (if missing) and global packages (pnpm, repomix)
+- Create a Python virtual environment at `.claude/skills/.venv`
+- Install Python packages for document-skills and any skill with a `scripts/requirements.txt`
+- Verify all installations and print a remediation report for anything skipped
 
 ### Windows (PowerShell)
 
@@ -47,200 +54,80 @@ Options:
 .\install.ps1 -Help
 ```
 
-The script will:
-- Install Chocolatey package manager (if needed)
-- Install system dependencies (FFmpeg, ImageMagick)
-- Install Node.js and global packages
-- Create Python virtual environment
-- Install Python packages
-- Verify all installations
-
 ### What Gets Installed
 
-**System Tools:**
-- FFmpeg (video/audio processing)
-- ImageMagick (image processing)
+**System tools:**
+- librsvg / `rsvg-convert` (tech-graph PNG export)
+- Poppler / `pdftoppm` (pdf skill image rendering)
 
-**Node.js Packages (global):**
-- rmbg-cli (AI background removal)
+**Node.js packages (global):**
 - pnpm (package manager)
-- wrangler (Cloudflare CLI)
 - repomix (repository packaging)
 
-**Python Packages:**
-- google-genai (Gemini API)
-- pypdf, python-docx (document processing)
-- Pillow (image processing)
-- pytest, pytest-cov (testing)
+**Python packages (in `.claude/skills/.venv`):**
+- document-skills set: pypdf, Pillow, openpyxl, python-pptx, defusedxml, lxml, pdf2image, six, markitdown, pandas, reportlab
+- pyyaml (repo tooling)
+- pytest, pytest-cov, pytest-mock (test dependencies, where a skill declares them)
 
 ## Manual Installation
 
 If you prefer manual installation or the automated script fails:
 
-## Quick Start
-
-### Option 1: Install All Dependencies (Recommended)
+### Python environment
 
 ```bash
 # Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python3 -m venv .claude/skills/.venv
+source .claude/skills/.venv/bin/activate  # Windows: .claude\skills\.venv\Scripts\activate
 
-# Install all skill dependencies
-pip install -r .claude/skills/ai-multimodal/scripts/requirements.txt
+# Document skills (docx, pdf, pptx, xlsx)
+pip install -r .claude/skills/document-skills/requirements.txt
 
-# Install test dependencies for development
-pip install pytest pytest-cov pytest-mock
+# Repo tooling (scan_skills.py, validators)
+pip install -r .claude/scripts/requirements.txt
 ```
 
-### Option 2: Install Per-Skill
-
-Navigate to specific skill and install:
+### System tools
 
 ```bash
-cd .claude/skills/ai-multimodal/scripts
-pip install -r requirements.txt
+# Ubuntu/Debian
+sudo apt-get install -y librsvg2-bin poppler-utils
+
+# Fedora/RHEL
+sudo dnf install -y librsvg2-tools poppler-utils
+
+# Arch
+sudo pacman -S librsvg poppler
+
+# Alpine
+apk add librsvg poppler-utils
+
+# macOS
+brew install librsvg poppler
 ```
-
-## Skills Dependencies
-
-### Python Package Dependencies
-
-Most skills use only Python standard library. Only **ai-multimodal** requires external packages:
-
-**ai-multimodal** (`.claude/skills/ai-multimodal/scripts/requirements.txt`):
-- `google-genai>=0.1.0` - Google Gemini API
-- `pypdf>=4.0.0` - PDF processing
-- `python-docx>=1.0.0` - DOCX conversion
-- `docx2pdf>=0.1.8` - PDF conversion (Windows only)
-- `markdown>=3.5.0` - Markdown processing
-- `Pillow>=10.0.0` - Image processing
-- `python-dotenv>=1.0.0` - Environment variables
-
-### System Tool Dependencies
-
-Several skills require external CLI tools:
-
-#### media-processing
-- **FFmpeg**: Video/audio processing
-  - Ubuntu/Debian: `sudo apt-get install ffmpeg`
-  - macOS: `brew install ffmpeg`
-  - Windows: `choco install ffmpeg`
-- **ImageMagick**: Image processing
-  - Ubuntu/Debian: `sudo apt-get install imagemagick`
-  - macOS: `brew install imagemagick`
-  - Windows: `choco install imagemagick`
-- **RMBG CLI**: AI background removal
-  - All platforms: `npm install -g rmbg-cli`
-
-#### devops
-- **Cloudflare Wrangler**: `npm install -g wrangler`
-- **Docker**: https://docs.docker.com/get-docker/
-- **Google Cloud CLI**: https://cloud.google.com/sdk/docs/install
-
-#### better-auth, repomix, shopify
-- **Node.js 18+**: https://nodejs.org/
-- **Better Auth**: `npm install better-auth`
-- **Repomix**: `npm install -g repomix`
-- **Shopify CLI**: `npm install -g @shopify/cli @shopify/theme`
-
-#### databases
-- **PostgreSQL client**: `sudo apt-get install postgresql-client` (Linux)
-- **MongoDB Shell**: https://www.mongodb.com/try/download/shell
-- **MongoDB Tools**: https://www.mongodb.com/try/download/database-tools
-
-#### web-frameworks, ui-styling
-- **Node.js 18+**: https://nodejs.org/
-- **pnpm**: `npm install -g pnpm`
-- **yarn**: `npm install -g yarn`
-
-## Installation by Platform
-
-### Linux (Ubuntu/Debian)
-
-```bash
-# Python environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Python packages (ai-multimodal only)
-cd .claude/skills/ai-multimodal/scripts
-pip install -r requirements.txt
-
-# System tools
-sudo apt-get update
-sudo apt-get install -y ffmpeg imagemagick postgresql-client
-
-# Node.js and tools
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-npm install -g pnpm wrangler repomix rmbg-cli @shopify/cli
-```
-
-### macOS
-
-```bash
-# Python environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Python packages (ai-multimodal only)
-cd .claude/skills/ai-multimodal/scripts
-pip install -r requirements.txt
-
-# System tools via Homebrew
-brew install ffmpeg imagemagick postgresql
-
-# Node.js and tools
-brew install node
-npm install -g pnpm wrangler repomix rmbg-cli @shopify/cli
-```
-
-### Windows
 
 ```powershell
-# Python environment
-python -m venv .venv
-.venv\Scripts\activate
-
-# Python packages (ai-multimodal only)
-cd .claude\skills\ai-multimodal\scripts
-pip install -r requirements.txt
-
-# System tools via Chocolatey
-choco install ffmpeg imagemagick nodejs
-
-# Node.js tools
-npm install -g pnpm wrangler repomix rmbg-cli @shopify/cli
+# Windows
+winget install oschwartz10612.Poppler
+choco install rsvg-convert -y    # librsvg is not on winget/scoop
 ```
 
-## Testing Dependencies
-
-All skills include test dependencies in `requirements.txt`:
-
-```txt
-pytest>=8.0.0
-pytest-cov>=4.1.0
-pytest-mock>=3.12.0
-```
-
-To run tests for a skill:
+### Node.js tools
 
 ```bash
-cd .claude/skills/{skill-name}/scripts
-python -m pytest tests/ -v --cov=. --cov-report=term-missing
+npm install -g pnpm repomix
 ```
+
+## Running Python Skill Scripts
+
+Always use the venv interpreter so installed packages are found:
+
+- **Linux/macOS:** `.claude/skills/.venv/bin/python3 <script>.py`
+- **Windows:** `.claude\skills\.venv\Scripts\python.exe <script>.py`
 
 ## Environment Variables
 
-Skills respect environment variable loading priority:
-
-1. **process.env** (highest priority - runtime environment)
-2. **`.claude/skills/{skill-name}/.env`** (skill-specific config)
-3. **`.claude/skills/.env`** (shared skills config)
-4. **`.claude/.env`** (global Claude config)
-
-Example `.env` files are provided where needed (e.g., `devops/.env.example`).
+Skills and hooks that need configuration ship an `.env.example` next to their code (e.g. `.claude/.env.example`, `.claude/skills/.env.example`, `.claude/hooks/notifications/.env.example`). Copy the template to the same location without the `.example` suffix and fill in values. For notification hooks specifically, see `.claude/hooks/docs/README.md`.
 
 ## Troubleshooting
 
@@ -250,12 +137,9 @@ If you see this error when installing packages:
 
 ```bash
 # Use virtual environment (recommended)
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Or use pipx for CLI tools
-pipx install google-genai
+python3 -m venv .claude/skills/.venv
+source .claude/skills/.venv/bin/activate
+pip install -r .claude/skills/document-skills/requirements.txt
 ```
 
 ### Missing System Tools
@@ -264,14 +148,26 @@ If scripts fail with "command not found":
 
 ```bash
 # Check if tool is installed
-which ffmpeg
-which docker
+which rsvg-convert
+which pdftoppm
 which node
 
 # Verify tool works
-ffmpeg -version
-docker --version
+rsvg-convert --version
+pdftoppm -v
 node --version
+```
+
+### Pillow/lxml Build Failures
+
+Prebuilt wheels cover most platforms. If pip falls back to building from source, install build tools first:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y gcc python3-dev libjpeg-dev zlib1g-dev
+
+# macOS
+xcode-select --install
 ```
 
 ### Permission Errors
@@ -279,82 +175,14 @@ node --version
 On Linux/macOS, you may need to make scripts executable:
 
 ```bash
-chmod +x .claude/skills/*/scripts/*.py
+chmod +x .claude/skills/install.sh
 ```
-
-## Minimal Installation
-
-If you only want to use specific skills:
-
-**For ai-multimodal only:**
-```bash
-pip install google-genai pypdf python-docx markdown Pillow python-dotenv
-```
-
-**For media-processing only:**
-```bash
-# macOS
-brew install ffmpeg imagemagick
-npm install -g rmbg-cli
-
-# Linux
-sudo apt-get install ffmpeg imagemagick
-npm install -g rmbg-cli
-
-# Windows
-choco install ffmpeg imagemagick
-npm install -g rmbg-cli
-```
-
-**For other skills:**
-Most other skills (better-auth, repomix, shopify, devops, web-frameworks, ui-styling, databases) use only Python stdlib and require no `pip install`.
-
-## Development Setup
-
-For contributors working on skills:
-
-```bash
-# Install all test dependencies
-pip install pytest pytest-cov pytest-mock
-
-# Install pre-commit hooks (if available)
-pre-commit install
-
-# Run all tests
-pytest .claude/skills/*/scripts/tests/ -v
-
-# Check coverage across all skills
-pytest .claude/skills/*/scripts/tests/ --cov=.claude/skills --cov-report=html
-```
-
-## Skill-Specific Notes
-
-### ai-multimodal
-- Requires `GEMINI_API_KEY` in environment
-- Get API key: https://aistudio.google.com/app/apikey
-- Windows users: `docx2pdf` requires Microsoft Word installed
-
-### media-processing
-- FFmpeg must be in PATH
-- ImageMagick must be in PATH
-- RMBG CLI must be installed globally
-- Test with: `ffmpeg -version`, `convert -version`, and `rmbg --version`
-
-### devops
-- Cloudflare: Requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
-- GCloud: Requires `GOOGLE_APPLICATION_CREDENTIALS` path to service account JSON
-- Docker: Must have Docker daemon running
-
-### shopify
-- Requires Shopify CLI authentication: `shopify auth login`
-- Partner account needed for app development
 
 ## Getting Help
 
 If dependencies fail to install or scripts don't work:
 
-1. Check the skill's `scripts/requirements.txt` for specific versions
+1. Check the relevant `requirements.txt` for specific versions
 2. Verify system tools are installed and in PATH
-3. Check environment variables are set correctly
-4. Review skill's `SKILL.md` for additional setup instructions
-5. Open an issue: https://github.com/anthropics/claude-code/issues
+3. Review the skill's `SKILL.md` Dependencies section for additional setup
+4. Open an issue: https://github.com/duy-tung/claude-code-setup/issues

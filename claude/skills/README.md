@@ -23,7 +23,7 @@ The example skills in this repo are open source (Apache 2.0). We've also include
 
 # Installation
 
-Some skills require external dependencies (FFmpeg, ImageMagick, Node.js packages, Python packages). Use our automated installation scripts to set up all dependencies:
+Most skills are pure instructions and need no setup. A few require external dependencies (librsvg for tech-graph, Poppler for pdf, Python packages for document-skills, the repomix CLI). Use the automated installation scripts to set up all dependencies:
 
 ## Automated Installation (Recommended)
 
@@ -40,10 +40,10 @@ cd .claude\skills
 ```
 
 The installation scripts will:
-- Install system tools (FFmpeg, ImageMagick)
-- Install Node.js packages (rmbg-cli, pnpm, wrangler, repomix)
+- Install system tools (librsvg/rsvg-convert, Poppler/pdftoppm)
+- Install Node.js packages (pnpm, repomix)
 - Create Python virtual environment
-- Install Python packages (google-genai, pypdf, Pillow, etc.)
+- Install Python packages (pypdf, Pillow, openpyxl, python-pptx, etc.)
 - Install test dependencies
 - Verify all installations
 
@@ -53,9 +53,9 @@ For manual installation or troubleshooting, see [INSTALLATION.md](INSTALLATION.m
 
 ## What Gets Installed
 
-- **System Tools**: FFmpeg, ImageMagick
-- **Node.js Packages**: rmbg-cli, pnpm, wrangler, repomix
-- **Python Packages**: google-genai, pypdf, python-docx, Pillow, pytest
+- **System Tools**: librsvg (rsvg-convert), Poppler (pdftoppm)
+- **Node.js Packages**: pnpm, repomix
+- **Python Packages**: document-skills set (pypdf, Pillow, openpyxl, python-pptx, defusedxml, lxml, pdf2image, markitdown, pandas, reportlab), pyyaml, pytest
 
 See [INSTALLATION.md](INSTALLATION.md) for complete dependency list and platform-specific instructions.
 
@@ -114,7 +114,7 @@ You can use Anthropic's pre-built skills, and upload custom skills, via the Clau
 
 # Creating a Basic Skill
 
-Skills are simple to create - just a folder with a `SKILL.md` file containing YAML frontmatter and instructions. Use the `/ck:skill-creator` skill to scaffold a new one, or copy any existing skill (e.g., `show-off/`) as a starting point:
+Skills are simple to create - just a folder with a `SKILL.md` file containing YAML frontmatter and instructions. Use the `/ck:skill-creator` skill to scaffold a new one, or copy any existing skill (e.g., `retro/`) as a starting point:
 
 ```markdown
 ---

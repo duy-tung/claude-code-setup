@@ -30,7 +30,7 @@ Generate production-quality SVG technical diagrams exported as PNG via `rsvg-con
 
 ## Vendoring Notes
 
-This skill is vendored — installation is handled by `claude/skills/install.sh` (no manual `npx skills add` step). The required system dependency `librsvg` (`rsvg-convert` binary) is installed automatically alongside FFmpeg/ImageMagick when `ck install` runs. Drift from upstream is tracked in `~/claudekit/.maintainer/external-sources.json` (Mode A entry) — see CLAUDE.md "External Source Drift Watcher" in the monorepo for the update procedure.
+This skill is vendored — installation is handled by `claude/skills/install.sh` (no manual `npx skills add` step). The required system dependency `librsvg` (`rsvg-convert` binary) is installed automatically when `ck install` runs. Drift from upstream is tracked in `~/claudekit/.maintainer/external-sources.json` (Mode A entry) — see CLAUDE.md "External Source Drift Watcher" in the monorepo for the update procedure.
 
 ## Helper Scripts (Recommended)
 

@@ -1,0 +1,23 @@
+# Shared Python dependencies for the document-skills group (docx, pdf, pptx, xlsx).
+# Installed by claude/skills/install.sh / install.ps1 into the skills venv.
+#
+# System/npm dependencies (LibreOffice, pandoc, poppler, pptxgenjs, playwright, ...)
+# are documented per skill in each SKILL.md; install.sh handles poppler.
+
+# Script imports (scripts fail without these)
+defusedxml>=0.7.1
+lxml>=5.0.0
+openpyxl>=3.1.0
+pdf2image>=1.17.0
+Pillow>=10.0.0
+pypdf>=4.0.0
+python-pptx>=1.0.0
+six>=1.16.0
+
+# Used by SKILL.md recipes ("assume installed")
+markitdown[pptx]>=0.1.0
+pandas>=2.0.0
+reportlab>=4.0.0
+
+# Optional OCR path in pdf/SKILL.md (needs system tesseract):
+# pytesseract>=0.3.10

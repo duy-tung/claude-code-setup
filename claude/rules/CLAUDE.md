@@ -62,7 +62,7 @@ When running Python scripts from `.claude/skills/`, use the venv Python interpre
 - **Linux/macOS:** `.claude/skills/.venv/bin/python3 scripts/xxx.py`
 - **Windows:** `.claude\skills\.venv\Scripts\python.exe scripts\xxx.py`
 
-This ensures packages installed by `install.sh` (google-genai, pypdf, etc.) are available.
+This ensures packages installed by `install.sh` (pypdf, Pillow, openpyxl, etc.) are available.
 
 **IMPORTANT:** When scripts of skills failed, don't stop, try to fix them directly.
 

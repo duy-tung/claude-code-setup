@@ -590,46 +590,21 @@ function Install-SystemDeps {
         Write-Warning "No package manager found. Will provide manual install instructions."
     }
 
-    # FFmpeg
-    if (Test-Command "ffmpeg") {
-        $ffmpegVersion = (ffmpeg -version 2>&1 | Select-Object -First 1)
-        Write-Success "FFmpeg already installed ($ffmpegVersion)"
-        Track-Success -Category "optional" -Name "FFmpeg"
-    } else {
-        $null = Install-WithPackageManager `
-            -DisplayName "FFmpeg" `
-            -WingetId "Gyan.FFmpeg" `
-            -ChocoName "ffmpeg" `
-            -ScoopName "ffmpeg" `
-            -ManualUrl "https://ffmpeg.org/download.html" `
-            -Category "optional"
-    }
-
-    # ImageMagick
-    if (Test-Command "magick") {
-        Write-Success "ImageMagick already installed"
-        Track-Success -Category "optional" -Name "ImageMagick"
-    } else {
-        $null = Install-WithPackageManager `
-            -DisplayName "ImageMagick" `
-            -WingetId "ImageMagick.ImageMagick" `
-            -ChocoName "imagemagick" `
-            -ScoopName "imagemagick" `
-            -ManualUrl "https://imagemagick.org/script/download.php" `
-            -Category "optional"
-    }
-
     # librsvg (rsvg-convert) — required only for tech-graph PNG export.
     $null = Install-RsvgConvert
 
-    # Docker (optional)
-    if (Test-Command "docker") {
-        $dockerVersion = (docker --version)
-        Write-Success "Docker already installed ($dockerVersion)"
-        Track-Success -Category "optional" -Name "Docker"
+    # Poppler (pdftoppm) — required by the pdf document skill's pdf2image.
+    if (Test-Command "pdftoppm") {
+        Write-Success "Poppler (pdftoppm) already installed"
+        Track-Success -Category "optional" -Name "Poppler"
     } else {
-        Write-Warning "Docker not found. Skipping (optional)..."
-        Write-Info "Install Docker from: https://docs.docker.com/desktop/install/windows-install/"
+        $null = Install-WithPackageManager `
+            -DisplayName "Poppler (pdftoppm)" `
+            -WingetId "oschwartz10612.Poppler" `
+            -ChocoName "poppler" `
+            -ScoopName "poppler" `
+            -ManualUrl "https://github.com/oschwartz10612/poppler-windows/releases" `
+            -Category "optional"
     }
 }
 
@@ -663,9 +638,7 @@ function Install-NodeDeps {
     Write-Info "Installing global npm packages..."
 
     $npmPackages = @(
-        "rmbg-cli",
         "pnpm",
-        "wrangler",
         "repomix"
     )
 
@@ -700,28 +673,6 @@ function Install-NodeDeps {
         Write-Success "sequential-thinking dependencies installed"
     }
 
-    # markdown-novel-viewer (marked, highlight.js, gray-matter)
-    $novelViewerPath = Join-Path $ScriptDir "markdown-novel-viewer"
-    $novelViewerPackageJson = Join-Path $novelViewerPath "package.json"
-    if ((Test-Path $novelViewerPath) -and (Test-Path $novelViewerPackageJson)) {
-        Write-Info "Installing markdown-novel-viewer dependencies..."
-        Push-Location $novelViewerPath
-        npm install --quiet
-        Pop-Location
-        Write-Success "markdown-novel-viewer dependencies installed"
-    }
-
-    # show-off capture script (puppeteer, sharp)
-    $showOffPath = Join-Path $ScriptDir "show-off\scripts"
-    $showOffPackageJson = Join-Path $showOffPath "package.json"
-    if ((Test-Path $showOffPath) -and (Test-Path $showOffPackageJson)) {
-        Write-Info "Installing show-off capture dependencies..."
-        Push-Location $showOffPath
-        npm install --quiet
-        Pop-Location
-        Write-Success "show-off capture dependencies installed"
-    }
-
     # plans-kanban launcher package
     $plansKanbanPath = Join-Path $ScriptDir "plans-kanban"
     $plansKanbanPackageJson = Join-Path $plansKanbanPath "package.json"
@@ -733,20 +684,6 @@ function Install-NodeDeps {
         Write-Success "plans-kanban dependencies installed"
     }
 
-    # Optional: Shopify CLI (ask user unless auto-confirming)
-    $shopifyPath = Join-Path $ScriptDir "shopify"
-    if (Test-Path $shopifyPath) {
-        if ($Y) {
-            Write-Info "Skipping Shopify CLI installation (optional, use -Y to install all)"
-        } else {
-            $confirmation = Get-UserInput -Prompt "Install Shopify CLI for Shopify skill? (y/N)" -Default "N"
-            if ($confirmation -eq 'y' -or $confirmation -eq 'Y') {
-                Write-Info "Installing Shopify CLI..."
-                npm install -g @shopify/cli @shopify/theme
-                Write-Success "Shopify CLI installed"
-            }
-        }
-    }
 }
 
 # Try pip install with wheel-first fallback
@@ -904,7 +841,8 @@ function Setup-PythonEnv {
     Get-ChildItem -Path $ScriptDir -Directory | ForEach-Object {
         $skillName = $_.Name
 
-        # Skip .venv and document-skills
+        # Skip .venv and document-skills (document-skills has a single
+        # shared requirements.txt installed after this loop)
         if ($skillName -eq ".venv" -or $skillName -eq "document-skills") {
             return
         }
@@ -965,6 +903,43 @@ function Setup-PythonEnv {
         }
     }
 
+    # Install document-skills requirements (shared across docx/pdf/pptx/xlsx)
+    $docSkillsReqPath = Join-Path $ScriptDir "document-skills\requirements.txt"
+    if (Test-Path $docSkillsReqPath) {
+        $docSkillsLogFile = Join-Path $LogDir "install-document-skills.log"
+        Write-Info "Installing document-skills dependencies..."
+
+        $pkgSuccess = 0
+        $pkgFail = 0
+        Get-Content $docSkillsReqPath | ForEach-Object {
+            $line = $_.Trim()
+            if ($line -match '^#' -or [string]::IsNullOrWhiteSpace($line)) {
+                return
+            }
+            $line = ($line -split '#')[0].Trim()
+            if ([string]::IsNullOrWhiteSpace($line)) {
+                return
+            }
+
+            if (Try-PipInstall -PackageSpec $line -LogFile $docSkillsLogFile) {
+                $pkgSuccess++
+            } else {
+                $pkgFail++
+                Track-Failure -Category "optional" -Name "document-skills:${line}" -Reason "Package install failed"
+            }
+        }
+
+        if ($pkgFail -eq 0) {
+            Write-Success "document-skills: all $pkgSuccess packages installed"
+            Track-Success -Category "optional" -Name "document-skills"
+            [void]$successfulSkills.Add("document-skills")
+            $installedCount++
+        } else {
+            Write-Warning "document-skills: $pkgSuccess installed, $pkgFail failed"
+            [void]$failedSkills.Add("document-skills")
+        }
+    }
+
     # Install .claude/scripts requirements (contains pyyaml for scan_skills.py)
     $scriptsReqPath = Join-Path $ScriptDir "..\scripts\requirements.txt"
     if (Test-Path $scriptsReqPath) {
@@ -1022,8 +997,8 @@ function Test-Installations {
     Write-Header "Verifying Installations"
 
     $tools = @{
-        "ffmpeg" = "FFmpeg"
-        "magick" = "ImageMagick"
+        "rsvg-convert" = "librsvg (rsvg-convert)"
+        "pdftoppm" = "Poppler (pdftoppm)"
         "node" = "Node.js"
         "npm" = "npm"
     }
@@ -1036,7 +1011,7 @@ function Test-Installations {
         }
     }
 
-    $npmPackages = @("rmbg", "pnpm", "wrangler", "repomix")
+    $npmPackages = @("pnpm", "repomix")
     foreach ($package in $npmPackages) {
         if (Test-Command $package) {
             Write-Success "$package CLI is available"
@@ -1045,20 +1020,22 @@ function Test-Installations {
         }
     }
 
-    # Check Python packages
+    # Check Python packages (document-skills + repo tooling)
     if (Test-Path $VenvDir) {
         $activateScript = Join-Path $VenvDir "Scripts\Activate.ps1"
         & $activateScript
 
-        try {
-            python -c "import google.genai" 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "google-genai Python package is available"
-            } else {
-                Write-Warning "google-genai Python package is not available"
+        foreach ($pyPkg in @("pypdf", "PIL", "openpyxl", "pptx", "yaml")) {
+            try {
+                python -c "import $pyPkg" 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Success "$pyPkg Python package is available"
+                } else {
+                    Write-Warning "$pyPkg Python package is not available"
+                }
+            } catch {
+                Write-Warning "$pyPkg Python package is not available"
             }
-        } catch {
-            Write-Warning "google-genai Python package is not available"
         }
 
         deactivate
@@ -1108,10 +1085,10 @@ function Test-SystemFailureItem {
     $failure = Split-FailureItem -Item $Item
     $name = $failure.Name.ToLowerInvariant()
     return (
-        $name -eq "ffmpeg" -or
-        $name -eq "imagemagick" -or
         $name -eq "librsvg" -or
-        $name -like "*rsvg-convert*"
+        $name -like "*rsvg-convert*" -or
+        $name -like "poppler*" -or
+        $name -like "*pdftoppm*"
     )
 }
 
@@ -1144,9 +1121,9 @@ function Get-RemediationCommands {
         Write-Host "# System packages (use winget or scoop):"
         foreach ($item in $Script:SKIPPED_ADMIN) {
             $pkg = ($item -split ':')[0]
-            switch ($pkg) {
-                "FFmpeg" { Write-Host "winget install Gyan.FFmpeg" }
-                "ImageMagick" { Write-Host "winget install ImageMagick.ImageMagick" }
+            switch -Regex ($pkg) {
+                "^Poppler" { Write-Host "winget install oschwartz10612.Poppler" }
+                "rsvg-convert|librsvg" { Write-Host "choco install rsvg-convert -y" }
                 default { Write-Host "# ${pkg}: see documentation" }
             }
         }
@@ -1159,8 +1136,7 @@ function Get-RemediationCommands {
             $failure = Split-FailureItem -Item $item
             $name = $failure.Name
             switch -Regex ($name) {
-                "^FFmpeg$" { Write-Host "winget install Gyan.FFmpeg" }
-                "^ImageMagick$" { Write-Host "winget install ImageMagick.ImageMagick" }
+                "^Poppler" { Write-Host "winget install oschwartz10612.Poppler" }
                 "rsvg-convert|librsvg" {
                     Write-Host "# rsvg-convert is not available via winget or Scoop"
                     Write-Host "# Option A (admin): choco install rsvg-convert -y"
@@ -1281,7 +1257,7 @@ function Write-ErrorSummary {
         optional_failures = @($Script:FAILED_OPTIONAL)
         skipped = @($Script:SKIPPED_ADMIN)
         remediation = @{
-            winget_packages = "winget install Gyan.FFmpeg ImageMagick.ImageMagick"
+            winget_packages = "winget install oschwartz10612.Poppler; choco install rsvg-convert -y"
             build_tools = "https://visualstudio.microsoft.com/visual-cpp-build-tools/"
             pip_retry = ".\.claude\skills\.venv\Scripts\Activate.ps1; python -m pip install `"<package>`""
         }

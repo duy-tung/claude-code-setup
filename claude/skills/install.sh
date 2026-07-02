@@ -501,12 +501,6 @@ install_system_deps() {
         fi
     fi
 
-    # FFmpeg (required for media-processing skill)
-    install_system_package "ffmpeg" "FFmpeg" "ffmpeg"
-
-    # ImageMagick (required for media-processing skill)
-    install_system_package "imagemagick" "ImageMagick" "magick,convert"
-
     # librsvg (provides rsvg-convert — required for tech-graph skill).
     # Package name differs per distro: brew/Alpine/Arch use "librsvg",
     # Debian uses "librsvg2-bin", RedHat uses "librsvg2-tools".
@@ -517,15 +511,14 @@ install_system_deps() {
     esac
     install_system_package "$rsvg_pkg" "librsvg (rsvg-convert)" "rsvg-convert"
 
-    # PostgreSQL client (optional - just check)
-    if command_exists psql; then
-        print_success "PostgreSQL client already installed"
-    fi
-
-    # Docker (optional - just check)
-    if command_exists docker; then
-        print_success "Docker already installed ($(docker --version))"
-    fi
+    # Poppler (provides pdftoppm — required by the pdf document skill's pdf2image).
+    # brew/Arch use "poppler"; Debian/Alpine/RedHat use "poppler-utils".
+    local poppler_pkg="poppler-utils"
+    case "$DISTRO" in
+        arch) poppler_pkg="poppler" ;;
+        none) poppler_pkg="poppler" ;;  # macOS brew
+    esac
+    install_system_package "$poppler_pkg" "Poppler (pdftoppm)" "pdftoppm"
 }
 
 # Install Node.js and npm packages
@@ -601,9 +594,7 @@ install_node_deps() {
     # Package name to CLI command mapping (some packages have different CLI names)
     # Using indexed array with colon-separated pairs for Bash 3.2+ compatibility
     npm_packages=(
-        "rmbg-cli:rmbg"
         "pnpm:pnpm"
-        "wrangler:wrangler"
         "repomix:repomix"
     )
 
@@ -638,20 +629,6 @@ install_node_deps() {
         print_success "sequential-thinking dependencies installed"
     fi
 
-    # markdown-novel-viewer (marked, highlight.js, gray-matter)
-    if [ -d "$SCRIPT_DIR/markdown-novel-viewer" ] && [ -f "$SCRIPT_DIR/markdown-novel-viewer/package.json" ]; then
-        print_info "Installing markdown-novel-viewer dependencies..."
-        (cd "$SCRIPT_DIR/markdown-novel-viewer" && npm install --quiet)
-        print_success "markdown-novel-viewer dependencies installed"
-    fi
-
-    # show-off capture script (puppeteer, sharp)
-    if [ -d "$SCRIPT_DIR/show-off/scripts" ] && [ -f "$SCRIPT_DIR/show-off/scripts/package.json" ]; then
-        print_info "Installing show-off capture dependencies..."
-        (cd "$SCRIPT_DIR/show-off/scripts" && npm install --quiet)
-        print_success "show-off capture dependencies installed"
-    fi
-
     # plans-kanban launcher package
     if [ -d "$SCRIPT_DIR/plans-kanban" ] && [ -f "$SCRIPT_DIR/plans-kanban/package.json" ]; then
         print_info "Installing plans-kanban dependencies..."
@@ -659,33 +636,6 @@ install_node_deps() {
         print_success "plans-kanban dependencies installed"
     fi
 
-    # stitch (@google/stitch-sdk)
-    if [ -d "$SCRIPT_DIR/stitch/scripts" ] && [ -f "$SCRIPT_DIR/stitch/scripts/package.json" ]; then
-        print_info "Installing Stitch SDK dependencies..."
-        if (cd "$SCRIPT_DIR/stitch/scripts" && npm install --quiet); then
-            print_success "Stitch SDK dependencies installed"
-        else
-            print_warning "Stitch SDK install failed (optional)"
-        fi
-    fi
-
-    # Optional: Shopify CLI (ask user unless auto-confirming)
-    if [ -d "$SCRIPT_DIR/shopify" ]; then
-        if [[ "$SKIP_CONFIRM" == "true" ]]; then
-            print_info "Skipping Shopify CLI installation (optional, use --yes to install all)"
-        else
-            read -p "Install Shopify CLI for Shopify skill? (y/N) " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                print_info "Installing Shopify CLI..."
-                npm install -g @shopify/cli @shopify/theme 2>/dev/null || {
-                    print_warning "Failed to install Shopify CLI globally. Trying with sudo..."
-                    sudo npm install -g @shopify/cli @shopify/theme
-                }
-                print_success "Shopify CLI installed"
-            fi
-        fi
-    fi
 }
 
 # Setup Python virtual environment
@@ -808,7 +758,8 @@ setup_python_env() {
         if [ -d "$skill_dir" ]; then
             skill_name=$(basename "$skill_dir")
 
-            # Skip .venv and document-skills
+            # Skip .venv and document-skills (document-skills has a single
+            # shared requirements.txt installed after this loop)
             if [ "$skill_name" == ".venv" ] || [ "$skill_name" == "document-skills" ]; then
                 continue
             fi
@@ -866,6 +817,40 @@ setup_python_env() {
             fi
         fi
     done
+
+    # Install document-skills requirements (shared across docx/pdf/pptx/xlsx)
+    local DOCSKILLS_REQ="$SCRIPT_DIR/document-skills/requirements.txt"
+    if [ -f "$DOCSKILLS_REQ" ]; then
+        local DOCSKILLS_LOG="$LOG_DIR/install-document-skills.log"
+        print_info "Installing document-skills dependencies..."
+
+        local pkg_success=0
+        local pkg_fail=0
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^#.*$ ]] && continue
+            [[ -z "${line// }" ]] && continue
+            line="${line%%#*}"
+            line="${line%"${line##*[![:space:]]}"}"
+            [[ -z "$line" ]] && continue
+
+            if try_pip_install "$line" "$DOCSKILLS_LOG"; then
+                pkg_success=$((pkg_success + 1))
+            else
+                pkg_fail=$((pkg_fail + 1))
+                track_failure "optional" "document-skills:$line" "Package install failed"
+            fi
+        done < "$DOCSKILLS_REQ"
+
+        if [[ $pkg_fail -eq 0 ]]; then
+            print_success "document-skills: all $pkg_success packages installed"
+            track_success "optional" "document-skills"
+            successful_skills+=("document-skills")
+            installed_count=$((installed_count + 1))
+        else
+            print_warning "document-skills: $pkg_success installed, $pkg_fail failed"
+            failed_skills+=("document-skills")
+        fi
+    fi
 
     # Install .claude/scripts requirements (contains pyyaml for scan_skills.py)
     local SCRIPTS_REQ="$SCRIPT_DIR/../scripts/requirements.txt"
@@ -1008,18 +993,18 @@ migrate_env_vars() {
 verify_installations() {
     print_header "Verifying Installations"
 
-    # FFmpeg
-    if command_exists ffmpeg; then
-        print_success "FFmpeg is available"
+    # librsvg (tech-graph)
+    if command_exists rsvg-convert; then
+        print_success "rsvg-convert is available"
     else
-        print_warning "FFmpeg is not available"
+        print_warning "rsvg-convert is not available (tech-graph PNG export needs it)"
     fi
 
-    # ImageMagick (check both magick and convert - older versions use convert)
-    if command_exists magick || command_exists convert; then
-        print_success "ImageMagick is available"
+    # Poppler (pdf document skill)
+    if command_exists pdftoppm; then
+        print_success "pdftoppm is available"
     else
-        print_warning "ImageMagick is not available"
+        print_warning "pdftoppm is not available (pdf skill image rendering needs it)"
     fi
 
     # Node.js & npm
@@ -1036,9 +1021,7 @@ verify_installations() {
     fi
 
     declare -a npm_packages=(
-        "rmbg"
         "pnpm"
-        "wrangler"
         "repomix"
     )
 
@@ -1050,14 +1033,16 @@ verify_installations() {
         fi
     done
 
-    # Check Python packages
+    # Check Python packages (document-skills + repo tooling)
     if [ -d "$VENV_DIR" ]; then
         source "$VENV_DIR/bin/activate"
-        if python -c "import google.genai" 2>/dev/null; then
-            print_success "google-genai Python package is available"
-        else
-            print_warning "google-genai Python package is not available"
-        fi
+        for py_pkg in "pypdf" "PIL" "openpyxl" "pptx" "yaml"; do
+            if python -c "import $py_pkg" 2>/dev/null; then
+                print_success "$py_pkg Python package is available"
+            else
+                print_warning "$py_pkg Python package is not available"
+            fi
+        done
         deactivate
     fi
 }
@@ -1098,8 +1083,8 @@ generate_remediation_commands() {
                 for item in "${SKIPPED_SUDO[@]}"; do
                     local pkg="${item%%:*}"
                     case "$pkg" in
-                        FFmpeg) echo "apk add ffmpeg" ;;
-                        ImageMagick) echo "apk add imagemagick" ;;
+                        librsvg*) echo "apk add librsvg" ;;
+                        Poppler*) echo "apk add poppler-utils" ;;
                         *) echo "# $pkg: see documentation" ;;
                     esac
                 done
@@ -1109,8 +1094,8 @@ generate_remediation_commands() {
                 for item in "${SKIPPED_SUDO[@]}"; do
                     local pkg="${item%%:*}"
                     case "$pkg" in
-                        FFmpeg) echo "sudo pacman -S --noconfirm ffmpeg" ;;
-                        ImageMagick) echo "sudo pacman -S --noconfirm imagemagick" ;;
+                        librsvg*) echo "sudo pacman -S --noconfirm librsvg" ;;
+                        Poppler*) echo "sudo pacman -S --noconfirm poppler" ;;
                         *) echo "# $pkg: see documentation" ;;
                     esac
                 done
@@ -1120,8 +1105,8 @@ generate_remediation_commands() {
                 for item in "${SKIPPED_SUDO[@]}"; do
                     local pkg="${item%%:*}"
                     case "$pkg" in
-                        FFmpeg) echo "sudo apt-get install -y ffmpeg" ;;
-                        ImageMagick) echo "sudo apt-get install -y imagemagick" ;;
+                        librsvg*) echo "sudo apt-get install -y librsvg2-bin" ;;
+                        Poppler*) echo "sudo apt-get install -y poppler-utils" ;;
                         *) echo "# $pkg: see documentation" ;;
                     esac
                 done
@@ -1131,8 +1116,8 @@ generate_remediation_commands() {
                 for item in "${SKIPPED_SUDO[@]}"; do
                     local pkg="${item%%:*}"
                     case "$pkg" in
-                        FFmpeg) echo "sudo dnf install -y ffmpeg" ;;
-                        ImageMagick) echo "sudo dnf install -y ImageMagick" ;;
+                        librsvg*) echo "sudo dnf install -y librsvg2-tools" ;;
+                        Poppler*) echo "sudo dnf install -y poppler-utils" ;;
                         *) echo "# $pkg: see documentation" ;;
                     esac
                 done
@@ -1294,27 +1279,27 @@ write_error_summary() {
     local sudo_pkg_cmd build_tools_cmd
     case "$DISTRO" in
         alpine)
-            sudo_pkg_cmd="apk add ffmpeg imagemagick"
+            sudo_pkg_cmd="apk add librsvg poppler-utils"
             build_tools_cmd="apk add build-base python3-dev jpeg-dev zlib-dev"
             ;;
         arch)
-            sudo_pkg_cmd="sudo pacman -S --noconfirm ffmpeg imagemagick"
+            sudo_pkg_cmd="sudo pacman -S --noconfirm librsvg poppler"
             build_tools_cmd="sudo pacman -S --noconfirm base-devel python libjpeg-turbo zlib"
             ;;
         debian)
-            sudo_pkg_cmd="sudo apt-get install -y ffmpeg imagemagick"
+            sudo_pkg_cmd="sudo apt-get install -y librsvg2-bin poppler-utils"
             build_tools_cmd="sudo apt-get install -y gcc python3-dev libjpeg-dev zlib1g-dev"
             ;;
         redhat)
-            sudo_pkg_cmd="sudo dnf install -y ffmpeg ImageMagick"
+            sudo_pkg_cmd="sudo dnf install -y librsvg2-tools poppler-utils"
             build_tools_cmd="sudo dnf install -y gcc python3-devel libjpeg-devel zlib-devel"
             ;;
         *)
             if [[ "$OS" == "macos" ]]; then
-                sudo_pkg_cmd="brew install ffmpeg imagemagick"
+                sudo_pkg_cmd="brew install librsvg poppler"
                 build_tools_cmd="xcode-select --install && brew install jpeg libpng"
             else
-                sudo_pkg_cmd="# Install ffmpeg and imagemagick for your distro"
+                sudo_pkg_cmd="# Install librsvg and poppler for your distro"
                 build_tools_cmd="# Install gcc, python3-dev, and image libraries for your distro"
             fi
             ;;
