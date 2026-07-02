@@ -80,19 +80,21 @@ def _extract_body_refs(content: str, own_name: str) -> set[str]:
 
 
 def scan_all_skills(skills_dir: Path) -> dict[str, dict]:
-    """Scan all SKILL.md files, return {dir_name: {name, refs, requires, related}}."""
+    """Scan SKILL.md files, return {dir_name: {name, refs, requires, related}}.
+
+    Skills may be nested one or more levels below a group directory that has
+    no SKILL.md of its own (e.g. document-skills/pdf/SKILL.md registers as
+    "pdf"). Directories that ARE skills are not descended into, so template
+    SKILL.md files inside a skill's own tree are never picked up.
+    """
     skills = {}
-    for entry in sorted(skills_dir.iterdir()):
-        if not entry.is_dir() or entry.name in SKIP_DIRS or entry.name.startswith("."):
-            continue
-        skill_file = entry / "SKILL.md"
-        if not skill_file.exists():
-            continue
-        content = skill_file.read_text(encoding="utf-8", errors="replace")
+
+    def _register(entry: Path):
+        content = (entry / "SKILL.md").read_text(encoding="utf-8", errors="replace")
         fm = _parse_frontmatter(content)
         name = fm.get("name", entry.name) or entry.name
-        # Normalize dir name for graph node
-        dir_name = entry.name
+        # Graph node key: leaf dir name; fall back to relative path on collision
+        dir_name = entry.name if entry.name not in skills else str(entry.relative_to(skills_dir))
         body_refs = _extract_body_refs(content, name)
         requires = fm.get("requires") or []
         related = fm.get("related") or []
@@ -106,6 +108,17 @@ def scan_all_skills(skills_dir: Path) -> dict[str, dict]:
             "requires": requires,
             "related": related,
         }
+
+    def _walk(directory: Path):
+        for entry in sorted(directory.iterdir()):
+            if not entry.is_dir() or entry.name in SKIP_DIRS or entry.name.startswith("."):
+                continue
+            if (entry / "SKILL.md").exists():
+                _register(entry)
+            else:
+                _walk(entry)  # group dir without SKILL.md: look one level deeper
+
+    _walk(skills_dir)
     return skills
 
 
@@ -208,7 +221,7 @@ def print_report(skills: dict, graph: dict, missing: list[dict]):
 # ── Self-Tests ───────────────────────────────────────────────────────────────
 
 def _run_self_tests():
-    """Run 8 self-tests with temp SKILL.md fixtures."""
+    """Run self-tests with temp SKILL.md fixtures."""
     passed = 0
     failed = 0
 
@@ -229,12 +242,19 @@ def _run_self_tests():
             "plan": '---\nname: ck:plan\ndescription: "Plan things"\ncategory: utilities\nkeywords: [plan]\n---\n# Plan\nThis skill creates plans.\n',
             "scout": '---\nname: ck:scout\ndescription: "Scout"\ncategory: dev-tools\nkeywords: [scout]\nrequires: [ck:scout]\n---\n# Scout\nExplore code. See /ck:cook for next step.\n```\n/ck:plan should not match inside fence\n```\n',
             "orphan-skill": '---\nname: ck:orphan\ndescription: "Orphan"\ncategory: other\nkeywords: []\n---\n# Orphan\nNo refs here.\n',
-            "broken-ref": '---\nname: ck:broken\ndescription: "Broken"\ncategory: other\nkeywords: []\n---\n# Broken\nSee /ck:nonexistent for help.\nAlso /ck:cook is good.\n',
+            "broken-ref": '---\nname: ck:broken\ndescription: "Broken"\ncategory: other\nkeywords: []\n---\n# Broken\nSee /ck:nonexistent for help.\nAlso /ck:cook is good.\nAnd /ck:pdf handles documents.\n',
         }
         for dname, content in fixtures.items():
             d = base / dname
             d.mkdir()
             (d / "SKILL.md").write_text(content)
+
+        # Nested skill under a group dir with no SKILL.md of its own
+        nested = base / "document-skills" / "pdf"
+        nested.mkdir(parents=True)
+        (nested / "SKILL.md").write_text(
+            '---\nname: ck:pdf\ndescription: "PDF"\ncategory: multimedia\nkeywords: [pdf]\n---\n# PDF\nNo refs here.\n'
+        )
 
         skills = scan_all_skills(base)
         graph = build_reference_graph(skills)
@@ -262,8 +282,15 @@ def _run_self_tests():
         # T8: Code fence exclusion (scout has /ck:plan in code fence — should NOT count)
         scout_refs = skills["scout"]["body_refs"]
         _assert("plan" not in scout_refs, "T8: Code fence refs excluded")
+        # T9: Nested skill registered under leaf dir name and resolvable by ref
+        _assert("pdf" in skills, "T9a: Nested skill (document-skills/pdf) registered")
+        _assert(not any(r == "pdf" for _, r in graph["broken"]),
+                "T9b: /ck:pdf ref to nested skill is not broken")
+        _assert("pdf" in graph["edges"].get("broken-ref", []),
+                "T9c: Edge to nested skill resolved")
 
-        print(f"\nResults: {passed}/8 passed, {failed}/8 failed")
+        total = passed + failed
+        print(f"\nResults: {passed}/{total} passed, {failed}/{total} failed")
         return failed == 0
 
 

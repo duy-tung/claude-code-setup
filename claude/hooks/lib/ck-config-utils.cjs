@@ -70,14 +70,17 @@ const DEFAULT_CONFIG = {
   hooks: {
     'session-init': true,
     'subagent-init': true,
+    'descriptive-name': true,
     'dev-rules-reminder': true,
     'usage-context-awareness': true,
     'context-tracking': true,
     'scout-block': true,
     'privacy-block': true,
     'simplify-gate': true,
+    'cook-after-plan-reminder': true,
     'task-completed-handler': true,
     'teammate-idle-handler': true,
+    'team-context-inject': true,
     'session-state': true,
     'workflow-artifact-gate': false
   },

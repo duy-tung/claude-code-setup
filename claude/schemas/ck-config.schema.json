@@ -515,6 +515,31 @@
           "type": "boolean",
           "default": false,
           "description": "Opt-in UserPromptSubmit/PreToolUse hook - validates fix/cook workflow artifacts before finalize and ship-like actions"
+        },
+        "session-state": {
+          "type": "boolean",
+          "default": true,
+          "description": "Stop/SubagentStop/PostToolUse hook - persists session state for recovery after compaction"
+        },
+        "cook-after-plan-reminder": {
+          "type": "boolean",
+          "default": true,
+          "description": "SubagentStop hook - reminds to run cook after a Plan subagent completes"
+        },
+        "task-completed-handler": {
+          "type": "boolean",
+          "default": true,
+          "description": "TaskCompleted hook for agent teams - not registered in default settings.json; add the event entry there to activate"
+        },
+        "teammate-idle-handler": {
+          "type": "boolean",
+          "default": true,
+          "description": "TeammateIdle hook for agent teams - not registered in default settings.json; add the event entry there to activate"
+        },
+        "team-context-inject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Agent-teams context injection hook - not registered in default settings.json; add the event entry there to activate"
         }
       },
       "additionalProperties": false
