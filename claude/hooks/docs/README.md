@@ -10,7 +10,6 @@ This directory contains hooks for Claude Code sessions.
 | **Scout Block** | `scout-block.cjs` | Blocks heavy directories (node_modules, .git, etc.) |
 | **Privacy Block** | `privacy-block.cjs` | Prevents access to sensitive files |
 | **Workflow Artifact Gate** | `workflow-artifact-gate.cjs` | Opt-in validation for fix/cook review artifacts before finalize/ship actions |
-| **Modularization** | `modularization-hook.js` | Suggests code modularization for large files |
 | **Session Init** | `session-init.cjs` | Session startup initialization |
 | **Dev Rules** | `dev-rules-reminder.cjs` | Development rules injection |
 

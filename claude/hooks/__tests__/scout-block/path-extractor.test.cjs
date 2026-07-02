@@ -9,7 +9,7 @@
  * - Real LLM output patterns (redirects, pipes, env vars)
  * - Edge cases and regressions
  *
- * Run: node --test .claude/hooks/tests/scout-block/path-extractor.test.cjs
+ * Run: node --test .claude/hooks/__tests__/scout-block/path-extractor.test.cjs
  */
 
 const { describe, it } = require('node:test');

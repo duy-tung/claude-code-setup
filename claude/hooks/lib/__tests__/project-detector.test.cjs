@@ -7,10 +7,28 @@
  * - Edge cases: deleted CWD, symlinks, worktrees, permissions
  */
 
+const { describe, test, beforeEach, afterEach } = require('node:test');
+const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+
+// Minimal Jest-style expect shim — this suite predates the node:test runner
+function expect(actual) {
+  return {
+    toBe: (expected) => assert.strictEqual(actual, expected),
+    toBeLessThan: (expected) => assert.ok(actual < expected, `${actual} is not < ${expected}`),
+    toBeTruthy: () => assert.ok(actual),
+    toContain: (expected) => assert.ok(actual.includes(expected), `${JSON.stringify(actual)} does not contain ${JSON.stringify(expected)}`),
+    toMatch: (re) => assert.match(actual, re instanceof RegExp ? re : new RegExp(re)),
+    toThrow: () => assert.throws(actual),
+    not: {
+      toThrow: () => assert.doesNotThrow(actual),
+      toMatch: (re) => assert.doesNotMatch(actual, re instanceof RegExp ? re : new RegExp(re))
+    }
+  };
+}
 
 // Module under test
 const {

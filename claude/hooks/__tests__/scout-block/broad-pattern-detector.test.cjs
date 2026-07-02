@@ -5,7 +5,7 @@
  * Covers: broad pattern detection, scoped patterns, high-level path checks,
  * specific directory detection, suggestion generation.
  *
- * Run: node --test .claude/hooks/tests/scout-block/broad-pattern-detector.test.cjs
+ * Run: node --test .claude/hooks/__tests__/scout-block/broad-pattern-detector.test.cjs
  */
 
 const { describe, it } = require('node:test');

@@ -5,7 +5,7 @@
  * Tests the full pipeline: command splitting → allowlist → path extraction → pattern matching.
  * Uses real .ckignore fixtures to validate end-to-end behavior.
  *
- * Run: node --test .claude/hooks/tests/scout-block/scout-checker.test.cjs
+ * Run: node --test .claude/hooks/__tests__/scout-block/scout-checker.test.cjs
  */
 
 const { after, describe, it } = require('node:test');

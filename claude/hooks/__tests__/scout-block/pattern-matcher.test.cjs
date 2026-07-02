@@ -5,7 +5,7 @@
  * Covers: dir name matching, nested paths, negation, globs,
  * Windows backslash normalization, edge cases.
  *
- * Run: node --test .claude/hooks/tests/scout-block/pattern-matcher.test.cjs
+ * Run: node --test .claude/hooks/__tests__/scout-block/pattern-matcher.test.cjs
  */
 
 const { describe, it } = require('node:test');

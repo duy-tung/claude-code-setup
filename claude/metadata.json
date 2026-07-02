@@ -190,7 +190,9 @@
     "hooks/lib/config-counter.cjs",
     "scripts/scan_commands.py",
     "hooks/tests/test-ckignore.cjs",
-    "skills/agent_skills_spec.md"
+    "skills/agent_skills_spec.md",
+    "hooks/tests/**",
+    "hooks/scout-block/tests/**"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",
