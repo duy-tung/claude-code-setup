@@ -8,7 +8,7 @@ keywords: [implementation, workflow, feature, pipeline]
 argument-hint: "[task|plan-path] [--interactive|--fast|--parallel|--auto|--no-test] [--tdd]"
 metadata:
   author: claudekit
-  version: "2.2.0"
+  version: "2.3.0"
 ---
 
 # Cook - Smart Feature Implementation
@@ -25,7 +25,7 @@ End-to-end implementation with automatic workflow detection.
 /ck:cook <natural language task OR plan path>
 ```
 
-**IMPORTANT:** If no flag is provided, the skill will use the `interactive` mode by default for the workflow.
+With no flag, the workflow defaults to `interactive` mode.
 
 **Optional flags to select the workflow mode:** 
 - `--interactive`: Full workflow with user input (**default**)
@@ -98,17 +98,6 @@ If review/testing reveals a side effect, regression, or broken workflow, STOP. U
 Let the user decide. Do not silently patch around regressions.
 </HARD-GATE-NO-SIDE-EFFECTS>
 
-## Anti-Rationalization
-
-| Thought | Reality |
-|---------|---------|
-| "This is too simple to plan" | Simple tasks have hidden complexity. Plan takes 30 seconds. |
-| "I already know how to do this" | Knowing ≠ planning. Write it down. |
-| "Let me just start coding" | Undisciplined action wastes tokens. Plan first. |
-| "The user wants speed" | Fastest path = plan → implement → done. Not: implement → debug → rewrite. |
-| "I'll plan as I go" | That's not planning, that's hoping. |
-| "Just this once" | Every skip is "just this once." No exceptions. |
-
 ## Smart Intent Detection
 
 | Input Pattern | Detected Mode | Behavior |
@@ -130,7 +119,7 @@ flowchart TD
     B -->|Yes| F[Load Plan]
     B -->|No| C{Mode?}
     C -->|fast| D[Scout → Plan → Code]
-    C -->|interactive/auto| SC[Scout Codebase MANDATORY]
+    C -->|interactive/auto| SC[Scout Codebase - required]
     SC --> SR[Summarize Findings to User]
     SR --> RQ{Exact requirements captured?<br/>output, acceptance, scope, constraints, touchpoints}
     RQ -->|No| SR
@@ -188,7 +177,7 @@ Human review required at these checkpoints (skipped with `--auto`):
 
 **Always enforced (all modes):**
 - **Testing:** 100% pass required (unless no-test mode)
-- **Code Review (MANDATORY):** Spawn `code-reviewer` subagent with explicit checks:
+- **Code Review:** Spawn `code-reviewer` subagent with explicit checks:
   (a) every acceptance criterion met,
   (b) no regression to business logic in touchpoints/blast-radius,
   (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars) unless called out,
@@ -196,14 +185,14 @@ Human review required at these checkpoints (skipped with `--auto`):
   (e) no new lint/type/build errors anywhere.
   Pass scout summary + acceptance criteria as context. If reviewer flags side effects → trigger HARD-GATE-NO-SIDE-EFFECTS (`AskUserQuestion` with 2-4 options).
   Then: User approval OR artifact-gated auto approval. Score is advisory; it never approves by itself.
-- **Finalize (MANDATORY - never skip):**
-  1. **Activate `/ck:project-management` skill (MANDATORY)** → run full plan sync-back across ALL `phase-XX-*.md` (not only current phase), update `plan.md` status/progress, hydrate Claude Tasks, generate progress report
+- **Finalize:**
+  1. **Activate `/ck:project-management` skill** → run full plan sync-back across ALL `phase-XX-*.md` (not only current phase), update `plan.md` status/progress, hydrate Claude Tasks, generate progress report
   2. `docs-manager` subagent → update `./docs` if changes warrant
   3. `TaskUpdate` → mark all Claude Tasks complete after sync-back verification (skip if Task tools unavailable)
   4. Ask user if they want to commit via `git-manager` subagent
   5. Run `/ck:journal` to write a concise technical journal entry upon completion
 
-## Required Subagents (MANDATORY)
+## Required Subagents
 
 | Phase | Subagent | Requirement |
 |-------|----------|-------------|
@@ -211,15 +200,11 @@ Human review required at these checkpoints (skipped with `--auto`):
 | Scout | `ck:scout` | Optional in code |
 | Plan | `planner` | Optional in code |
 | UI Work | `fullstack-developer` | If frontend work |
-| Testing | `tester`, `debugger` | **MUST** spawn |
-| Review | `code-reviewer` | **MUST** spawn |
-| Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | **MUST** invoke all |
+| Testing | `tester`, `debugger` | Always spawn |
+| Review | `code-reviewer` | Always spawn |
+| Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | Always invoke all |
 
-**CRITICAL ENFORCEMENT:**
-- Steps 4, 5, 6 **MUST** use Task tool to spawn subagents
-- DO NOT implement testing, review, or finalization yourself - DELEGATE
-- If workflow ends with 0 Task tool calls, it is INCOMPLETE
-- Pattern: `Task(subagent_type="[type]", prompt="[task]", description="[brief]")`
+**Delegation contract:** Testing, review, and finalization run through subagents — `Task(subagent_type="[type]", prompt="[task]", description="[brief]")` — not inline. A workflow that ends with zero Task tool calls skipped this contract.
 
 ## References
 

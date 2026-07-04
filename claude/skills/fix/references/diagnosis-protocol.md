@@ -4,9 +4,9 @@ Structured root cause analysis methodology. Replaces ad-hoc guessing with eviden
 
 ## Core Principle
 
-**NEVER guess root causes.** Form hypotheses through structured reasoning and test them against evidence.
+**Don't guess root causes.** Form hypotheses through structured reasoning and test them against evidence.
 
-## Pre-Diagnosis: Capture State (MANDATORY)
+## Pre-Diagnosis: Capture State (always, before any investigation)
 
 Before any investigation, capture the current broken state as baseline:
 
@@ -18,7 +18,7 @@ Before any investigation, capture the current broken state as baseline:
 5. Record git status / recent changes: git log --oneline -10
 ```
 
-This baseline is required for Step 5 (Verify) — you MUST compare before/after.
+This baseline is required for Step 5 (Verify) — the before/after comparison depends on it.
 
 ## Diagnosis Chain (Follow in Order)
 
@@ -79,7 +79,7 @@ Symptom (where error appears)
       ↑ ROOT CAUSE (the original trigger that must be fixed)
 ```
 
-**Rule:** NEVER fix where the error appears. Trace back to the source.
+**Rule:** Don't fix where the error appears — trace back to the source.
 
 ### Phase 5: Escalate — When hypotheses fail
 

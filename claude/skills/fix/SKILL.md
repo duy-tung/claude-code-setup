@@ -8,7 +8,7 @@ keywords: [bugfix, error, test-failure, CI, lint]
 argument-hint: "[issue] --auto|--review|--quick|--parallel"
 metadata:
   author: claudekit
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
 # Fixing
@@ -76,19 +76,6 @@ If verification reveals a side effect, regression, or broken workflow, STOP. Do 
 Let the user decide. Do not assume.
 </HARD-GATE-NO-SIDE-EFFECTS>
 
-## Anti-Rationalization
-
-| Thought | Reality |
-|---------|---------|
-| "I can see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. Scout first. |
-| "Quick fix for now, investigate later" | "Later" never comes. Fix properly now. |
-| "Just try changing X" | Random fixes waste time and create new bugs. Diagnose first. |
-| "It's probably X" | "Probably" = guessing. Use structured diagnosis. Verify first. |
-| "One more fix attempt" (after 2+) | 3+ failures = wrong approach. Question architecture. |
-| "Emergency, no time for process" | Systematic diagnosis is FASTER than guess-and-check. |
-| "I already know the codebase" | Knowledge decays. Scout to verify assumptions before acting. |
-| "The fix is done, tests pass" | Without prevention, same bug class will recur. Add guards. |
-
 ## Process Flow (Authoritative)
 
 ```mermaid
@@ -129,11 +116,11 @@ flowchart TD
 
 See `references/mode-selection.md` for AskUserQuestion format.
 
-### Step 1: Scout (MANDATORY — never skip)
+### Step 1: Scout
 
 **Purpose:** Understand the affected codebase BEFORE forming any hypotheses.
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. Activate `ck:scout` skill OR launch 2-3 parallel `Explore` subagents
 2. Discover: affected files, dependencies, related tests, recent changes (`git log`)
 3. Read `./docs` for project context if unfamiliar
@@ -143,11 +130,11 @@ See `references/mode-selection.md` for AskUserQuestion format.
 
 **Output:** `✓ Step 1: Scouted - [N] files mapped, [M] dependencies, [K] tests found`
 
-### Step 2: Diagnose (MANDATORY — never skip)
+### Step 2: Diagnose
 
-**Purpose:** Structured root cause analysis. NO guessing. Evidence-based only.
+**Purpose:** Structured root cause analysis — evidence-based, not guessed.
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. **Capture pre-fix state:** Record exact error messages, failing test output, stack traces, log snippets. This becomes the baseline for Step 5 verification.
 2. Activate `ck:debug` skill (systematic-debugging + root-cause-tracing techniques).
 3. Activate `ck:sequential-thinking` skill — form hypotheses through structured reasoning, NOT guessing.
@@ -183,11 +170,11 @@ Classify before routing. See `references/complexity-assessment.md`.
 - Follow diagnosis findings — fix the ROOT CAUSE, not symptoms.
 - Minimal changes only. Follow existing patterns.
 
-### Step 5: Verify + Prevent (MANDATORY — never skip)
+### Step 5: Verify + Prevent
 
 **Purpose:** Prove the fix works, has NO side effects, and prevents the same bug class from recurring. See HARD-GATE-NO-SIDE-EFFECTS.
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. **Verify (iron-law):** Run the EXACT commands from pre-fix state capture. Compare output. NO claims without fresh evidence.
 2. **Regression test:** Add or update test(s) that specifically cover the fixed issue. The test MUST fail without the fix and pass with it.
 3. **Side-effect sweep (NEW):** Run tests across the full **blast radius** identified in Step 2 (not just the modified file). Walk each dependent code path. Confirm public contracts unchanged (signatures, response shapes, DB schemas, env vars).
@@ -204,18 +191,18 @@ See `references/prevention-gate.md` for prevention requirements.
 
 **Output:** `✓ Step 5: Verified + Prevented - [before/after comparison], [N] tests added, [M] guards added`
 
-### Step 6: Finalize (MANDATORY — never skip)
+### Step 6: Finalize (every fix, including quick mode)
 
 1. Report summary: confidence score, root cause, changes, files, prevention measures, side-effect sweep results
-2. **Activate `/ck:project-management` skill (MANDATORY)** → sync plan/task status (if fix is part of a plan), update progress, hydrate Claude Tasks, generate status report
-3. `docs-manager` subagent → update `./docs` if changes warrant (NON-OPTIONAL)
+2. **Activate `/ck:project-management` skill** → sync plan/task status (if fix is part of a plan), update progress, hydrate Claude Tasks, generate status report
+3. `docs-manager` subagent → update `./docs` if changes warrant
 4. `TaskUpdate` → mark ALL Claude Tasks `completed` (skip if Task tools unavailable)
 5. Ask user if they want to commit via `git-manager` subagent
 6. Run `/ck:journal` to write a concise technical journal entry upon completion
 
 ---
 
-## IMPORTANT: Skill/Subagent Activation Matrix
+## Skill/Subagent Activation Matrix
 
 See `references/skill-activation-matrix.md` for complete matrix.
 
@@ -225,7 +212,7 @@ See `references/skill-activation-matrix.md` for complete matrix.
 - `ck:sequential-thinking` (Step 2) — structured hypothesis formation
 
 **Always activate (Step 6 Finalize):**
-- `ck:project-management` — MANDATORY for sync-back and progress tracking, every fix
+- `ck:project-management` — sync-back and progress tracking, every fix
 
 **Conditional:**
 - `ck:brainstorm` — multiple valid approaches, architecture decision (Deep only)

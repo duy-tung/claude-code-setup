@@ -9,7 +9,7 @@ When to activate each skill and tool during fixing workflows.
 | `ck:scout` OR parallel `Explore` | Step 1 | Understand codebase context before diagnosing |
 | `ck:debug` | Step 2 | Systematic root cause investigation |
 | `ck:sequential-thinking` | Step 2 | Structured hypothesis formation — NO guessing |
-| `/ck:project-management` | Step 6 | MANDATORY for sync-back and progress tracking, every fix |
+| `/ck:project-management` | Step 6 | Sync-back and progress tracking, every fix |
 
 ## Task Orchestration (Moderate+ Only)
 
@@ -82,7 +82,7 @@ See `references/parallel-exploration.md` for detailed patterns.
 | Step 3: Assess | Classify complexity → create Tasks (moderate+) |
 | Step 4: Fix | Implement per workflow → follow root cause |
 | Step 5: Verify+Prevent | Iron-law verify → regression test → defense-in-depth → parallel `Bash` verify |
-| Step 6: Finalize | Report → `/ck:project-management` (MANDATORY) → `docs-manager` → `TaskUpdate` → `git-manager` → `/ck:journal` |
+| Step 6: Finalize | Report → `/ck:project-management` → `docs-manager` → `TaskUpdate` → `git-manager` → `/ck:journal` |
 
 ## Detection Triggers
 

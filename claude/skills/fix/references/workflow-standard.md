@@ -20,7 +20,7 @@ T6 = TaskCreate(subject="Finalize",               activeForm="Finalizing",      
 ### Step 1: Scout Codebase
 `TaskUpdate(T1, status="in_progress")`
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. Activate `ck:scout` skill OR launch 2-3 parallel `Explore` subagents.
 2. Map: affected files, module boundaries, dependencies, related tests, recent git changes.
 
@@ -39,7 +39,7 @@ See `references/parallel-exploration.md` for patterns.
 ### Step 2: Diagnose Root Cause
 `TaskUpdate(T2, status="in_progress")`
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. **Capture pre-fix state:** Record exact error messages, failing test output, stack traces.
 2. Activate `ck:debug` skill. Use `debugger` subagent if needed.
 3. Activate `ck:sequential-thinking` — form hypotheses through structured reasoning.
@@ -67,7 +67,7 @@ Fix the ROOT CAUSE per diagnosis findings. Not symptoms.
 ### Step 4: Verify + Prevent
 `TaskUpdate(T4, status="in_progress")`
 
-**Mandatory skill chain:**
+**Skill chain:**
 1. **Iron-law verify:** Re-run the EXACT commands from pre-fix state capture. Compare before/after.
 2. **Regression test:** Add/update test(s) covering the fixed issue. Test MUST fail without fix, pass with fix.
 3. **Side-effect sweep (HARD-GATE-NO-SIDE-EFFECTS):** Walk each dependent caller of changed functions from Step 1 blast-radius. Run tests in modules that share files/contracts. Confirm public contracts (signatures, schemas, APIs, env vars) unchanged. See SKILL.md HARD-GATE-NO-SIDE-EFFECTS.

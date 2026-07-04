@@ -1,6 +1,6 @@
 # Prevention Gate
 
-After fixing a bug, prevent the same class of issues from recurring. This step is MANDATORY.
+After fixing a bug, prevent the same class of issues from recurring. This step runs for every fix.
 
 ## Core Principle
 
@@ -10,7 +10,7 @@ A fix without prevention is incomplete. The same bug pattern WILL recur if you o
 
 ### 1. Regression Test (ALWAYS required)
 
-Every fix MUST have a test that:
+Every fix ships with a test that:
 - **Fails** without the fix applied (proves the test catches the bug)
 - **Passes** with the fix applied (proves the fix works)
 

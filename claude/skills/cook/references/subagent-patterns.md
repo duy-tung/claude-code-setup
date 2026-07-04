@@ -71,7 +71,7 @@ Task(subagent_type="code-reviewer",
 - Trigger only when the touched files affect the named domain.
 - Keep findings tied to file/line evidence and required verification.
 Task(subagent_type="code-reviewer",
-     prompt="Review changes for [phase] against these MANDATORY checks: (a) every acceptance criterion met; (b) no regression to business logic in touchpoints/blast-radius from scout; (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars) unless explicitly called out; (d) follows existing patterns from scout; (e) no new lint/type/build errors anywhere. CONTEXT — scout summary: <scout-summary>; acceptance criteria: <acceptance-criteria>. Return score (X/10), critical, warnings, suggestions, and explicitly flag any side effects to trigger HARD-GATE-NO-SIDE-EFFECTS.",
+     prompt="Review changes for [phase] against these required checks: (a) every acceptance criterion met; (b) no regression to business logic in touchpoints/blast-radius from scout; (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars) unless explicitly called out; (d) follows existing patterns from scout; (e) no new lint/type/build errors anywhere. CONTEXT — scout summary: <scout-summary>; acceptance criteria: <acceptance-criteria>. Return score (X/10), critical, warnings, suggestions, and explicitly flag any side effects to trigger HARD-GATE-NO-SIDE-EFFECTS.",
      description="Review [phase]")
 ```
 
@@ -87,7 +87,7 @@ Task(subagent_type="code-simplifier", prompt="Simplify these files while preserv
 - Skip when `CK_SIMPLIFY_DISABLED=1` or `.ck.json` `simplify.gate.enabled=false`
 
 ## Project Management
-Activate the `/ck:project-management` skill (MANDATORY at Finalize — not a subagent):
+Activate the `/ck:project-management` skill (runs at every Finalize — a skill, not a subagent):
 > Run full sync-back in [plan-path]: reconcile completed tasks with all phase files, backfill stale completed checkboxes across all phases, update plan.md status/progress, and report unresolved mappings.
 
 ## Documentation
