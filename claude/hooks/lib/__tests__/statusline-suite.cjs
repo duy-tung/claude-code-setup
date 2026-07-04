@@ -4,8 +4,9 @@
 /**
  * Aggregate runner for statusline test suites.
  *
- * Run:
- *   node .claude/hooks/lib/__tests__/statusline-suite.cjs
+ * Run (from repo root or an installed .claude/ layout — paths resolve
+ * relative to this file):
+ *   node claude/hooks/lib/__tests__/statusline-suite.cjs
  */
 
 const path = require('path');
@@ -14,11 +15,11 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '../../../..');
 
 const SUITES = [
-  '.claude/hooks/lib/__tests__/usage-limits-cache.test.cjs',
-  '.claude/hooks/lib/__tests__/statusline.test.cjs',
-  '.claude/hooks/lib/__tests__/statusline-integration.test.cjs',
-  '.claude/hooks/lib/__tests__/statusline-scenarios.test.cjs'
-];
+  'usage-limits-cache.test.cjs',
+  'statusline.test.cjs',
+  'statusline-integration.test.cjs',
+  'statusline-scenarios.test.cjs'
+].map((file) => path.join(__dirname, file));
 
 let failed = 0;
 

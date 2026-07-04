@@ -1,31 +1,33 @@
 # Skills
-Skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks. Skills teach Claude how to complete specific tasks in a repeatable way, whether that's creating documents with your company's brand guidelines, analyzing data using your organization's specific workflows, or automating personal tasks.
 
-For more information, check out:
+Skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks. This directory contains the 40 skills shipped with **claudekit-engineer** — a lean kit for core software-engineering workflows with Claude Code. The CK CLI installs it as `.claude/skills/` in your project.
+
+Background reading on the skills system itself:
 - [What are skills?](https://support.claude.com/en/articles/12512176-what-are-skills)
-- [Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
 - [How to create custom skills](https://support.claude.com/en/articles/12512198-creating-custom-skills)
 - [Equipping agents for the real world with Agent Skills](https://anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
 
-# About This Repository
+## Anatomy and Naming
 
-This repository contains example skills that demonstrate what's possible with Claude's skills system. These examples range from creative applications (art, music, design) to technical tasks (testing web apps, MCP server generation) to enterprise workflows (communications, branding, etc.).
+Each skill is a self-contained directory with a `SKILL.md` (YAML frontmatter + instructions), and optionally `references/` (detail docs loaded on demand), `scripts/` (executables), and `agents/` (subagent prompts).
 
-Each skill is self-contained in its own directory with a `SKILL.md` file containing the instructions and metadata that Claude uses. Browse through these examples to get inspiration for your own skills or to understand different patterns and approaches.
+Naming convention: the directory may carry a `ck-` prefix, but the invocation name comes from the frontmatter `name:` field with its `ck:` prefix — so directory `ck-debug` has `name: ck:debug` and is invoked as `/ck:debug`.
 
-The example skills in this repo are open source (Apache 2.0). We've also included the document creation & editing skills that power [Claude's document capabilities](https://www.anthropic.com/news/create-files) under the hood in the [`document-skills/`](./document-skills/) folder. These are source-available, not open source, but we wanted to share these with developers as a reference for more complex skills that are actively used in a production AI application.
+## Skill Catalog
 
-**Note:** These are reference examples for inspiration and learning. They showcase general-purpose capabilities rather than organization-specific workflows or sensitive content.
+Invoke any skill as a slash command, or just describe the task — the routing rules in `.claude/rules/skill-domain-routing.md` and `skill-workflow-routing.md` guide Claude to the right one. `/ck:find-skills` searches the catalog by capability.
 
-## Disclaimer
+| Category | Skills |
+|----------|--------|
+| Core workflow | `/ck:plan`, `/ck:cook`, `/ck:fix`, `/ck:test`, `/ck:code-review`, `/ck:ship`, `/ck:git`, `/ck:debug`, `/ck:scout`, `/ck:worktree` |
+| Ideation & analysis | `/ck:brainstorm`, `/ck:ask`, `/ck:predict`, `/ck:scenario`, `/ck:security`, `/ck:research`, `/ck:autoresearch`, `/ck:sequential-thinking` |
+| Project & process | `/ck:bootstrap`, `/ck:project-management`, `/ck:project-organization`, `/ck:plans-kanban`, `/ck:journal`, `/ck:retro`, `/ck:harness`, `/ck:loop`, `/ck:team`, `/ck:coding-level` |
+| Docs, context & visuals | `/ck:docs`, `/ck:preview`, `/ck:tech-graph`, `/ck:repomix`, `/ck:context-engineering`, `/ck:xia`, `/ck:find-skills`, `/ck:skill-creator` |
+| Office documents | `/ck:docx`, `/ck:pdf`, `/ck:pptx`, `/ck:xlsx` |
 
-**These skills are provided for demonstration and educational purposes only.** While some of these capabilities may be available in Claude, the implementations and behaviors you receive from Claude may differ from what is shown in these examples. These examples are meant to illustrate patterns and possibilities. Always test skills thoroughly in your own environment before relying on them for critical tasks.
-
-# Installation
+## Installation
 
 Most skills are pure instructions and need no setup. A few require external dependencies (librsvg for tech-graph, Poppler for pdf, Python packages for document-skills, the repomix CLI). Use the automated installation scripts to set up all dependencies:
-
-## Automated Installation (Recommended)
 
 **Linux/macOS:**
 ```bash
@@ -42,79 +44,21 @@ cd .claude\skills
 The installation scripts will:
 - Install system tools (librsvg/rsvg-convert, Poppler/pdftoppm)
 - Install Node.js packages (pnpm, repomix)
-- Create Python virtual environment
+- Create a Python virtual environment
 - Install Python packages (pypdf, Pillow, openpyxl, python-pptx, etc.)
-- Install test dependencies
 - Verify all installations
 
-## Manual Installation
+For manual installation or troubleshooting, see [INSTALLATION.md](INSTALLATION.md) for the complete dependency list and platform-specific instructions.
 
-For manual installation or troubleshooting, see [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
+When running a skill's Python scripts, use the venv interpreter (`.claude/skills/.venv/bin/python3` on Linux/macOS, `.claude\skills\.venv\Scripts\python.exe` on Windows) so those packages are available.
 
-## What Gets Installed
+## Document Skills
 
-- **System Tools**: librsvg (rsvg-convert), Poppler (pdftoppm)
-- **Node.js Packages**: pnpm, repomix
-- **Python Packages**: document-skills set (pypdf, Pillow, openpyxl, python-pptx, defusedxml, lxml, pdf2image, markitdown, pandas, reportlab), pyyaml, pytest
+The `document-skills/` subdirectory contains the docx / pdf / pptx / xlsx skills Anthropic developed for Claude's document capabilities, included here as point-in-time snapshots (source-available, not open source — see their license headers). They demonstrate advanced patterns for binary file formats and are the reason for most of the Python dependencies above.
 
-See [INSTALLATION.md](INSTALLATION.md) for complete dependency list and platform-specific instructions.
+## Creating a Skill
 
-# Example Skills
-
-This repository includes a diverse collection of example skills demonstrating different capabilities:
-
-## Creative & Design
-- **algorithmic-art** - Create generative art using p5.js with seeded randomness, flow fields, and particle systems
-- **canvas-design** - Design beautiful visual art in .png and .pdf formats using design philosophies
-- **slack-gif-creator** - Create animated GIFs optimized for Slack's size constraints
-
-## Development & Technical
-- **artifacts-builder** - Build complex claude.ai HTML artifacts using React, Tailwind CSS, and shadcn/ui components
-- **mcp-server** - Guide for creating high-quality MCP servers to integrate external APIs and services
-- **webapp-testing** - Test local web applications using Playwright for UI verification and debugging
-
-## Enterprise & Communication
-- **brand-guidelines** - Apply Anthropic's official brand colors and typography to artifacts
-- **internal-comms** - Write internal communications like status reports, newsletters, and FAQs
-- **theme-factory** - Style artifacts with 10 pre-set professional themes or generate custom themes on-the-fly
-
-## Meta Skills
-- **skill-creator** - Guide for creating effective skills that extend Claude's capabilities
-
-# Document Skills
-
-The `document-skills/` subdirectory contains skills that Anthropic developed to help Claude create various document file formats. These skills demonstrate advanced patterns for working with complex file formats and binary data:
-
-- **docx** - Create, edit, and analyze Word documents with support for tracked changes, comments, formatting preservation, and text extraction
-- **pdf** - Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms
-- **pptx** - Create, edit, and analyze PowerPoint presentations with support for layouts, templates, charts, and automated slide generation
-- **xlsx** - Create, edit, and analyze Excel spreadsheets with support for formulas, formatting, data analysis, and visualization
-
-**Important Disclaimer:** These document skills are point-in-time snapshots and are not actively maintained or updated. Versions of these skills ship pre-included with Claude. They are primarily intended as reference examples to illustrate how Anthropic approaches developing more complex skills that work with binary file formats and document structures.
-
-# Try in Claude Code, Claude.ai, and the API
-
-## Claude Code
-You can register this repository as a Claude Code Plugin marketplace by running the following command in Claude Code:
-```
-/plugin marketplace add anthropics/skills
-```
-
-After installing the plugin, you can use the skill by just mentioning it. For instance, if you install the document-skills plugin from the marketplace, you can ask Claude Code to do something like: "use the pdf skill to extract the form fields from path/to/some-file.pdf"
-
-## Claude.ai
-
-These example skills are all already available to paid plans in Claude.ai. 
-
-To use any skill from this repository or upload custom skills, follow the instructions in [Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude#h_a4222fa77b).
-
-## Claude API
-
-You can use Anthropic's pre-built skills, and upload custom skills, via the Claude API. See the [Skills API Quickstart](https://docs.claude.com/en/api/skills-guide#creating-a-skill) for more.
-
-# Creating a Basic Skill
-
-Skills are simple to create - just a folder with a `SKILL.md` file containing YAML frontmatter and instructions. Use the `/ck:skill-creator` skill to scaffold a new one, or copy any existing skill (e.g., `retro/`) as a starting point:
+A skill is just a folder with a `SKILL.md`. Use `/ck:skill-creator` to scaffold one, or copy a small existing skill (e.g. `retro/`) as a starting point:
 
 ```markdown
 ---
@@ -124,25 +68,7 @@ description: A clear description of what this skill does and when to use it
 
 # My Skill Name
 
-[Add your instructions here that Claude will follow when this skill is active]
-
-## Examples
-- Example usage 1
-- Example usage 2
-
-## Guidelines
-- Guideline 1
-- Guideline 2
+[Instructions Claude follows when this skill is active]
 ```
 
-The frontmatter requires only two fields:
-- `name` - A unique identifier for your skill (lowercase, hyphens for spaces)
-- `description` - A complete description of what the skill does and when to use it
-
-The markdown content below contains the instructions, examples, and guidelines that Claude will follow. For more details, see [How to create custom skills](https://support.claude.com/en/articles/12512198-creating-custom-skills).
-
-# Partner Skills
-
-Skills are a great way to teach Claude how to get better at using specific pieces of software. As we see awesome example skills from partners, we may highlight some of them here:
-
-- **Notion** - [Notion Skills for Claude](https://www.notion.so/notiondevs/Notion-Skills-for-Claude-28da4445d27180c7af1df7d8615723d0)
+Keep the `description` a tight routing signal (lead with a capability verb). If you add a skill to this kit, register it in a routing rule and run the validators before committing — see the repo's quality-gates rules for the contract (cross-reference integrity, frontmatter schema, catalog regeneration).

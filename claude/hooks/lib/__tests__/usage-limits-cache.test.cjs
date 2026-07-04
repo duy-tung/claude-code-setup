@@ -137,6 +137,8 @@ async function main() {
       const result = await refreshUsageCache({
         cachePath,
         accessToken: 'test-token',
+        env: {},
+        credentials: { claudeAiOauth: { subscriptionType: 'max' } },
         fetchImpl: async () => ({
           ok: true,
           json: async () => ({
@@ -174,6 +176,8 @@ async function main() {
       const result = await refreshUsageCache({
         cachePath,
         accessToken: 'test-token',
+        env: {},
+        credentials: { claudeAiOauth: { subscriptionType: 'max' } },
         fetchImpl: async () => ({
           ok: false,
           status: 401,

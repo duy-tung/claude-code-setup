@@ -111,6 +111,7 @@ try {
       const errorMsg = formatBroadPatternError({
         blocked: true,
         reason: result.reason,
+        pattern: result.pattern,
         suggestions: result.suggestions
       }, claudeDir);
       console.error(errorMsg);

@@ -272,10 +272,18 @@ test('create dry-run surfaces checkout-submodules flag', () => {
 });
 
 test('create dry-run shows explicit base branch source', () => {
-  const result = run('create test-explicit-base --dry-run --json --base dev');
+  // Use a branch that actually exists in this clone — hardcoding "dev"
+  // makes the test fail in any checkout without that branch.
+  const existingBranch = execSync('git for-each-ref "--format=%(refname:short)" refs/heads --count=1', {
+    encoding: 'utf-8',
+    cwd: STANDALONE_DIR,
+    stdio: ['pipe', 'pipe', 'pipe']
+  }).trim();
+  assert(existingBranch, 'Repo should have at least one local branch');
+  const result = run(`create test-explicit-base --dry-run --json --base "${existingBranch}"`);
   assert(result.success, 'Should succeed with explicit base');
   const json = assertJSON(result.output);
-  assert(json.wouldCreate.baseBranch === 'dev', 'Should use explicit base branch');
+  assert(json.wouldCreate.baseBranch === existingBranch, 'Should use explicit base branch');
   assert(json.wouldCreate.baseBranchSource === 'explicit', 'Should mark baseBranchSource as explicit');
 });
 

@@ -234,7 +234,7 @@ function formatBroadPatternError(result, claudeDir) {
     '',
     '\x1b[31mBLOCKED\x1b[0m: Overly broad glob pattern detected',
     '',
-    `  \x1b[33mPattern:\x1b[0m  ${pattern}`,
+    `  \x1b[33mPattern:\x1b[0m  ${pattern || 'unknown'}`,
     `  \x1b[33mReason:\x1b[0m   Would return ALL matching files, filling context`,
     '',
     '  \x1b[34mUse more specific patterns:\x1b[0m',

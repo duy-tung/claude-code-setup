@@ -92,6 +92,12 @@ function runStatuslineSync({ payload, cwd = TEST_ROOT, env = {}, inputRaw = null
     ...env
   };
   if (!Object.prototype.hasOwnProperty.call(env, 'NO_COLOR')) delete runtimeEnv.NO_COLOR;
+  // Keep quota rendering hermetic: host-level Anthropic runtime overrides
+  // (e.g. ANTHROPIC_BASE_URL in CI/sandboxes) would hide quota and break
+  // every quota assertion. Tests opt in by passing the key explicitly.
+  for (const key of ['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY']) {
+    if (!Object.prototype.hasOwnProperty.call(env, key)) delete runtimeEnv[key];
+  }
   if (!Object.prototype.hasOwnProperty.call(env, 'HOME') && fs.existsSync(path.join(cwd, '.claude', '.ck.json'))) {
     runtimeEnv.HOME = cwd;
   }
@@ -123,6 +129,12 @@ function runStatuslineWithDelayedChunks({ chunks, delaysMs, cwd = TEST_ROOT, env
       ...env
     };
     if (!Object.prototype.hasOwnProperty.call(env, 'NO_COLOR')) delete runtimeEnv.NO_COLOR;
+  // Keep quota rendering hermetic: host-level Anthropic runtime overrides
+  // (e.g. ANTHROPIC_BASE_URL in CI/sandboxes) would hide quota and break
+  // every quota assertion. Tests opt in by passing the key explicitly.
+  for (const key of ['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY']) {
+    if (!Object.prototype.hasOwnProperty.call(env, key)) delete runtimeEnv[key];
+  }
     if (!Object.prototype.hasOwnProperty.call(env, 'HOME') && fs.existsSync(path.join(cwd, '.claude', '.ck.json'))) {
       runtimeEnv.HOME = cwd;
     }

@@ -72,4 +72,14 @@ describe('scout-block hook end-to-end', () => {
       assert.strictEqual(runHook(scenario.input), scenario.expected);
     });
   }
+
+  it('broad-pattern block message names the offending pattern', () => {
+    const result = spawnSync('node', [HOOK_PATH], {
+      input: JSON.stringify({ tool_name: 'Glob', tool_input: { pattern: '**/*.ts' } }),
+      encoding: 'utf-8'
+    });
+    assert.strictEqual(result.status, 2, 'broad pattern should block');
+    assert.match(result.stderr, /\*\*\/\*\.ts/, 'stderr should include the offending pattern');
+    assert.doesNotMatch(result.stderr, /Pattern:\s*(\x1b\[0m)?\s*undefined/, 'stderr must not render "Pattern: undefined"');
+  });
 });
