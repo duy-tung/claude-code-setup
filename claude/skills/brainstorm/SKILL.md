@@ -9,7 +9,7 @@ license: MIT
 argument-hint: "[topic or problem]"
 metadata:
   author: claudekit
-  version: "2.3.0"
+  version: "2.3.1"
 ---
 
 # Brainstorming Skill
@@ -87,21 +87,11 @@ If any of these is still vague after one round of questions, ask another round. 
 Use `AskUserQuestion` with options grounded in what scout found (e.g., "Should the new endpoint live in `src/api/users.ts` (existing pattern) or a new `src/api/profile/` module?") — never ask abstract questions when the codebase already constrains the answer.
 </HARD-GATE-EXACT-REQUIREMENTS>
 
-## Anti-Rationalization
-
-| Thought | Reality |
-|---------|---------|
-| "This is too simple to need a design" | Simple projects = most wasted work from unexamined assumptions. |
-| "I already know the solution" | Then writing it down takes 30 seconds. Do it. |
-| "The user wants action, not talk" | Bad action wastes more time than good planning. |
-| "Let me explore the code first" | Brainstorming tells you HOW to explore. Follow the process. |
-| "I'll just prototype quickly" | Prototypes become production code. Design first. |
-
 ## Process Flow (Authoritative)
 
 ```mermaid
 flowchart TD
-    A[Scout Codebase MANDATORY] --> A2[Summarize Findings to User]
+    A[Scout Codebase - required] --> A2[Summarize Findings to User]
     A2 --> B[Ask Clarifying Questions grounded in scout]
     B --> B2{Exact requirements captured?<br/>output, acceptance, scope, constraints, touchpoints}
     B2 -->|No| B
@@ -123,7 +113,7 @@ flowchart TD
 **This diagram is the authoritative workflow.** If prose conflicts with this flow, follow the diagram. The terminal state is either `/ck:plan` or end.
 
 ## Your Process
-1. **Scout Phase (MANDATORY FIRST STEP)**: Always run before anything else.
+1. **Scout Phase (always first)**: Run before anything else.
    - Use `ck:scout` skill (or Glob/Grep directly for small repos) to map files relevant to the user's topic
    - Read `./README.md` and any `./docs/*.md` files relevant to the area
    - Identify the project type, language, framework, and existing patterns/conventions
