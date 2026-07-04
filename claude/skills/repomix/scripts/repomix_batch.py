@@ -36,7 +36,8 @@ class EnvLoader:
         """
         Load environment variables from .env files in order of precedence.
 
-        Order: process.env > skill/.env > skills/.env > .claude/.env
+        Order (more specific wins):
+        process.env > skill/.env > skills/.env > .claude/.env > ~/.claude/.env
 
         Returns:
             Dictionary of environment variables
@@ -46,6 +47,7 @@ class EnvLoader:
 
         # Define search paths in reverse order (lowest to highest priority)
         search_paths = [
+            Path.home() / ".claude" / ".env",           # ~/.claude/.env (user-global)
             script_dir.parent.parent.parent / ".env",  # .claude/.env
             script_dir.parent.parent / ".env",          # skills/.env
             script_dir.parent / ".env",                 # skill/.env (repomix/.env)

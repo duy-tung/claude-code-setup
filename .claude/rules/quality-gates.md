@@ -16,7 +16,7 @@ Canonical skill names live in each `claude/skills/*/SKILL.md` frontmatter `name:
 
 ## Skill Cross-Reference Integrity (run before committing)
 
-`claude/scripts/validate-skill-crossrefs.py` builds a registry from all `claude/skills/*/SKILL.md` frontmatter `name:` fields and audits every `/ck:` reference in `claude/**/*.md` — reporting broken refs, orphans, hubs, and workflow-chain gaps.
+`claude/scripts/validate-skill-crossrefs.py` builds a registry from all `claude/skills/**/SKILL.md` frontmatter `name:` fields (nested skills like `document-skills/pdf` included) and audits every `/ck:` reference in the skill bodies — reporting broken refs, graph orphans, hubs, and workflow-chain gaps.
 
 **Critical rule: use REGISTERED names, not directory names.**
 
@@ -44,7 +44,7 @@ python3 claude/scripts/validate-skill-crossrefs.py claude/skills/
 
 ## Skill Routing Coverage (run before committing)
 
-`validate-skill-crossrefs.py` also reports **orphaned skills** — shipped `ck:*` skills that no routing file (`skill-domain-routing.md` / `skill-workflow-routing.md`) reaches. There is no separate routing-coverage script or allowlist file anymore; reachability is a judgment call you make from the orphan list the validator prints.
+`validate-skill-crossrefs.py` also reports **orphaned skills** — skills with no inbound or outbound `/ck:` reference in the skill-to-skill graph. Note the validator does NOT read the routing files: a graph orphan can still be perfectly discoverable via `skill-domain-routing.md` / `skill-workflow-routing.md`. There is no routing-coverage script or allowlist file anymore; for each orphan the validator prints, grep the two routing files yourself and judge reachability from there.
 
 **The principle (audit-route-reframe):** discoverability is part of the contract. Shipping a skill that no routing file mentions means users (and Claude) will not find it. **Telemetry zero ≠ zero value** — most dormant skills audited under epic #711 flipped to KEEP after routing or description fixes. When tempted to delete a "dormant" skill:
 

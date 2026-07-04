@@ -73,8 +73,8 @@ The unified `notify.cjs` routes to all configured providers simultaneously. Set 
 ## Environment Variable Priority
 
 1. `process.env` (highest)
-2. `~/.claude/.env` (global)
-3. `.claude/.env` (project, lowest)
+2. `.claude/.env` (project)
+3. `~/.claude/.env` (global, lowest)
 
 ## Security Best Practices
 

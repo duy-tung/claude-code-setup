@@ -148,16 +148,14 @@ curl -s "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates" | jq '.result[
 
 ### 3. Configure Environment Variables
 
-Environment variables are loaded with this priority (highest to lowest):
+Environment variables are loaded with this priority (highest to lowest — a more specific location wins):
 1. **process.env** - System/shell environment variables
-2. **.claude/.env** - Project-level Claude configuration
-3. **.claude/hooks/.env** - Hook-specific configuration
+2. **`.claude/.env`** - Project-level configuration
+3. **`~/.claude/.env`** - User-global configuration (all projects)
 
 Choose one configuration method:
 
-#### Option A: Global Configuration (All Projects)
-
-Best for personal use across multiple projects.
+#### Option A: Shell Profile (process.env)
 
 Add to your shell profile (`~/.bash_profile`, `~/.bashrc`, or `~/.zshrc`):
 
@@ -177,11 +175,19 @@ echo $TELEGRAM_BOT_TOKEN
 echo $TELEGRAM_CHAT_ID
 ```
 
-#### Option B: Project Root `.env` (Recommended)
+#### Option B: `~/.claude/.env` (Global, All Projects — Recommended)
+
+Best for personal use across multiple projects:
+
+```bash
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+TELEGRAM_CHAT_ID=987654321
+```
+
+#### Option C: `.claude/.env` (Project-Level Override)
 
 Best for team projects or different notification channels per project.
-
-Create `.env` file in project root:
+Overrides `~/.claude/.env` for this project:
 
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
@@ -193,24 +199,6 @@ TELEGRAM_CHAT_ID=987654321
 # Add to .gitignore
 echo ".env" >> .gitignore
 echo ".env.*" >> .gitignore
-```
-
-#### Option C: `.claude/.env` (Project-Level Override)
-
-For project-specific Claude configuration:
-
-```bash
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-TELEGRAM_CHAT_ID=987654321
-```
-
-#### Option D: `.claude/hooks/.env` (Hook-Specific)
-
-For hook-only configuration:
-
-```bash
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-TELEGRAM_CHAT_ID=987654321
 ```
 
 See `.env.example` files in each location for templates.

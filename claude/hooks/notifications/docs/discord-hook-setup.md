@@ -70,22 +70,17 @@ Discord notifications are sent via `notify.cjs` + `providers/discord.cjs`. The b
 
 ### 2. Configure Environment Variables
 
-Environment variables are loaded with this priority (highest to lowest):
+Environment variables are loaded with this priority (highest to lowest — a more specific location wins):
 1. **process.env** - System/shell environment variables
-2. **.claude/.env** - Project-level Claude configuration
-3. **.claude/hooks/.env** - Hook-specific configuration
+2. **`.claude/.env`** - Project-level configuration
+3. **`~/.claude/.env`** - User-global configuration (all projects)
 
-**Option A: Project Root `.env`** (recommended):
+**Option A: `~/.claude/.env`** (global, all projects — recommended):
 ```bash
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
 ```
 
 **Option B: `.claude/.env`** (project-level override):
-```bash
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
-```
-
-**Option C: `.claude/hooks/.env`** (hook-specific):
 ```bash
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
 ```

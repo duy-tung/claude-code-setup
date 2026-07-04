@@ -108,17 +108,22 @@ claudekit-engineer/
 
 - **workflow-artifact-gate.cjs** - Validates `ck:fix`/`ck:cook` review artifacts before finalize/commit/ship-like boundaries. It supports soft warnings for finalize/commit and hard blocks for ship/push/PR/deploy when enabled.
 
-**Generated Context Hooks Disabled by Default:**
+**Context Hooks Enabled by Default** (registered in `settings.json`, gate defaults `true`; disable via `.ck.json` `hooks.<name>: false`):
 
 - `session-init.cjs`
 - `session-state.cjs`
 - `subagent-init.cjs`
-- `team-context-inject.cjs`
 - `dev-rules-reminder.cjs`
 - `plan-format-kanban.cjs`
 - `cook-after-plan-reminder.cjs`
-- `usage-context-awareness.cjs`
 - `usage-quota-cache-refresh.cjs`
+
+**Not Registered by Default** (gate defaults `true`, but they fire only if you add the matching event entry to `settings.json` — see `claude/hooks/docs/README.md`):
+
+- `team-context-inject.cjs`
+- `usage-context-awareness.cjs`
+- `task-completed-handler.cjs`
+- `teammate-idle-handler.cjs`
 
 **Hook Features:**
 - Crash Fail-Open: unexpected hook crashes exit 0 for graceful degradation

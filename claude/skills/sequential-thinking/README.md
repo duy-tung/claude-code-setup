@@ -21,9 +21,6 @@ sequential-thinking/
 ├── package.json
 │   Test dependencies (jest)
 │
-├── .env.example
-│   Configuration options
-│
 ├── scripts/
 │   ├── process-thought.js (executable)
 │   │   Validate and track thoughts deterministically
@@ -171,6 +168,12 @@ npm run test:coverage
 - No need for validation or tracking
 
 Scripts are **optional tooling** - the methodology can be applied without them.
+
+## Configuration
+
+Set `DISABLE_THOUGHT_LOGGING=true` in the shell environment to suppress console
+logging from `process-thought.js` (useful for automated processing). The scripts
+read `process.env` only — they do not load `.env` files.
 
 ## Source
 

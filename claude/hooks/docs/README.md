@@ -124,7 +124,7 @@ Expected output (if Telegram and Discord configured):
 ### Features
 
 - **Smart Throttling**: 5-minute quiet period after errors to prevent spam
-- **Env Cascade**: `process.env` > `~/.claude/.env` > `.claude/.env`
+- **Env Cascade**: `process.env` > `.claude/.env` (project) > `~/.claude/.env` (user-global)
 - **Zero Dependencies**: Uses native Node.js fetch (Node 18+)
 - **Cross-Platform**: Uses `path.basename()` for Windows compatibility
 - **Non-Blocking**: Always exits 0 to never block Claude

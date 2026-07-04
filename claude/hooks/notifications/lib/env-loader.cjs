@@ -1,5 +1,6 @@
 /**
- * Environment loader with cascade: process.env > ~/.claude/.env > .claude/.env
+ * Environment loader with cascade: process.env > .claude/.env > ~/.claude/.env
+ * (more specific wins: project-level overrides user-global)
  * Zero dependencies - manual .env parsing
  */
 'use strict';
@@ -77,15 +78,15 @@ function loadEnvFile(filePath) {
 
 /**
  * Load environment with cascade priority
- * Priority: process.env > ~/.claude/.env > .claude/.env
+ * Priority: process.env > .claude/.env (project) > ~/.claude/.env (user-global)
  * @param {string} [cwd] - Current working directory (defaults to process.cwd())
  * @returns {Object} Merged environment variables
  */
 function loadEnv(cwd = process.cwd()) {
   const envFiles = [
     // Lowest priority first (will be overwritten)
-    path.join(cwd, '.claude', '.env'),
     path.join(os.homedir(), '.claude', '.env'),
+    path.join(cwd, '.claude', '.env'),
   ];
 
   // Start with empty object, layer on each source

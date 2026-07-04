@@ -31,7 +31,7 @@
       "description": "feature-list schema+template, session-handoff template, init.sh verify entrypoint.",
       "status": "done",
       "dependencies": ["feat-003"],
-      "evidence": "claude/templates/*, claude/schemas/feature-list.schema.json, init.sh; audit 84->96"
+      "evidence": "claude/skills/ck-harness/templates/*, claude/schemas/feature-list.schema.json, init.sh; audit 84->96 (templates consolidated into ck-harness)"
     },
     {
       "id": "feat-006",

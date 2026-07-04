@@ -99,7 +99,7 @@ CHECKS: dict[str, list[tuple[str, callable]]] = {
          lambda: exists("claude/hooks/session-state.cjs")),
         ("machine-readable feature/status tracker",
          lambda: any_exists("feature_list.json", "feature-list.json",
-                            "claude/templates/feature-list.json")),  # known gap
+                            "claude/skills/ck-harness/templates/feature-list.json")),  # template fallback
         ("progress / handoff mechanism",
          lambda: exists("claude/skills/project-management/SKILL.md")
                  or any_exists("progress.md", "claude-progress.md")),
@@ -140,7 +140,7 @@ CHECKS: dict[str, list[tuple[str, callable]]] = {
          lambda: exists("claude/hooks/session-state.cjs")),
         ("clean-restart / session-handoff template",
          lambda: any_exists("session-handoff.md",
-                            "claude/templates/session-handoff.md")),  # known gap
+                            "claude/skills/ck-harness/templates/session-handoff.md")),  # template fallback
     ],
 }
 
