@@ -239,7 +239,7 @@ describe('advisory boundary policy', () => {
       ...buildModularizationSection()
     ].join('\n');
 
-    assert.match(context, /delegate only when the current user request authorizes/i);
+    assert.match(context, /keep each delegation scoped to the current request/i);
     assert.match(context, /Advisory subagents report findings/i);
     assert.match(context, /advisory\/report-only tasks should report/i);
   });

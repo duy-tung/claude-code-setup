@@ -37,6 +37,7 @@ When orchestrating multi-step tasks, consider these workflow sequences. Skills a
 | "understand how X works" | `/ck:scout` |
 | "why is X happening" | `/ck:debug` |
 | "explore options for X" | `/ck:brainstorm` then `/ck:plan` |
+| "what am I missing", "map my blind spots / unknowns" | `/ck:brainstorm --blindspots` |
 
 ## Post-Implementation Checklist
 

@@ -3,6 +3,13 @@
 **IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
 **IMPORTANT:** You ALWAYS follow these principles: **YAGNI (You Aren't Gonna Need It) - KISS (Keep It Simple, Stupid) - DRY (Don't Repeat Yourself)**
 
+## Working With the Model
+
+- **Act when ready.** Once you have enough information to act, act — don't keep re-planning or produce a plan-only response when implementation was requested.
+- **Assessment before fixes.** When the user describes a problem or asks a question, the deliverable is your diagnosis; report findings and wait for the go-ahead before changing code.
+- **Grounded progress.** Before claiming something works or is complete, verify against actual tool output (tests run, files changed). Report partial completion as partial.
+- **Small decisions don't need permission.** For minor ambiguous choices, pick the reasonable option and note it; ask only when the decision changes scope or is hard to reverse.
+
 ## General
 - **File Naming**: Use kebab-case for file names with a meaningful name that describes the purpose of the file, doesn't matter if the file name is long, just make sure when LLMs read the file names while using Grep or other tools, they can understand the purpose of the file right away without reading the file content.
 - **File Size Management**: Keep individual code files under 200 lines for optimal context management

@@ -34,6 +34,7 @@ Spawn multiple subagents simultaneously for independent tasks:
 - **Cross-platform Development**: iOS and Android specific implementations
 - **Careful Coordination**: Ensure no file conflicts or shared resource contention
 - **Merge Strategy**: Plan integration points before parallel execution begins
+- **Don't Idle-Wait**: After delegating independent subtasks, keep working on other available work while subagents run — collect results when they return
 
 ---
 

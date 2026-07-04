@@ -86,6 +86,15 @@ After each file is modified:
 - **Pattern verify:** confirm the new code matches adjacent conventions
 - **Import check:** confirm no circular dependency or dead import was added
 
+### Implementation Notes & Deviations
+
+Maintain `{plan_dir}/implementation-notes.md` while implementing. When reality
+diverges from the plan (missing helper, wrong assumption, API mismatch, renamed
+file), append one line under a `## Deviations` heading — what changed, why, and
+the conservative choice made — then keep going instead of stopping to ask.
+Surface the Deviations list to the `code-reviewer` subagent in Step 5 and fold
+material deviations back into the plan files during the Step 6 sync-back.
+
 ### `--tdd` Flag Behavior
 
 When `--tdd` is active, Step 3 splits into sub-steps per phase:

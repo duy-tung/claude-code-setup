@@ -139,7 +139,7 @@ Bootstrap new projects with research, tech stack, design, planning, and implemen
 
 ### `brainstorm`
 
-Brainstorm solutions with trade-off analysis and brutal honesty. Use for ideation, architecture decisions, technical debates, feature exploration, feasibility assessment, design discussions.
+Brainstorm solutions with trade-off analysis and brutal honesty. Use for ideation, architecture decisions, technical debates, feature exploration, feasibility assessment, design discussions, blind-spot mapping (--blindspots).
 
 **Location**: `.claude/skills/brainstorm/SKILL.md`
 

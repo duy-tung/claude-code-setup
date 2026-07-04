@@ -59,6 +59,7 @@ Fix the ROOT CAUSE per diagnosis findings. Not symptoms.
 
 - Use `ck:sequential-thinking` for complex logic
 - Minimal changes. Follow existing patterns.
+- If implementation diverges from the diagnosis (different root-cause surface, extra affected file), record the deviation in one line — expected vs. found vs. what you did — pick the conservative option, keep going, and include the deviations in the Step 6 summary.
 
 `TaskUpdate(T3, status="completed")`
 **Output:** `✓ Step 3: Implemented - [N] files changed`

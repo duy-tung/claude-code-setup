@@ -90,4 +90,4 @@ We keep all important docs in `./docs` folder and keep updating them, structure 
 └── project-roadmap.md
 ```
 
-**IMPORTANT:** *MUST READ* and *MUST COMPLY* all *INSTRUCTIONS* in `.claude/rules/CLAUDE.md`, especially *WORKFLOWS* section is *CRITICALLY IMPORTANT*, this rule is *MANDATORY. NON-NEGOTIABLE. NO EXCEPTIONS. MUST REMEMBER AT ALL TIMES!!!*
+Follow the instructions in `.claude/rules/CLAUDE.md` and the workflow files it links (see Workflows above) — they are the operating contract for this kit.

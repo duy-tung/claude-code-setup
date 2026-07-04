@@ -2,6 +2,10 @@
 
 8-phase specification executed each iteration. Complete phases in order — no skipping.
 
+## Autonomous Operation
+
+While the loop runs you are operating autonomously — the user already authorized the iterations by configuring the loop. Do not pause to ask "Want me to continue?" or "Shall I run another iteration?"; the stop conditions in Phase 8 are the only exit. Before ending a turn, check your last paragraph: if it is a question or a promise about a phase you have not executed, execute it now. End only when Phase 8 says stop or a precondition is unrecoverable.
+
 ---
 
 ## Phase 0: Precondition Checks (first iteration only)
