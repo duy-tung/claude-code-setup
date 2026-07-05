@@ -122,6 +122,32 @@ class TestEnvLoader:
             env_vars = EnvLoader.load_env_files()
             assert env_vars.get("PROCESS_VAR") == "from_process"
 
+    def test_parse_env_file_strips_inline_comment(self, tmp_path):
+        """Unquoted values drop an inline comment; quoted values keep inner '#'."""
+        env_file = tmp_path / ".env"
+        env_file.write_text(
+            "KEY1=value1 # trailing comment\n"
+            'KEY2="has # hash"\n'
+            "KEY3=plain#nospace\n"
+        )
+        result = EnvLoader._parse_env_file(env_file)
+        # KEY3 has no whitespace before '#', so it is NOT a comment (dotenv rule).
+        assert result == {"KEY1": "value1", "KEY2": "has # hash", "KEY3": "plain#nospace"}
+
+    def test_load_env_files_project_level_is_cwd_anchored(self, tmp_path, monkeypatch):
+        """The `.claude/.env` level resolves against the invocation cwd (the
+        project), not the script's install dir — so a project override is read."""
+        project = tmp_path / "project"
+        (project / ".claude").mkdir(parents=True)
+        (project / ".claude" / ".env").write_text("PROJECT_VAR=from_project\n")
+        fake_home = tmp_path / "home"
+        (fake_home / ".claude").mkdir(parents=True)  # user-global dir, no .env
+        monkeypatch.chdir(project)
+        monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
+        with patch.dict(os.environ, {}, clear=True):
+            env_vars = EnvLoader.load_env_files()
+        assert env_vars.get("PROJECT_VAR") == "from_project"
+
 
 class TestRepomixBatchProcessor:
     """Test RepomixBatchProcessor class."""

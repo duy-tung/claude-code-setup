@@ -9,6 +9,14 @@ const path = require('node:path');
 
 const HOOK = path.resolve(__dirname, '..', 'simplify-gate.cjs');
 
+// Config lives at the canonical <cwd>/.claude/.ck.json (the gate reads global
+// ~/.claude/.ck.json + local <cwd>/.claude/.ck.json via the ck-config-utils cascade).
+function writeCk(dir, config) {
+  const cfgDir = path.join(dir, '.claude');
+  fs.mkdirSync(cfgDir, { recursive: true });
+  fs.writeFileSync(path.join(cfgDir, '.ck.json'), JSON.stringify(config));
+}
+
 function makeRepo({ enableGate = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'simplify-gate-'));
   const git = (...args) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
@@ -17,12 +25,10 @@ function makeRepo({ enableGate = true } = {}) {
   git('config', 'user.name', 'Test');
   fs.writeFileSync(path.join(dir, 'README.md'), '# repo\n');
   // Gate defaults to OFF (opt-in). Most tests exercise enabled-gate behavior,
-  // so commit a .ck.json enabling it (committed so it doesn't pollute diff signals).
-  // Tests that need default-off pass enableGate=false.
+  // so commit a .claude/.ck.json enabling it (committed so it doesn't pollute
+  // diff signals). Tests that need default-off pass enableGate=false.
   if (enableGate) {
-    fs.writeFileSync(path.join(dir, '.ck.json'), JSON.stringify({
-      simplify: { gate: { enabled: true } }
-    }));
+    writeCk(dir, { simplify: { gate: { enabled: true } } });
   }
   git('add', '.');
   git('commit', '-m', 'init');
@@ -30,10 +36,14 @@ function makeRepo({ enableGate = true } = {}) {
 }
 
 function runHook(payload, env = {}) {
+  // Pin HOME to cwd so the global (~/.claude/.ck.json) cascade level resolves to
+  // the same per-test config dir instead of the runner's real home — keeps the
+  // gate's global+local merge deterministic across environments.
+  const home = payload.cwd || os.tmpdir();
   return spawnSync('node', [HOOK], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...env }
+    env: { ...process.env, HOME: home, USERPROFILE: home, ...env }
   });
 }
 
@@ -154,9 +164,7 @@ test('default config (no .ck.json) leaves gate OFF — exits silently even on bi
 test('respects .ck.json simplify.gate.enabled=false', () => {
   const dir = makeRepo();
   writeBigFile(dir, 'big.ts', 600);
-  fs.writeFileSync(path.join(dir, '.ck.json'), JSON.stringify({
-    simplify: { gate: { enabled: false } }
-  }));
+  writeCk(dir, { simplify: { gate: { enabled: false } } });
   const r = runHook({ cwd: dir, prompt: 'ship it' });
   assert.strictEqual(r.status, 0);
   assert.strictEqual(r.stdout.trim(), '');
@@ -165,12 +173,12 @@ test('respects .ck.json simplify.gate.enabled=false', () => {
 test('honors custom thresholds from .ck.json', () => {
   const dir = makeRepo();
   writeBigFile(dir, 'mid.ts', 100);
-  fs.writeFileSync(path.join(dir, '.ck.json'), JSON.stringify({
+  writeCk(dir, {
     simplify: {
       threshold: { locDelta: 50, fileCount: 100, singleFileLoc: 10000 },
       gate: { enabled: true }
     }
-  }));
+  });
   const r = runHook({ cwd: dir, prompt: 'ship it' });
   assert.strictEqual(r.status, 2);
   const out = parseStdout(r.stdout);
@@ -180,9 +188,9 @@ test('honors custom thresholds from .ck.json', () => {
 test('honors custom verbs from .ck.json', () => {
   const dir = makeRepo();
   writeBigFile(dir, 'big.ts', 600);
-  fs.writeFileSync(path.join(dir, '.ck.json'), JSON.stringify({
+  writeCk(dir, {
     simplify: { gate: { enabled: true, hardVerbs: ['launch'], softVerbs: [] } }
-  }));
+  });
   const blocked = runHook({ cwd: dir, prompt: 'launch the rocket' });
   assert.strictEqual(blocked.status, 2);
 

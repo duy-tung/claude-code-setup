@@ -44,13 +44,19 @@ class EnvLoader:
         """
         env_vars = {}
         script_dir = Path(__file__).parent.resolve()
+        cwd = Path.cwd()
 
-        # Define search paths in reverse order (lowest to highest priority)
+        # Define search paths in reverse order (lowest to highest priority).
+        # The `.claude/.env` and `.claude/skills/.env` levels are anchored to the
+        # invocation cwd (the project), NOT the script's install dir — otherwise a
+        # global install (~/.claude/skills/repomix/scripts) reads ~/.claude/.env
+        # twice and never the project's ./.claude/.env. The skill-local .env stays
+        # next to the script. Matches the documented cascade in .claude/.env.example.
         search_paths = [
             Path.home() / ".claude" / ".env",           # ~/.claude/.env (user-global)
-            script_dir.parent.parent.parent / ".env",  # .claude/.env
-            script_dir.parent.parent / ".env",          # skills/.env
-            script_dir.parent / ".env",                 # skill/.env (repomix/.env)
+            cwd / ".claude" / ".env",                   # <project>/.claude/.env
+            cwd / ".claude" / "skills" / ".env",        # <project>/.claude/skills/.env
+            script_dir.parent / ".env",                 # <skill>/.env (repomix/.env)
         ]
 
         # Load from files (lower priority first)
@@ -87,11 +93,16 @@ class EnvLoader:
                         key, value = line.split('=', 1)
                         key = key.strip()
                         value = value.strip()
-                        # Remove quotes if present
-                        if value.startswith('"') and value.endswith('"'):
+                        # Quoted value: strip matching quotes, keep any inner '#'
+                        if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
                             value = value[1:-1]
-                        elif value.startswith("'") and value.endswith("'"):
-                            value = value[1:-1]
+                        else:
+                            # Unquoted value: drop inline comment (' #' or tab-'#')
+                            for sep in (' #', '\t#'):
+                                idx = value.find(sep)
+                                if idx != -1:
+                                    value = value[:idx]
+                            value = value.strip()
                         env_vars[key] = value
         except Exception as e:
             print(f"Warning: Failed to parse {path}: {e}", file=sys.stderr)
