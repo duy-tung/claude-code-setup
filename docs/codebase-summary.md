@@ -49,7 +49,7 @@ claudekit-engineer/
 - `code-reviewer.md` - Code quality assessment
 - `tester.md` - Testing and validation
 - `debugger.md` - Issue analysis and debugging
-- `docs-manager.md` - Documentation management (Gemini model)
+- `docs-manager.md` - Documentation management
 - `git-manager.md` - Version control operations
 - `journal-writer.md` - Development journaling
 - `brainstormer.md` - Solution ideation
@@ -221,11 +221,10 @@ Types:
 - BREAKING CHANGE: Major version bump
 ```
 
-**Automated Release**:
-- Every push to `main` triggers release check
-- Semantic versioning (MAJOR.MINOR.PATCH)
-- Automated changelog generation
-- GitHub releases with generated notes
+**Versioning**:
+- Semantic versioning (MAJOR.MINOR.PATCH), inferred from conventional commit types
+- No CI/release automation in this kit — the lean refactor removed the GitHub
+  Actions workflows. Version bumps and any release are performed manually.
 
 ## Testing Strategy
 

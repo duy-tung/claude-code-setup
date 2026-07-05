@@ -268,7 +268,7 @@ Enterprise-grade features and deployment options.
 
 ### Technology Stack
 - **Runtime:** Node.js >= 18.0.0, Bash, PowerShell, Cross-platform hooks
-- **AI Platforms:** Anthropic Claude, OpenRouter, Google Gemini, Grok Code
+- **AI Platforms:** Anthropic Claude (all subagents); Google Gemini + Grok Code as optional external research/scout tooling
 - **Development Tools:** Repomix, Scout Block Hook, Node.js test runner (`node --test`)
 - **Languages:** JavaScript, Bash, PowerShell, Markdown
 
