@@ -2,7 +2,7 @@
 
 Auto-generated catalog of all available skills in ClaudeKit Engineer.
 
-**Last Updated**: 2026-07-04
+**Last Updated**: 2026-07-05
 
 **Total Skills**: 40
 

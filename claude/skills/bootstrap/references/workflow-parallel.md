@@ -20,11 +20,11 @@ No user gate — proceed automatically.
 
 ## Step 3: Wireframe & Design
 
-1. Use `fullstack-developer` + `researcher` agents in parallel:
+1. Use `general-purpose` + `researcher` agents in parallel:
    - Research style, trends, fonts, colors, spacing, positions
    - Predict Google Fonts name (NOT just Inter/Poppins)
    - Describe assets for image-generation
-2. `fullstack-developer` creates:
+2. `general-purpose` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
 3. If no logo: generate with an image-generation tool
@@ -50,9 +50,9 @@ Load `references/shared-phases.md` for remaining phases.
 
 Activate **ck:cook** skill: `/ck:cook --parallel <plan-path>`
 - Read `plan.md` for dependency graph and execution strategy
-- Launch multiple `fullstack-developer` agents in PARALLEL for concurrent phases
+- Launch multiple `general-purpose` agents in PARALLEL for concurrent phases
   - Pass: phase file path, environment info
-- Use `fullstack-developer` for frontend (generate/analyze assets with an image-generation/vision tool, edit with `imagemagick`)
+- Use `general-purpose` for frontend (generate/analyze assets with an image-generation/vision tool, edit with `imagemagick`)
 - Respect file ownership boundaries
 - Run type checking after implementation
 - Keep cook review gates; `--parallel` controls execution shape, not approval bypass

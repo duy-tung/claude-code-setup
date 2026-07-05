@@ -54,7 +54,7 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - "Database deadlocks under load"
 - "Security vulnerability in auth flow"
 
-### Parallel (→ multiple fullstack-developer agents) — Use Task Trees
+### Parallel (→ multiple general-purpose agents) — Use Task Trees
 
 **Triggers:**
 - `--parallel` flag explicitly passed (activate parallel routing regardless of auto-classification)
@@ -65,7 +65,7 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - No dependencies between issues
 - Keywords: list of issues, "and", "also", multiple error types
 
-**Task usage:** Create separate task trees per independent issue (each with scout+diagnose+fix+verify). Spawn `fullstack-developer` agent per tree. See `references/task-orchestration.md`.
+**Task usage:** Create separate task trees per independent issue (each with scout+diagnose+fix+verify). Spawn `general-purpose` agent per tree. See `references/task-orchestration.md`.
 
 **Examples:**
 - "Fix type errors AND update UI styling"

@@ -8,7 +8,7 @@ keywords: [bugfix, error, test-failure, CI, lint]
 argument-hint: "[issue] --auto|--review|--quick|--parallel"
 metadata:
   author: claudekit
-  version: "2.2.0"
+  version: "2.2.1"
 ---
 
 # Fixing
@@ -20,7 +20,7 @@ Unified skill for fixing issues of any complexity with intelligent routing.
 - `--auto` - Activate autonomous mode (**default**); high-risk fixes stop for human approval before finalize/commit/ship
 - `--review` - Activate human-in-the-loop review mode
 - `--quick` - Activate quick mode
-- `--parallel` - Activate parallel mode: route to parallel `fullstack-developer` agents per issue
+- `--parallel` - Activate parallel mode: route to parallel `general-purpose` agents per issue
 
 <HARD-GATE>
 Do NOT propose or implement fixes before completing Steps 1-2 (Scout + Diagnose).
@@ -155,7 +155,7 @@ Classify before routing. See `references/complexity-assessment.md`.
 | **Simple** | Single file, clear error, type/lint | `references/workflow-quick.md` |
 | **Moderate** | Multi-file, root cause unclear | `references/workflow-standard.md` |
 | **Complex** | System-wide, architecture impact | `references/workflow-deep.md` |
-| **Parallel** | 2+ independent issues OR `--parallel` flag | Parallel `fullstack-developer` agents |
+| **Parallel** | 2+ independent issues OR `--parallel` flag | Parallel `general-purpose` agents |
 
 **Task Orchestration (Moderate+ only):** After classifying, create native Claude Tasks for all phases upfront with dependencies. See `references/task-orchestration.md`.
 - Skip for Quick workflow (< 3 steps, overhead exceeds benefit)

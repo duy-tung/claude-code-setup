@@ -31,10 +31,10 @@ Spawn multiple `researcher` subagents in parallel:
 ## Step 4: Wireframe & Design
 
 1. Ask user if they want wireframes/design. If no → skip to Step 5.
-2. Use `fullstack-developer` + `researcher` subagents in parallel:
+2. Use `general-purpose` + `researcher` subagents in parallel:
    - Research style, trends, fonts (predict Google Fonts name, NOT just Inter/Poppins), colors, spacing, positions
    - Describe assets for image-generation
-3. `fullstack-developer` creates:
+3. `general-purpose` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
 4. If no logo provided: generate with an image-generation tool

@@ -159,7 +159,7 @@ describe('Issue #327: Path Resolution Integration', () => {
       // Simulate subagent spawned with different CWD
       const subdirPath = path.join(gitRoot, '.claude');
       const result = await runHook('subagent-init.cjs', {
-        agent_type: 'fullstack-developer',
+        agent_type: 'planner',
         agent_id: 'monorepo-test',
         cwd: subdirPath  // Payload CWD
       }, { cwd: gitRoot });  // Process CWD different from payload

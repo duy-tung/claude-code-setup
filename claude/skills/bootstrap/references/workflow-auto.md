@@ -20,10 +20,10 @@ No user gate — auto-select best option.
 
 ## Step 3: Wireframe & Design
 
-1. Use `fullstack-developer` + `researcher` subagents in parallel:
+1. Use `general-purpose` + `researcher` subagents in parallel:
    - Research style, trends, fonts (predict Google Fonts name, NOT just Inter/Poppins), colors, spacing, positions
    - Describe assets for image-generation
-2. `fullstack-developer` creates:
+2. `general-purpose` creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
 3. If no logo provided: generate with an image-generation tool

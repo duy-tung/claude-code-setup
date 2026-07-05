@@ -29,7 +29,7 @@ Task(subagent_type="planner", prompt="Create implementation plan based on report
 
 ## UI Implementation
 ```
-Task(subagent_type="fullstack-developer", prompt="Implement [feature] UI per ./docs/design-guidelines.md", description="UI [feature]")
+Task(subagent_type="general-purpose", prompt="Implement [feature] UI per ./docs/design-guidelines.md", description="UI [feature]")
 ```
 - For frontend work
 - Follow design guidelines
@@ -102,7 +102,7 @@ Task(subagent_type="git-manager", prompt="Stage and commit changes with conventi
 
 ## Parallel Execution
 ```
-Task(subagent_type="fullstack-developer", prompt="Implement [phase-file] with file ownership: [files]", description="Implement phase [N]")
+Task(subagent_type="general-purpose", prompt="Implement [phase-file] with file ownership: [files]", description="Implement phase [N]")
 ```
 - Launch multiple for parallel phases
 - Include file ownership boundaries

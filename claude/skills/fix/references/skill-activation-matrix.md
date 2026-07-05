@@ -49,7 +49,7 @@ Skip Tasks for Quick workflow (< 3 steps). See `references/task-orchestration.md
 | `ck:code-review` | After fix, verify quality and security (Step 5) |
 | `git-manager` | After approval, commit changes (Step 6) |
 | `docs-manager` | API/behavior changes need doc updates (Step 6) |
-| `fullstack-developer` | Parallel independent issues (each gets own agent) |
+| `general-purpose` | Parallel independent issues (each gets own agent) |
 
 ## Parallel Patterns
 
@@ -61,7 +61,7 @@ See `references/parallel-exploration.md` for detailed patterns.
 | Testing hypotheses (Step 2) | 2-3 `Explore` agents per hypothesis |
 | Multi-module fix | `Explore` each module in parallel |
 | After implementation (Step 5) | `Bash` agents: typecheck + lint + build + test |
-| 2+ independent issues | Task trees + `fullstack-developer` agents per issue |
+| 2+ independent issues | Task trees + `general-purpose` agents per issue |
 
 ## Workflow → Skills Map
 
@@ -70,7 +70,7 @@ See `references/parallel-exploration.md` for detailed patterns.
 | Quick | `ck:scout` (minimal), `ck:debug`, `ck:sequential-thinking`, `ck:code-review`, `/ck:project-management`, parallel `Bash` verification |
 | Standard | Above + Tasks, `ck:project-management`, `tester`, parallel `Explore` |
 | Deep | All above + `ck:brainstorm`, `ck:context-engineering`, `researcher`, `planner` |
-| Parallel | Per-issue Task trees + `ck:project-management` + `fullstack-developer` agents + coordination via `TaskList` |
+| Parallel | Per-issue Task trees + `ck:project-management` + `general-purpose` agents + coordination via `TaskList` |
 
 ## Step → Skills Chain (Mandatory Order)
 
