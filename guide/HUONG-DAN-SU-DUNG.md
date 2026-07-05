@@ -225,7 +225,6 @@ Hook là script chạy tự động theo sự kiện của Claude Code (trước
 | Hook | Tác dụng | Cách bật |
 |------|----------|----------|
 | `workflow-artifact-gate` | Chặn ship/push/PR nếu fix/cook chưa có artifact review hợp lệ | Bật trong `.ck.json` + thêm entry vào `settings.json` (xem `.claude/hooks/docs/README.md`) |
-| Notifications | Báo Telegram/Discord/Slack khi Claude xong việc/cần input | Điền token vào `.env` + thêm entry `Stop`/`Notification` vào `settings.json` |
 | `team-context-inject`, `task-completed-handler`, `teammate-idle-handler`, `usage-context-awareness` | Phục vụ chế độ team | Thêm entry sự kiện vào `settings.json` |
 
 ### 5.3. Bật/tắt hook
@@ -250,7 +249,7 @@ Thứ tự ưu tiên (cụ thể hơn thắng):
 process.env  >  <skill>/.env  >  .claude/skills/.env  >  .claude/.env  >  ~/.claude/.env
 ```
 
-Copy mẫu từ `.claude/.env.example`. Các key thường dùng: `CLAUDEKIT_API_KEY`, `CONTEXT7_API_KEY`, `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`. Riêng hook notification chỉ đọc `process.env > .claude/.env > ~/.claude/.env`.
+Copy mẫu từ `.claude/.env.example`. Các key thường dùng: `CLAUDEKIT_API_KEY`, `CONTEXT7_API_KEY`, `GEMINI_API_KEY`.
 
 **Tuyệt đối không commit file `.env`** — privacy-block và luật pre-commit của kit đều chặn chuyện này.
 
@@ -321,10 +320,9 @@ Luật quan trọng nhất: **xoá/đổi tên bất kỳ file nào dưới `cla
 | Claude báo "BLOCKED: Access to node_modules denied" | Chủ đích của scout-block. Cần đọc thật thì thêm `!node_modules/tên-pkg/**` vào `.claude/.ckignore` |
 | Claude bị chặn đọc `.env` | Privacy-block — duyệt qua hộp thoại nó bật lên, hoặc tự dán nội dung cần thiết |
 | Script Python của skill lỗi import | Chưa chạy `install.sh`, hoặc không dùng venv `.claude/skills/.venv/bin/python3` |
-| Không nhận được notification | Kiểm tra token trong `.env`, đã thêm entry hook vào `settings.json` chưa; xoá throttle: `rm /tmp/ck-noti-throttle.json` |
 | Task tools (TaskCreate…) báo lỗi | Chỉ có trên CLI, không có trong VSCode extension — kit tự fallback sang TodoWrite |
 | Quota không hiện trên statusline | Máy đang đặt `ANTHROPIC_BASE_URL`/`ANTHROPIC_API_KEY` (runtime override) hoặc tài khoản không phải subscription — hành vi chủ đích |
 
 ---
 
-*Tài liệu tham khảo thêm: `guide/SKILLS.md` (catalog chi tiết từng skill), `.claude/hooks/docs/README.md` (hooks + notifications), `.claude/skills/INSTALLATION.md` (cài dependency), `docs/codebase-summary.md` (tổng quan kiến trúc kit).*
+*Tài liệu tham khảo thêm: `guide/SKILLS.md` (catalog chi tiết từng skill), `.claude/hooks/docs/README.md` (hooks), `.claude/skills/INSTALLATION.md` (cài dependency), `docs/codebase-summary.md` (tổng quan kiến trúc kit).*

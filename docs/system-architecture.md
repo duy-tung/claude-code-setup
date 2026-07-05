@@ -438,11 +438,6 @@ is reported by field path only.
 **GitHub**:
 - Issues and PRs (project management)
 
-**Discord**:
-- Webhook notifications
-- Project updates
-- Team communication
-
 **NPM** (Optional):
 - Package publishing
 - Version management

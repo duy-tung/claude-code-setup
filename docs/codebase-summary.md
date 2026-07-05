@@ -268,10 +268,6 @@ Run `npx repomix` (or `/ck:repomix`) for current file/token counts.
 
 ## Integration Capabilities
 
-### Discord Notifications
-Script: `.claude/hooks/notifications/notify.cjs` + `providers/discord.cjs`
-Purpose: Send project updates to Discord channels
-
 ### Agent Skills
 - **research**: Research and analysis
 - **docs**: Documentation workflows

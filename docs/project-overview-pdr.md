@@ -484,9 +484,6 @@ Command behavior is implemented via skill directories:
 - Claude Code CLI
 - API keys for AI platforms
 
-### Optional Dependencies
-- Discord webhook for notifications
-
 ### Integrations
 - Repomix
 - Various MCP servers

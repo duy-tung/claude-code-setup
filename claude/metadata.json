@@ -194,7 +194,8 @@
     "hooks/tests/**",
     "hooks/scout-block/tests/**",
     "templates/**",
-    "skills/sequential-thinking/.env.example"
+    "skills/sequential-thinking/.env.example",
+    "hooks/notifications/**"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",

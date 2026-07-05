@@ -321,7 +321,6 @@ Enterprise-grade features and deployment options.
 - API keys for AI platforms
 
 ### Optional
-- Discord webhook for notifications
 - PowerShell 5.1+ (Windows statusline)
 
 ### Key External Tools
