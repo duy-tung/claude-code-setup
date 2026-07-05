@@ -200,7 +200,8 @@
     "skills/repomix/scripts/.coverage",
     "skills/plans-kanban/scripts/lib/plan-scanner.cjs",
     "skills/plans-kanban/scripts/lib/plan-parser.cjs",
-    "skills/plans-kanban/scripts/lib/plan-metadata-extractor.cjs"
+    "skills/plans-kanban/scripts/lib/plan-metadata-extractor.cjs",
+    "session-state/.gitkeep"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",

@@ -17,7 +17,7 @@ All modes share core steps with mode-specific variations.
 
 **Interactive/Auto:**
 - Spawn multiple `researcher` agents in parallel
-- Use `/ck:scout ext` or `scout` agent for codebase search
+- Use `/ck:scout ext` (or parallel `Explore` subagents) for codebase search
 - Keep reports ≤150 lines
 
 **Parallel:**

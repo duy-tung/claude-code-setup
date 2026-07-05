@@ -180,6 +180,9 @@ When a reproduction command needs real credentials, write it as a *template* the
 
 - [`references/autonomous-loop-protocol.md`](references/autonomous-loop-protocol.md) — Full 8-phase loop spec, decision matrix, anti-patterns
 - [`references/git-memory-pattern.md`](references/git-memory-pattern.md) — Git as cross-iteration memory, revert vs reset, commit conventions
+- [`references/metric-library.md`](references/metric-library.md) — ready-made verify commands per metric (coverage, bundle size, lint, perf)
+- [`references/guard-and-noise.md`](references/guard-and-noise.md) — guard-command patterns and filtering noisy/oscillating metrics
+- [`references/results-logging.md`](references/results-logging.md) — loop-results.tsv schema and per-iteration logging format
 
 ## Lineage
 

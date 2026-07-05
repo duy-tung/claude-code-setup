@@ -43,8 +43,6 @@ The upstream framework ships 11 sub-commands. Locally, 6 are absorbed (4 standal
 | `/autoresearch:ship` | — | Missing | Backfill candidate (MEDIUM); partly covered by `/ck:ship` |
 | `/autoresearch:learn` | — | Missing | Backfill candidate (LOW) — autonomous docs generator |
 
-Drift assessments and backfill priorities come from the integration audit at `plans/reports/researcher-260502-2145-autoresearch-integration-audit.md`.
-
 ## When to invoke this skill directly
 
 Almost never. This page is a discovery aid. To actually do work, route to one of the specialized skills above.

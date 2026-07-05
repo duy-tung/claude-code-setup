@@ -362,4 +362,10 @@ If unresponsive: close terminal or kill session. Clean orphaned configs at `~/.c
 
 See `.claude/rules/team-coordination-rules.md` for teammate behavior rules.
 
+## References
+
+- [`references/agent-teams-controls-and-modes.md`](references/agent-teams-controls-and-modes.md) — display modes, navigation, spawn controls
+- [`references/agent-teams-examples-and-best-practices.md`](references/agent-teams-examples-and-best-practices.md) — worked examples and coordination best practices
+- [`references/agent-teams-official-docs.md`](references/agent-teams-official-docs.md) — upstream Agent Teams reference
+
 > v3.0.0: Agent tool migration, worktree isolation for cook devs, run_in_background spawning, updated model requirements.
