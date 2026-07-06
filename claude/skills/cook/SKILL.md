@@ -8,7 +8,7 @@ keywords: [implementation, workflow, feature, pipeline]
 argument-hint: "[task|plan-path] [--interactive|--fast|--parallel|--auto|--no-test] [--tdd]"
 metadata:
   author: claudekit
-  version: "2.3.0"
+  version: "2.3.1"
 ---
 
 # Cook - Smart Feature Implementation
@@ -199,7 +199,7 @@ Human review required at these checkpoints (skipped with `--auto`):
 | Research | `researcher` | Optional in fast/code |
 | Scout | `ck:scout` | Optional in code |
 | Plan | `planner` | Optional in code |
-| UI Work | `fullstack-developer` | If frontend work |
+| UI Work | `general-purpose` | If frontend work |
 | Testing | `tester`, `debugger` | Always spawn |
 | Review | `code-reviewer` | Always spawn |
 | Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | Always invoke all |

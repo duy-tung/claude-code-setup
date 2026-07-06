@@ -127,7 +127,7 @@ Always use the venv interpreter so installed packages are found:
 
 ## Environment Variables
 
-Skills and hooks that need configuration ship an `.env.example` next to their code (e.g. `.claude/.env.example`, `.claude/skills/.env.example`, `.claude/hooks/notifications/.env.example`). Copy the template to the same location without the `.example` suffix and fill in values. For notification hooks specifically, see `.claude/hooks/docs/README.md`.
+Skills that need configuration ship an `.env.example` next to their code (e.g. `.claude/.env.example`, `.claude/skills/.env.example`). Copy the template to the same location without the `.example` suffix and fill in values.
 
 ## Troubleshooting
 

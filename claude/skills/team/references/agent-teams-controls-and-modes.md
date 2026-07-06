@@ -74,7 +74,7 @@ When spawning developer teammates, use `isolation: "worktree"` on the Agent tool
 
 ```
 Agent(
-  subagent_type: "fullstack-developer",
+  subagent_type: "general-purpose",
   model: "opus",
   isolation: "worktree",
   run_in_background: true,

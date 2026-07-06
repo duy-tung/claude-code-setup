@@ -57,8 +57,8 @@ T_B2 = TaskCreate(subject="[Issue B] Fix",   activeForm="Fixing B",   addBlocked
 T_final = TaskCreate(subject="Integration verify", addBlockedBy=[T_A2, T_B2])
 
 // Spawn agents per issue tree
-Task("fullstack-developer", "Fix Issue A. Claim tasks via TaskUpdate.", "Fix A")
-Task("fullstack-developer", "Fix Issue B. Claim tasks via TaskUpdate.", "Fix B")
+Task("general-purpose", "Fix Issue A. Claim tasks via TaskUpdate.", "Fix A")
+Task("general-purpose", "Fix Issue B. Claim tasks via TaskUpdate.", "Fix B")
 ```
 
 Agents claim work via `TaskUpdate(status="in_progress")` and complete via `TaskUpdate(status="completed")`. Blocked tasks auto-unblock when dependencies resolve.
@@ -71,7 +71,7 @@ Agents claim work via `TaskUpdate(status="in_progress")` and complete via `TaskU
 | Multi-module fix | Explore each module in parallel |
 | After implementation | Bash agents for typecheck + lint + build |
 | Before commit | Bash agents for test + build + lint |
-| 2+ independent issues | Task trees per issue + fullstack-developer agents |
+| 2+ independent issues | Task trees per issue + general-purpose agents |
 
 ## Combining Explore + Tasks + Bash
 

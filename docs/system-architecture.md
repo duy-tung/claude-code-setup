@@ -66,7 +66,7 @@ ClaudeKit Engineer implements a multi-agent AI orchestration architecture where 
 - `PreToolUse`: `scout-block`, `privacy-block`, `descriptive-name`
 - `UserPromptSubmit`: `simplify-gate`
 
-Generated context hooks (`session-init`, `session-state`, `subagent-init`, `team-context-inject`, `dev-rules-reminder`, `plan-format-kanban`, `cook-after-plan-reminder`, `usage-context-awareness`, `usage-quota-cache-refresh`) are not registered by default in new installs. The hook sources stay shipped for deliberate opt-in; maintenance cleanup must remove stale registrations without deleting those source files.
+Context hooks `session-init`, `session-state`, `subagent-init`, `dev-rules-reminder`, `plan-format-kanban`, `cook-after-plan-reminder`, and `usage-quota-cache-refresh` ARE registered by default in `settings.json`. A separate set — `team-context-inject`, `usage-context-awareness`, `task-completed-handler`, `teammate-idle-handler` — ships but is NOT registered by default; enable each by adding its matching event entry to `settings.json`. `settings.json` is the source of truth for what actually fires.
 
 **Log Contract**:
 - One JSON object per line
@@ -91,7 +91,7 @@ Generated context hooks (`session-init`, `session-state`, `subagent-init`, `team
 - `debugger` - Issue analysis, root-cause diagnosis
 
 **Documentation & Operations Agents**:
-- `docs-manager` - Documentation maintenance (Gemini)
+- `docs-manager` - Documentation maintenance
 - `journal-writer` - Development decision journaling
 - `git-manager` - Version control and commit management
 - `project-manager` - Progress tracking and oversight
@@ -102,9 +102,7 @@ Generated context hooks (`session-init`, `session-state`, `subagent-init`, `team
 ---
 name: agent-name
 description: Agent purpose and use cases
-mode: subagent | all
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.1
+model: haiku | sonnet | opus   # omit to inherit the session model
 ---
 
 # Agent instructions in markdown
@@ -114,15 +112,11 @@ temperature: 0.1
 ## Quality Standards
 ```
 
-**Agent Modes**:
-- `subagent`: Spawned by other agents, runs independently
-- `all`: Can be invoked as main or sub agent
-
-**Model Selection**:
-- `claude-sonnet-4-20250514` - Fast, efficient (most agents)
-- `claude-opus-4-1-20250805` - Advanced reasoning (planner-researcher)
-- `google/gemini-2.5-flash` - Cost-effective (docs-manager)
-- `grok-code` - Specialized (git-manager)
+**Model Selection** (from agent frontmatter):
+- `opus` - Advanced reasoning: `planner`, `code-simplifier`
+- `sonnet` - Balanced: `debugger`
+- `haiku` - Fast, cost-effective: `docs-manager`, `git-manager`, `journal-writer`, `project-manager`, `researcher`, `tester`
+- No `model` field (inherits the session model): `brainstormer`, `code-reviewer`
 
 #### 2.3 Agent Communication Protocol
 
@@ -332,19 +326,19 @@ All hooks live in `.claude/hooks/`. Crash paths fail open so broken hook code do
 **Testing**:
 - Validates: blocked/allowed patterns, error handling, edge cases, JSON validation
 
-**2. Generated Context Hooks (Disabled by Default)**
+**2. Context Hooks (Enabled by Default)**
 
-The following hooks previously injected session state, generated prompt context, team context, or usage context and are now pruned from default installs to avoid startup/context bloat:
+These inject session state and prompt context and are registered to events in the default `settings.json`:
 
-- `session-init.cjs`
-- `session-state.cjs`
-- `subagent-init.cjs`
-- `team-context-inject.cjs`
-- `dev-rules-reminder.cjs`
-- `plan-format-kanban.cjs`
-- `cook-after-plan-reminder.cjs`
-- `usage-context-awareness.cjs`
-- `usage-quota-cache-refresh.cjs`
+- `session-init.cjs` (SessionStart)
+- `session-state.cjs` (PostToolUse, Stop, SubagentStop)
+- `subagent-init.cjs` (SubagentStart)
+- `dev-rules-reminder.cjs` (UserPromptSubmit)
+- `plan-format-kanban.cjs` (PostToolUse)
+- `cook-after-plan-reminder.cjs` (SubagentStop)
+- `usage-quota-cache-refresh.cjs` (SessionStart, PostToolUse, UserPromptSubmit)
+
+Shipped but NOT registered by default (opt in via `settings.json`): `team-context-inject.cjs`, `usage-context-awareness.cjs`, `task-completed-handler.cjs`, `teammate-idle-handler.cjs`.
 
 **3. Workflow Artifact Gate (Opt-In)**
 
@@ -369,33 +363,21 @@ Soft stages (`finalize`, `commit`) warn for missing proof. Hard stages (`ship`,
 `push`, `pr`, `deploy`) block when artifacts fail. Secret-like artifact content
 is reported by field path only.
 
-**Default Hook Configuration** (`.claude/settings.json`):
-```json
-{
-  "hooks": {
-    "UserPromptSubmit": [{
-      "hooks": [
-        {"type": "command", "command": "node \".claude/hooks/simplify-gate.cjs\""}
-      ]
-    }],
-    "PreToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {"type": "command", "command": "node \".claude/hooks/descriptive-name.cjs\""}
-        ]
-      },
-      {
-        "matcher": "Bash|Glob|Grep|Read|Edit|Write",
-        "hooks": [
-          {"type": "command", "command": "node \".claude/hooks/scout-block.cjs\""},
-          {"type": "command", "command": "node \".claude/hooks/privacy-block.cjs\""}
-        ]
-      }
-    ]
-  }
-}
-```
+**Default Hook Registration** (`.claude/settings.json` is authoritative; this
+maps each event to the hooks it fires):
+
+| Event | Hooks (in order) |
+|-------|------------------|
+| `SessionStart` | `session-init`, `usage-quota-cache-refresh` |
+| `SubagentStart` | `subagent-init` |
+| `UserPromptSubmit` | `dev-rules-reminder`, `simplify-gate`, `usage-quota-cache-refresh` |
+| `PreToolUse` | `descriptive-name` (Write); `scout-block` + `privacy-block` (Bash\|Glob\|Grep\|Read\|Edit\|Write) |
+| `PostToolUse` | `plan-format-kanban`, `session-state`, `usage-quota-cache-refresh` |
+| `Stop` | `session-state` |
+| `SubagentStop` | `cook-after-plan-reminder`, `session-state` |
+
+`workflow-artifact-gate` and the notification-free opt-in hooks above are not in
+this default set — they fire only when added to `settings.json` explicitly.
 
 **Hook Features Summary**:
 - Crash Fail-Open: unexpected hook crashes exit 0 for graceful degradation
@@ -437,11 +419,6 @@ is reported by field path only.
 
 **GitHub**:
 - Issues and PRs (project management)
-
-**Discord**:
-- Webhook notifications
-- Project updates
-- Team communication
 
 **NPM** (Optional):
 - Package publishing
@@ -581,10 +558,9 @@ plans/<plan-name>/reports/251026-from-tester-to-main-test-results-report.md
 - Bash scripting (hooks)
 
 **AI Platforms**:
-- Anthropic Claude (Sonnet 4, Opus 4)
-- Google Gemini 2.5 Flash
-- OpenRouter (multi-model support)
-- Grok Code
+- Anthropic Claude (Opus / Sonnet / Haiku) — all subagents
+- Google Gemini via Gemini-CLI — optional external path in research/scout skills
+- Grok Code via opencode — optional external scouting model
 
 **Development Tools**:
 - Repomix (codebase compaction)

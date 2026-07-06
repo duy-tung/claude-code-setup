@@ -11,7 +11,13 @@
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { isHookEnabled } = require('./lib/ck-config-utils.cjs');
+const {
+  isHookEnabled,
+  loadConfigFromPath,
+  deepMerge,
+  GLOBAL_CONFIG_PATH,
+  LOCAL_CONFIG_PATH
+} = require('./lib/ck-config-utils.cjs');
 
 const DEFAULTS = {
   threshold: { locDelta: 400, fileCount: 8, singleFileLoc: 200 },
@@ -51,15 +57,16 @@ function matchedSeverity(prompt, hardVerbs, softVerbs) {
 }
 
 function loadConfig(cwd) {
-  // Read .claude/.ck.json (canonical) or .ck.json (project root) scoped to cwd.
-  let user = {};
-  for (const rel of [path.join('.claude', '.ck.json'), '.ck.json']) {
-    try {
-      const raw = fs.readFileSync(path.join(cwd, rel), 'utf8');
-      user = JSON.parse(raw)?.simplify || {};
-      break;
-    } catch { /* try next */ }
-  }
+  // Canonical cascade (matches isHookEnabled and ck-config-utils.loadConfig):
+  //   DEFAULTS -> ~/.claude/.ck.json (global) -> <cwd>/.claude/.ck.json (local, wins)
+  // The old loader read only cwd and additionally a project-root `.ck.json` that
+  // nothing else honors, so global `simplify` settings were silently ignored.
+  const globalCfg = loadConfigFromPath(GLOBAL_CONFIG_PATH);
+  const localCfg = loadConfigFromPath(path.join(cwd, LOCAL_CONFIG_PATH));
+  let merged = {};
+  if (globalCfg) merged = deepMerge(merged, globalCfg);
+  if (localCfg) merged = deepMerge(merged, localCfg);
+  const user = merged.simplify || {};
   return {
     threshold: { ...DEFAULTS.threshold, ...(user.threshold || {}) },
     gate: { ...DEFAULTS.gate, ...(user.gate || {}) }

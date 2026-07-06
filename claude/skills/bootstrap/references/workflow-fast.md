@@ -18,7 +18,7 @@ Keep all reports ≤150 lines.
 
 ## Step 2: Design
 
-1. `fullstack-developer` subagent analyzes research, creates:
+1. `general-purpose` subagent analyzes research, creates:
    - Design guidelines at `./docs/design-guidelines.md`
    - Wireframes in HTML at `./docs/wireframe/`
 2. If no logo provided: generate with an image-generation tool

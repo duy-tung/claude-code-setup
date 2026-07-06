@@ -147,6 +147,16 @@ Optimization patterns: `references/benchmark-optimization-guide.md`
 - **Design patterns**: `references/skill-design-patterns.md`
 - **Plugin Marketplaces**: `references/plugin-marketplace-overview.md`
 
+## More References
+
+- **Writing instructions**: `references/writing-effective-instructions.md`
+- **YAML frontmatter**: `references/yaml-frontmatter-reference.md`
+- **Testing & iteration**: `references/testing-and-iteration.md`
+- **Troubleshooting**: `references/troubleshooting-guide.md`
+- **Distribution**: `references/distribution-guide.md`
+- **MCP integration**: `references/mcp-skills-integration.md`
+- **Eval viewer asset**: `assets/eval_review.html`
+
 ## External References
 
 - [Agent Skills Docs](https://docs.claude.com/en/docs/claude-code/skills.md)

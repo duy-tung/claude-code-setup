@@ -17,7 +17,7 @@ All modes share core steps with mode-specific variations.
 
 **Interactive/Auto:**
 - Spawn multiple `researcher` agents in parallel
-- Use `/ck:scout ext` or `scout` agent for codebase search
+- Use `/ck:scout ext` (or parallel `Explore` subagents) for codebase search
 - Keep reports ≤150 lines
 
 **Parallel:**
@@ -111,13 +111,13 @@ the refactor broke something and must be fixed before the workflow proceeds.
 **All modes:**
 - Use `TaskUpdate` to mark tasks as `in_progress` immediately.
 - Execute phase tasks sequentially (Step 3.1, 3.2, etc.)
-- Use `fullstack-developer` for frontend
+- Use `general-purpose` for frontend
 - Use an image-generation tool for image assets
 - Run type checking after each file
 
 **Parallel mode:**
 - Utilize all tools of Claude Tasks: `TaskCreate`, `TaskUpdate`, `TaskGet` and `TaskList`
-- Launch multiple `fullstack-developer` agents
+- Launch multiple `general-purpose` agents
 - When agents pick up a task, use `TaskUpdate` to assign task to agent and mark tasks as `in_progress` immediately.
 - Respect file ownership boundaries
 - Wait for parallel group before next

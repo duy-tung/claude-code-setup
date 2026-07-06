@@ -138,7 +138,7 @@ describe('subagent-init.cjs', () => {
   describe('Issue #540: ck plan CLI injection for plan-aware agents', () => {
 
     it('injects ck plan CLI section for agents that may update plan state', async () => {
-      const planAwareTypes = ['planner', 'project-manager', 'code-simplifier', 'fullstack-developer'];
+      const planAwareTypes = ['planner', 'project-manager', 'code-simplifier'];
 
       for (const agentType of planAwareTypes) {
         const result = await runHook({
@@ -315,7 +315,7 @@ describe('subagent-init.cjs', () => {
       const isWorktree = fs.existsSync(gitPath) && fs.statSync(gitPath).isFile();
 
       const result = await runHook({
-        agent_type: 'fullstack-developer',
+        agent_type: 'planner',
         agent_id: 'submodule-test',
         cwd: gitRoot
       });
@@ -557,7 +557,7 @@ describe('subagent-init.cjs', () => {
 
         // Subagent running in inner repo should get inner repo's git root
         const result = await runHook({
-          agent_type: 'fullstack-developer',
+          agent_type: 'planner',
           agent_id: 'nested-test',
           cwd: innerDir
         }, { cwd: innerDir });

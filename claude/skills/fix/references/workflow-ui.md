@@ -3,7 +3,7 @@
 For fixing visual/UI issues. Uses native Claude Tasks for phase tracking.
 
 ## Required Skills (activate in order)
-Delegate UI work to the `fullstack-developer` subagent per ./docs/design-guidelines.md.
+Delegate UI work to the `general-purpose` subagent per ./docs/design-guidelines.md.
 
 ## Pre-fix Research
 Read `./docs/design-guidelines.md` for product, style, and accessibility conventions before fixing.
@@ -32,7 +32,7 @@ Analyze screenshots/videos with a vision/multimodal model.
 
 ### Step 2: Implement
 `TaskUpdate(T2, status="in_progress")`
-Use `fullstack-developer` agent.
+Use `general-purpose` agent.
 
 `TaskUpdate(T2, status="completed")`
 

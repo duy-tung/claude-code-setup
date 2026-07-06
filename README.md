@@ -123,7 +123,7 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 │   ├── codebase-summary.md # Auto-generated codebase overview
 │   ├── code-standards.md   # Development standards
 │   ├── project-overview-pdr.md # Product requirements
-│   └── development-roadmap.md  # Project roadmap
+│   └── project-roadmap.md      # Project roadmap
 ├── plans/                  # Implementation plans and reports
 │   ├── templates/          # Plan templates
 │   └── reports/            # Agent-to-agent communication
@@ -290,8 +290,8 @@ planner agent spawns:
 # Update documentation
 /ck:docs
 
-# Generate codebase summary
-repomix  # Creates ./docs/codebase-summary.md
+# Pack the codebase for LLM consumption
+repomix  # Creates ./repomix-output.xml
 
 # Review project status
 /ck:project-management

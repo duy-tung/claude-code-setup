@@ -8,7 +8,7 @@ keywords: [agents, parallel, multi-session, collaboration]
 argument-hint: "<template> <context> [--devs|--researchers|--reviewers N] [--delegate]"
 metadata:
   author: claudekit
-  version: "3.0.0"
+  version: "3.0.1"
 ---
 
 # Agent Teams - CK-Native Orchestration Engine
@@ -63,7 +63,7 @@ When `--delegate` flag is passed:
 
 ```
 Agent(
-  subagent_type: "researcher" | "fullstack-developer" | "code-reviewer" | "debugger" | "tester" | ...,
+  subagent_type: "researcher" | "general-purpose" | "code-reviewer" | "debugger" | "tester" | ...,
   description: "short task summary",
   prompt: "full instructions + CK Context Block",
   model: "opus",                    # Required for Agent Teams teammates
@@ -177,7 +177,7 @@ IMMEDIATELY execute in order:
    - Each task description includes: implementation scope, file ownership, acceptance criteria
 
 4. **SPAWN** developer teammates x N via `Agent` tool:
-   - `subagent_type: "fullstack-developer"`, `model: "opus"`
+   - `subagent_type: "general-purpose"`, `model: "opus"`
    - `isolation: "worktree"` -- each dev gets isolated git worktree (no file conflicts)
    - `run_in_background: true`
    - `name: "dev-{N}"`
@@ -361,5 +361,11 @@ If unresponsive: close terminal or kill session. Clean orphaned configs at `~/.c
 ## Rules Reference
 
 See `.claude/rules/team-coordination-rules.md` for teammate behavior rules.
+
+## References
+
+- [`references/agent-teams-controls-and-modes.md`](references/agent-teams-controls-and-modes.md) — display modes, navigation, spawn controls
+- [`references/agent-teams-examples-and-best-practices.md`](references/agent-teams-examples-and-best-practices.md) — worked examples and coordination best practices
+- [`references/agent-teams-official-docs.md`](references/agent-teams-official-docs.md) — upstream Agent Teams reference
 
 > v3.0.0: Agent tool migration, worktree isolation for cook devs, run_in_background spawning, updated model requirements.

@@ -90,7 +90,7 @@ git log --since="$SINCE" --until="$UNTIL" --name-only --format="" \
 
 ## Step 3 — Compute Derived Metrics
 
-Compute from raw data. Show formula in report.
+Compute from raw data. Show formula in report. See [`references/metrics-guide.md`](references/metrics-guide.md) for the full metric catalog, formulas, and interpretation notes.
 
 | Metric | Formula |
 |--------|---------|

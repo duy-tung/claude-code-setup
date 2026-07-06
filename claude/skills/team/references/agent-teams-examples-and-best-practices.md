@@ -69,7 +69,7 @@ For any template where teammates edit code (cook, fix), always use `isolation: "
 
 ```
 Agent(
-  subagent_type: "fullstack-developer",
+  subagent_type: "general-purpose",
   model: "opus",
   isolation: "worktree",
   run_in_background: true,

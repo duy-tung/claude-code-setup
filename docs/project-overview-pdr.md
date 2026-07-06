@@ -264,7 +264,7 @@ Command behavior is implemented via skill directories:
 **2. Skill Routing System** (replaces the original Command System as of v2.17)
 - Frontmatter-driven skill registry (`name:`, `description:`, `user-invocable: true`)
 - Domain + workflow routing rules (`claude/rules/skill-domain-routing.md`, `skill-workflow-routing.md`)
-- Cross-reference, description, and routing-coverage CI gates
+- Cross-reference, description, and frontmatter validators run as local manual gates (no CI — see `claude/rules/quality-gates.md`)
 - `metadata.deletions[]` to retire stale commands/skills on user upgrade
 
 **3. Workflow Engine**
@@ -300,10 +300,9 @@ Command behavior is implemented via skill directories:
 - Cross-platform hook dispatcher (Node.js)
 
 **AI Platforms**:
-- Anthropic Claude (Sonnet 4, Opus 4)
-- OpenRouter integration
-- Google Gemini (for docs-manager)
-- Grok Code (for git-manager)
+- Anthropic Claude (Opus / Sonnet / Haiku) — all subagents
+- Google Gemini via Gemini-CLI — optional external path in the research/scout skills
+- Grok Code via opencode — optional external scouting model (see `skills/scout/references/external-scouting.md`)
 
 **Development Tools**:
 - Repomix (codebase compaction)
@@ -450,14 +449,14 @@ Command behavior is implemented via skill directories:
 ### Phase 1: Foundation (Complete - v1.0–v1.8)
 - ✅ Core agent framework
 - ✅ Slash command system (later replaced by skills in Phase 2)
-- ✅ Automated releases
+- ✅ Automated releases (CI later removed in the lean refactor; versioning is now manual)
 - ✅ Skills library (initial)
 - ✅ Documentation system
 
 ### Phase 2: Enhancement + Commands→Skills Migration (Complete - v2.x through v2.18)
 - ✅ Skills expansion, later slimmed to a focused 40-skill catalog
 - ✅ Commands→Skills migration (v2.17)
-- ✅ Skill CI gates: cross-ref, description, routing coverage (v2.18)
+- ✅ Skill validation gates: cross-ref, description, frontmatter (v2.18; later moved from CI to local manual gates)
 - ✅ Windows parity + hook safety (v2.18.x)
 - ✅ Preview Dashboard
 - ✅ Cross-platform performance optimization
@@ -483,9 +482,6 @@ Command behavior is implemented via skill directories:
 - Git version control
 - Claude Code CLI
 - API keys for AI platforms
-
-### Optional Dependencies
-- Discord webhook for notifications
 
 ### Integrations
 - Repomix
@@ -557,6 +553,6 @@ Command behavior is implemented via skill directories:
 
 1. **Performance Benchmarks**: Need to establish baseline metrics for agent execution times
 2. **Multi-Repository Support**: How to handle projects spanning multiple repositories?
-3. **Custom AI Model Support**: Should we support other AI platforms beyond Claude and OpenRouter?
+3. **Custom AI Model Support**: Should we support AI platforms beyond Claude (and the optional Gemini/Grok external-scouting paths)?
 4. **Agent Marketplace**: Community-contributed agents and skills distribution mechanism?
 5. **Real-Time Collaboration**: How to handle multiple developers using agents simultaneously?

@@ -88,7 +88,7 @@ Agent(
 )
 ```
 
-**Built-in subagent types:** `general-purpose`, `Explore`, `Plan`, `researcher`, `fullstack-developer`, `code-reviewer`, `debugger`, `tester`, `planner`, `docs-manager`, `brainstormer`, and more.
+**Built-in subagent types:** `general-purpose`, `Explore`, `Plan`, `researcher`, `general-purpose`, `code-reviewer`, `debugger`, `tester`, `planner`, `docs-manager`, `brainstormer`, and more.
 
 **Custom subagents:** Define in `.claude/agents/` with frontmatter (name, description, tools, model).
 

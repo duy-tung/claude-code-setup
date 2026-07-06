@@ -598,9 +598,7 @@ function example() {
 ---
 name: agent-name
 description: Brief description of agent purpose and when to use it
-mode: subagent | all
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.1
+model: haiku | sonnet | opus   # omit to inherit the session model
 ---
 ```
 
