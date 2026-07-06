@@ -82,8 +82,12 @@ Enabled Windows users to use Claude Code statusline functionality through multip
 - 380+ lines of comprehensive guidance
 
 #### Sub-Task: Preview Dashboard (All 6 Phases)
-**Status:** ✅ COMPLETE
+**Status:** ✅ COMPLETE (later superseded)
 **Completed:** 2025-12-11
+
+> Superseded: the bundled preview HTTP server was later removed. The plan/kanban
+> dashboard now lives in the external claudekit CLI (`ck config ui`), invoked via
+> the `/ck:plans-kanban` skill. The phases below are kept as historical record.
 **Priority:** High
 
 Interactive web-based visualization of implementation plans with advanced filtering, sorting, and real-time discovery.

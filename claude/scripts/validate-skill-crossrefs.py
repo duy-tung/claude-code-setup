@@ -33,7 +33,7 @@ FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 CODE_FENCE_RE = re.compile(r"```[\s\S]*?```", re.MULTILINE)
 SKILL_REF_RE = re.compile(r"/ck:([a-z0-9][\w-]*)")
 
-SKIP_DIRS = frozenset({"_shared", "template-skill", "common", ".venv",
+SKIP_DIRS = frozenset({"_shared", ".venv",
                         "node_modules", "__pycache__"})
 
 # Expected workflow chains — consecutive pairs must have edges.

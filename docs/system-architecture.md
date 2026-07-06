@@ -62,9 +62,11 @@ ClaudeKit Engineer implements a multi-agent AI orchestration architecture where 
 #### 1.4 Hook Runtime Diagnostics
 **Location**: `.claude/hooks/lib/hook-logger.cjs` and `.claude/hooks/.logs/hook-log.jsonl`
 **Responsibility**: Persist structured hook execution telemetry for local inspection and downstream dashboard consumption
-**Current Coverage**:
-- `PreToolUse`: `scout-block`, `privacy-block`, `descriptive-name`
-- `UserPromptSubmit`: `simplify-gate`
+**Current Coverage** (hooks that call `hook-logger.cjs`):
+- `scout-block`, `privacy-block`, `descriptive-name`, `dev-rules-reminder`,
+  `plan-format-kanban`, `session-init`, `subagent-init`,
+  `usage-quota-cache-refresh`, `usage-context-awareness`, `task-completed-handler`
+- Note: `simplify-gate` does NOT use hook-logger.
 
 Context hooks `session-init`, `session-state`, `subagent-init`, `dev-rules-reminder`, `plan-format-kanban`, `cook-after-plan-reminder`, and `usage-quota-cache-refresh` ARE registered by default in `settings.json`. A separate set — `team-context-inject`, `usage-context-awareness`, `task-completed-handler`, `teammate-idle-handler` — ships but is NOT registered by default; enable each by adding its matching event entry to `settings.json`. `settings.json` is the source of truth for what actually fires.
 

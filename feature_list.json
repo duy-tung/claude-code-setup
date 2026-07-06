@@ -47,7 +47,7 @@
       "description": "Shipped skill to scaffold and audit a harness for any project.",
       "status": "done",
       "dependencies": ["feat-005"],
-      "evidence": "claude/skills/ck-harness; 48 skills valid; fresh scaffold audits 100/100; cataloged"
+      "evidence": "claude/skills/ck-harness; 40 skills valid; fresh scaffold audits 100/100; cataloged"
     }
   ]
 }

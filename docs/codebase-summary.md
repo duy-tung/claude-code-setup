@@ -25,7 +25,7 @@ claudekit-engineer/
 │   └── templates/       # Plan templates
 ├── README.md           # Project overview
 ├── package.json        # Node.js dependencies
-└── repomix-output.xml  # Codebase compaction file
+└── repomix-output.xml  # Codebase compaction file (generated on demand by `npx repomix`)
 ```
 
 ## Core Technologies
