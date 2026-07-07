@@ -1,6 +1,6 @@
 # Setup ClaudeKit Engineer Cho Dự Án Cụ Thể & Hệ Nhiều Repo
 
-> Áp dụng cho kit 2.19.1. Tài liệu chị em: `HUONG-DAN-SU-DUNG.md` (cách dùng hằng ngày). Tài liệu này trả lời câu hỏi: **cài kit vào một dự án cụ thể thế nào, và tổ chức ra sao khi một sản phẩm có nhiều repo, nhiều tech stack nhưng chung một business.**
+> Áp dụng cho kit 2.19.1. Tài liệu chị em: `HUONG-DAN-SU-DUNG.md` (cách dùng hằng ngày). Tài liệu này trả lời câu hỏi: **cài kit vào một dự án cụ thể thế nào; tổ chức ra sao khi một sản phẩm có nhiều repo, nhiều tech stack nhưng chung một business; và setup thế nào cho hệ microservice nhiều repo backend.**
 
 ---
 
@@ -190,8 +190,89 @@ Nguyên tắc của xia là "adapt, don't transplant" — viết lại idiomatic
 
 ---
 
+## Phần 3 — Microservice Nhiều Repo Backend
+
+Đây là trường hợp đặc biệt của Phần 2: thay vì vài repo khác loại (web/mobile/backend), bạn có **một hạm đội repo đồng dạng** — đa số cùng `type: "api"`, thường cùng stack — giao tiếp qua contract (OpenAPI/proto). Hai nhu cầu quyết định cách setup: **tính nhất quán giữa các service** và **contract-first workflow**.
+
+### Kiến trúc: hub-and-spoke + 2 repo hạ tầng
+
+```
+kit repo (HUB — chuẩn hóa 1 lần)
+  ├── svc-auth / svc-order / svc-payment / ...   (mỗi service 1 repo, .ck.json {"type":"api"})
+  ├── contracts repo (OpenAPI / proto / AsyncAPI — nguồn sự thật giao tiếp)
+  │     └─ nhúng submodule vào MỌI service:  api/contracts/
+  └── infra repo (docker-compose / k8s manifests, .ck.json {"type":"application"})
+        └─ môi trường dựng cả hệ để chạy integration test local
+```
+
+So với Phần 2, repo `product-docs` được thay bằng (hoặc bổ sung bởi) **contracts repo** — với microservice, contract chính là business context quan trọng nhất giữa các repo.
+
+### 3a. Chuẩn hóa tại HUB
+
+Ngoài các mục ở 2a, với microservice cần chuẩn hóa thêm trong kit nguồn (`claude/rules/development-rules.md`, `docs/code-standards.md` mẫu):
+- Quy ước **logging / error format / correlation-id / tracing** thống nhất — điều Claude phải tuân theo ở mọi service
+- Chuẩn **health-check, retry, timeout** giữa các service
+- Commit convention + `plan.issuePrefix` chung cho cả fleet
+
+### 3b. "Golden service" và nhân bản setup
+
+Vì các service đồng dạng, đừng setup từng repo bằng tay:
+
+1. Chọn service chuẩn nhất làm **golden service**, làm đủ 8 bước ở Phần 1 cho nó (khai báo `type: "api"`, `.ckignore` theo stack, `/ck:docs init`, `/ck:harness audit`)
+2. Nhân bản cho phần còn lại của fleet:
+   ```bash
+   for d in svc-*/; do
+     (cd "$d" && ck init --kit engineer)
+     cp svc-golden/.claude/.ck.json   "$d/.claude/.ck.json"
+     cp svc-golden/.claude/.ckignore  "$d/.claude/.ckignore"
+   done
+   ```
+   Cùng stack + cùng type → cấu hình giống hệt nhau, copy được nguyên trạng.
+
+### 3c. Contract-first workflow (luồng làm việc chính)
+
+Mọi thay đổi giao tiếp giữa service đi theo một chiều:
+
+1. **Sửa contract trước** — mở session ở contracts repo: `/ck:plan` cho thay đổi API, review tại đó (bằng checklist API có sẵn của kit: `ck-code-review/references/checklists/api.md`)
+2. **Bump submodule** ở các service bị ảnh hưởng (`git submodule update --remote api/contracts`)
+3. **Mỗi service một session** `/ck:cook` implement theo contract mới — contract trong `api/contracts/` chính là "context handoff" giữa các session, không cần chép tay mô tả API qua lại
+4. Chạy integration test qua infra repo (dựng compose cả hệ) trước khi `/ck:ship` từng service
+
+### 3d. Tạo service mới
+
+- Cùng stack với fleet: tạo repo từ golden service, rồi `/ck:xia <đường-dẫn-golden-svc> --copy` hoặc `--improve` để mang theo middleware/pattern chuẩn (auth, logging, health-check)
+- Khác stack: `/ck:bootstrap` cho khung mới + `/ck:xia <golden-svc> --port` — viết lại pattern chuẩn theo idiom của stack mới
+
+### 3e. Giữ nhất quán cả fleet
+
+Định kỳ (hoặc trước mỗi đợt refactor lớn):
+
+```bash
+python3 .claude/skills/repomix/scripts/repomix_batch.py -f repos.json
+# mẫu fleet: guide/templates/repos.microservices.example.json
+```
+
+Rồi mở 1 session, nạp các file pack và yêu cầu **so sánh consistency giữa các service** (error handling, auth middleware, cấu trúc handler, health-check...). Đây là pattern chính thức của kit — `repomix/references/usage-patterns.md` mục "Cross-Repository: Microservices, consistency checks, integration analysis". Lệch chuẩn ở service nào → `/ck:xia` từ golden service để đồng bộ.
+
+### 3f. Debug xuyên service
+
+Không có debug 1-lệnh xuyên repo. Cách làm: mở session ở service nghi ngờ, chạy `/ck:debug` và **dán logs/trace của các service liên quan** (correlation-id giúp ở đây — xem 3a); nếu cần Claude hiểu code của service upstream, đưa file pack repomix của service đó làm context tham chiếu.
+
+### Giới hạn riêng của kịch bản microservice
+
+| Giới hạn | Cách sống chung |
+|----------|-----------------|
+| Không có orchestration xuyên repo | Contract-first (3c) là cơ chế điều phối thay thế |
+| `/ck:team`/worktree: một cây git | Song song hóa bằng nhiều session, mỗi session một service |
+| Nâng cấp kit chạy per-repo | Dùng vòng lặp shell như 3b |
+| Fleet nhỏ + cùng stack | Cân nhắc **monorepo** thay vì polyrepo — kit hỗ trợ monorepo native (tự phát hiện workspaces, worktree theo package, một `.claude/` duy nhất), chi phí vận hành thấp hơn hẳn |
+
+---
+
 ## Checklist Tóm Tắt
 
 **Một dự án:** `ck init --kit engineer` → `install.sh` (nếu cần) → khai báo `project.type` + `locale` trong `.ck.json` → `.env`/`.mcp.json` → `.ckignore` theo stack → `/ck:docs init` → tùy biến rules → `/ck:harness audit`.
 
 **Nhiều repo chung business:** chuẩn hóa rules + defaults ở kit nguồn (HUB) → cài kit vào từng repo, chỉ tinh chỉnh type/ckignore/code-standards (SPOKE) → business docs chung trong repo riêng, nhúng submodule `docs/business/` → keys chung ở `~/.claude/.env` → cross-repo bằng repomix batch + `/ck:xia` + mỗi repo một session.
+
+**Microservice nhiều repo backend:** chuẩn hóa logging/error/tracing ở HUB → setup golden service rồi nhân bản `.ck.json`/`.ckignore` bằng vòng lặp shell → contracts repo nhúng submodule `api/contracts/` vào mọi service, mọi thay đổi API đi contract-first → service mới sinh từ golden service + `/ck:xia` → giữ nhất quán fleet bằng repomix batch + session so sánh consistency → infra repo dựng cả hệ cho integration test.
