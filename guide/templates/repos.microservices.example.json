@@ -1,26 +1,26 @@
 [
   {
-    "path": "../svc-auth",
+    "path": "./svc-auth",
     "output": "packs/svc-auth.xml"
   },
   {
-    "path": "../svc-order",
+    "path": "./svc-order",
     "output": "packs/svc-order.xml"
   },
   {
-    "path": "../svc-payment",
+    "path": "./svc-payment",
     "output": "packs/svc-payment.xml"
   },
   {
-    "path": "../svc-notification",
+    "path": "./svc-notification",
     "output": "packs/svc-notification.xml"
   },
   {
-    "path": "../contracts",
+    "path": "./contracts",
     "output": "packs/contracts.xml"
   },
   {
-    "path": "../infra",
+    "path": "./infra",
     "output": "packs/infra.xml"
   }
 ]

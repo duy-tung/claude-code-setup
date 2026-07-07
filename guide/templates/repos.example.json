@@ -1,18 +1,18 @@
 [
   {
-    "path": "../backend-api",
+    "path": "./backend-api",
     "output": "packs/backend-api.xml"
   },
   {
-    "path": "../web-app",
+    "path": "./web-app",
     "output": "packs/web-app.xml"
   },
   {
-    "path": "../mobile-app",
+    "path": "./mobile-app",
     "output": "packs/mobile-app.xml"
   },
   {
-    "path": "../product-docs",
+    "path": "./product-docs",
     "output": "packs/product-docs.xml"
   },
   {

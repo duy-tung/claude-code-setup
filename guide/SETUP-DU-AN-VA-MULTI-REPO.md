@@ -250,6 +250,7 @@ Mọi thay đổi giao tiếp giữa service đi theo một chiều:
 ```bash
 python3 .claude/skills/repomix/scripts/repomix_batch.py -f repos.json
 # mẫu fleet: guide/templates/repos.microservices.example.json
+# (mẫu viết theo góc nhìn chạy từ thư mục cha workspace — xem Phần 4b)
 ```
 
 Rồi mở 1 session, nạp các file pack và yêu cầu **so sánh consistency giữa các service** (error handling, auth middleware, cấu trúc handler, health-check...). Đây là pattern chính thức của kit — `repomix/references/usage-patterns.md` mục "Cross-Repository: Microservices, consistency checks, integration analysis". Lệch chuẩn ở service nào → `/ck:xia` từ golden service để đồng bộ.
@@ -269,6 +270,82 @@ Không có debug 1-lệnh xuyên repo. Cách làm: mở session ở service nghi
 
 ---
 
+## Phần 4 — Quy Ước Thư Mục Cha (Workspace Layout)
+
+Nếu bạn đặt toàn bộ repo vào **một thư mục cha mang tên dự án** (khuyến nghị cho polyrepo), hãy chuẩn hóa nó thành trạm điều phối:
+
+```
+my-product/                      ← thư mục cha = tên dự án (KHÔNG cài kit ở đây)
+├── CLAUDE.md                    ← business context + bản đồ repo (tự nạp vào mọi session con)
+├── repos.json                   ← khai báo fleet cho repomix batch (path "./svc-auth"...)
+├── packs/                       ← output pack của cả fleet
+├── contracts/                   ← repo contract (nguồn sự thật API)
+├── infra/                       ← repo hạ tầng (compose/k8s)
+├── svc-auth/  svc-order/ ...    ← các service (mỗi repo có .claude/ riêng)
+└── web-app/ ...
+```
+
+### 4a. `my-product/CLAUDE.md` — tài sản lớn nhất của quy ước này
+
+Claude Code tự nạp `CLAUDE.md` từ cwd **và các thư mục tổ tiên** → file này được nạp vào MỌI session mở trong repo con, không cần setup gì thêm. Nội dung nên có:
+
+```markdown
+# My Product
+
+Một đoạn mô tả business của toàn dự án.
+
+## Bản đồ repo
+| Repo | Vai trò | Stack | Giao tiếp với |
+|------|---------|-------|---------------|
+| svc-auth | Xác thực, cấp token | Go | mọi service |
+| svc-order | Quản lý đơn hàng | Go | svc-payment, svc-auth |
+| web-app | Frontend | React | qua API gateway |
+| contracts | OpenAPI specs — NGUỒN SỰ THẬT giao tiếp | — | — |
+| infra | docker-compose / k8s | — | — |
+
+## Quy ước cross-repo
+- Mọi thay đổi API: sửa `contracts/` TRƯỚC, service implement SAU
+- Contract của service X nằm ở `contracts/<x>/openapi.yaml`
+```
+
+So với submodule: CLAUDE.md cha nhẹ hơn (không cần bump), nhưng chỉ tồn tại trên máy có đủ thư mục cha. Submodule `api/contracts/` vẫn giữ cho CI và máy chỉ clone một repo — hai cơ chế bổ trợ nhau.
+
+### 4b. Thư mục cha = trạm điều phối fleet
+
+- `repos.json` + `packs/` đặt tại đây; path trong repos.json thành `./svc-auth` (xem 2 file mẫu trong `templates/` — viết theo góc nhìn chạy từ thư mục cha)
+- Pack cả fleet (mượn script từ repo bất kỳ đã cài kit):
+  ```bash
+  cd my-product
+  python3 svc-auth/.claude/skills/repomix/scripts/repomix_batch.py -f repos.json
+  ```
+- Script nhân bản setup (3b) và vòng lặp nâng cấp kit chạy từ đây một cách tự nhiên
+
+### 4c. Hai loại session — đúng việc đúng chỗ
+
+| Mở session tại | Có gì | Dùng cho |
+|----------------|-------|----------|
+| Repo con (`my-product/svc-order`) | Đầy đủ kit: skills `/ck:`, hooks, rules | Plan / cook / fix / ship — mọi việc implement |
+| Thư mục cha (`my-product/`) | KHÔNG kit (không có `.claude/` ở đó), nhưng đọc được mọi repo con trong 1 session | Phân tích xuyên repo: consistency check, điều tra kiến trúc toàn hệ |
+
+Mở session ở thư mục cha an toàn — hooks của kit đều fail-open và git-info xử lý êm khi cwd không phải git repo. Chỉ cần nhớ: session đó không có skill `/ck:` nào.
+
+### 4d. Biến thể tùy chọn: meta-repo
+
+Muốn session tại thư mục cha CÓ kit? Biến nó thành meta-repo:
+
+```bash
+cd my-product
+git init
+printf '%s\n' 'svc-*/' 'web-app/' 'contracts/' 'infra/' 'packs/' >> .gitignore
+ck init --kit engineer
+```
+
+Khi đó CLAUDE.md, repos.json được version-control, hooks/skills hoạt động ở tầng cha. Đổi lại: quản lý thêm một "repo", và nên thêm pattern các repo con vào `.claude/.ckignore` nếu không muốn scout của session cha tự quét sâu vào từng service.
+
+**Lưu ý:** đừng cài kit vào thư mục cha khi nó KHÔNG phải git repo — các tính năng giả định git root (simplify-gate, plan branch resolution, worktree) sẽ bất hoạt; kit được thiết kế per-repo.
+
+---
+
 ## Checklist Tóm Tắt
 
 **Một dự án:** `ck init --kit engineer` → `install.sh` (nếu cần) → khai báo `project.type` + `locale` trong `.ck.json` → `.env`/`.mcp.json` → `.ckignore` theo stack → `/ck:docs init` → tùy biến rules → `/ck:harness audit`.
@@ -276,3 +353,5 @@ Không có debug 1-lệnh xuyên repo. Cách làm: mở session ở service nghi
 **Nhiều repo chung business:** chuẩn hóa rules + defaults ở kit nguồn (HUB) → cài kit vào từng repo, chỉ tinh chỉnh type/ckignore/code-standards (SPOKE) → business docs chung trong repo riêng, nhúng submodule `docs/business/` → keys chung ở `~/.claude/.env` → cross-repo bằng repomix batch + `/ck:xia` + mỗi repo một session.
 
 **Microservice nhiều repo backend:** chuẩn hóa logging/error/tracing ở HUB → setup golden service rồi nhân bản `.ck.json`/`.ckignore` bằng vòng lặp shell → contracts repo nhúng submodule `api/contracts/` vào mọi service, mọi thay đổi API đi contract-first → service mới sinh từ golden service + `/ck:xia` → giữ nhất quán fleet bằng repomix batch + session so sánh consistency → infra repo dựng cả hệ cho integration test.
+
+**Thư mục cha workspace:** đặt mọi repo dưới `my-product/` → viết `my-product/CLAUDE.md` (business + bản đồ repo — tự nạp vào mọi session con) → `repos.json` + `packs/` ở thư mục cha → implement trong session tại repo con (có kit), phân tích xuyên repo trong session tại thư mục cha (không kit) → cần kit ở tầng cha thì dùng biến thể meta-repo.
