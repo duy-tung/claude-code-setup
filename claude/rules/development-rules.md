@@ -45,6 +45,17 @@
 - Handle edge cases and error scenarios
 - **DO NOT** create new enhanced files, update to the existing files directly.
 
+## Cross-Service Conventions (Polyrepo Fleet)
+
+Apply these when this project is one service among several repos sharing a business (microservice fleet). Skip for standalone projects.
+
+- **Contract-first**: Any change to an inter-service API starts in the contracts repo (OpenAPI/proto); implement in the service only after the contract is updated. Never invent or drift from a contract inside a service.
+- **Structured logging**: JSON logs with a propagated correlation id (`X-Request-Id` or the fleet's equivalent) on every inter-service call; include it in error reports and diagnostics.
+- **Consistent error envelope**: All services return errors in the same shape (code, message, details). Reuse the fleet's existing envelope — do not invent a new one per service.
+- **Resilience defaults**: Every outbound inter-service call sets an explicit timeout and bounded retry with backoff; no unbounded retries.
+- **Health endpoints**: Each service exposes liveness/readiness endpoints consistent with the rest of the fleet.
+- **Mirror the golden service**: When in doubt about structure, middleware, or conventions, copy the fleet's reference ("golden") service instead of introducing a new pattern.
+
 ## Visual Aids
 - Use `/ck:preview --explain` when explaining unfamiliar code patterns or complex logic
 - Use `/ck:preview --diagram` for architecture diagrams and data flow visualization
