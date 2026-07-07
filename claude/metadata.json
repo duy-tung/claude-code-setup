@@ -201,7 +201,10 @@
     "skills/plans-kanban/scripts/lib/plan-scanner.cjs",
     "skills/plans-kanban/scripts/lib/plan-parser.cjs",
     "skills/plans-kanban/scripts/lib/plan-metadata-extractor.cjs",
-    "session-state/.gitkeep"
+    "session-state/.gitkeep",
+    "skills/_shared/lib/plan-table-parser.cjs",
+    "skills/_shared/lib/__tests__/plan-table-parser.test.cjs",
+    "skills/_shared/tests/plan-table-parser.test.cjs"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",

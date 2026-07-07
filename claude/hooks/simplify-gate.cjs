@@ -156,13 +156,16 @@ function emitHard(message) {
 
 function main() {
   if (process.env.CK_SIMPLIFY_DISABLED === '1') process.exit(0);
-  if (!isHookEnabled('simplify-gate')) process.exit(0);
 
   const payload = readPayload();
   const prompt = String(payload.prompt || payload.user_prompt || '').trim();
   if (!prompt) process.exit(0);
 
+  // Resolve both the enable check and the gate settings against the payload
+  // cwd so they read the same local .ck.json.
   const cwd = payload.cwd || process.cwd();
+  if (!isHookEnabled('simplify-gate', cwd)) process.exit(0);
+
   const config = loadConfig(cwd);
   if (config.gate.enabled === false) process.exit(0);
 

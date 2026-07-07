@@ -115,34 +115,28 @@ Command behavior is implemented via skill directories:
 **Security**: ck-security
 **Skill Development**: skill-creator, ck-harness
 **Testing & QA**: test
-**Workflow Tools**: cook, ck-loop, fix, preview, xia, bootstrap
+**Workflow Tools**: cook, ck-loop, preview, xia, bootstrap
 
-### 4. Automated Release Management
+### 4. Release Management (manual, post-lean-refactor)
 
 **Features**:
-- Semantic versioning (MAJOR.MINOR.PATCH)
-- Conventional commit enforcement
-- Automated changelog generation
-- GitHub releases with assets
-- Optional NPM publishing
-- Git hooks for commit validation
+- Semantic versioning (MAJOR.MINOR.PATCH) maintained by hand in `package.json` and `claude/metadata.json`
+- Conventional commits as a convention (the `/ck:git` skill writes them; nothing enforces them)
+- `metadata.json` `deletions[]` contract so the CLI installer removes retired files on user upgrade
+- No CI, automated changelog, GitHub release automation, or NPM publishing — all removed in the lean refactor
 
-**Commit Types**:
+**Commit Types** (convention for choosing the manual version bump):
 - `feat:` → Minor version bump
 - `fix:` → Patch version bump
 - `BREAKING CHANGE:` → Major version bump
-- `docs:`, `refactor:`, `test:`, `ci:` → Patch bump
+- `docs:`, `refactor:`, `test:` → Patch bump
 
-### 5. Development Workflow Automation
+### 5. Local Quality Gates
 
-**Pre-Commit**:
-- Commit message linting (conventional commits)
-- Optional test execution
-
-**Pre-Push**:
-- Linting validation
-- Test suite execution
-- Build verification
+No git hooks or CI enforce these — contributors run them manually before committing (see `claude/rules/quality-gates.md`):
+- `python3 claude/scripts/validate-skill-frontmatter.py`
+- `python3 claude/scripts/validate-skill-crossrefs.py claude/skills/`
+- `npm test` and `python3 eval/tier0_static.py`
 
 ## Technical Requirements
 
@@ -154,11 +148,11 @@ Command behavior is implemented via skill directories:
 - Maintain context across agent handoffs
 - Track agent task completion
 
-**FR2: Command System**
-- Parse slash commands with arguments
-- Route to appropriate agent workflows
-- Support nested commands (e.g., `/ck:fix:ci`)
-- Provide command discovery and help
+**FR2: Skill Routing System**
+- Parse `/ck:` skill invocations with arguments
+- Route to appropriate agent workflows via the domain/workflow routing rules
+- Namespaced flat skill names (e.g., `/ck:fix` — nested command paths were retired in the v2.17 migration)
+- Provide skill discovery via `/ck:find-skills` and the routing rules
 
 **FR3: Documentation Management**
 - Auto-generate codebase summaries with repomix
@@ -285,19 +279,17 @@ Command behavior is implemented via skill directories:
 - Type checking and linting
 - Security scanning
 
-**6. Release System**
-- Semantic versioning engine
-- Changelog generation
-- GitHub release creation
-- Asset packaging
+**6. Release/Upgrade System**
+- Manual semantic versioning (`package.json` + `claude/metadata.json`)
+- `metadata.deletions[]` upgrade contract consumed by the CLI installer
+- Catalog regeneration via `claude/scripts/scan_skills.py`
 
 ### Technology Stack
 
 **Runtime**:
 - Node.js >= 18.0.0
-- Bash scripting (Unix hooks)
-- PowerShell scripting (Windows hooks)
-- Cross-platform hook dispatcher (Node.js)
+- All hooks are cross-platform Node.js (`.cjs`) — no Bash/PowerShell hook scripts
+- Python 3 for skill/validation scripts (`claude/scripts/`, document skills)
 
 **AI Platforms**:
 - Anthropic Claude (Opus / Sonnet / Haiku) — all subagents
@@ -311,17 +303,13 @@ Command behavior is implemented via skill directories:
 
 ### Integration Points
 
-**MCP Tools**:
+**MCP Tools** (none wired by default; optional examples in `claude/.mcp.json.example`):
 - **context7**: Read latest documentation
-- **sequential-thinking**: Structured problem solving
-- **SearchAPI**: Google and YouTube search
-- **review-website**: Web content extraction
-- **VidCap**: Video transcript analysis
+- **human-mcp**: Vision/multimodal analysis via Gemini
+- **chrome-devtools**: Browser debugging integration
 
 **External Services**:
-- GitHub (Actions, Releases, PRs)
-- Discord (notifications)
-- NPM (optional package publishing)
+- GitHub (Issues and PRs)
 
 ## Use Cases
 

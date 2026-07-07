@@ -570,14 +570,17 @@ function sanitizeConfig(config, projectRoot) {
  * @param {boolean} options.includeProject - Include project section (default: true)
  * @param {boolean} options.includeAssertions - Include assertions (default: true)
  * @param {boolean} options.includeLocale - Include locale section (default: true)
+ * @param {string} options.cwd - Base dir for the local config (default: process.cwd()).
+ *   Hooks should pass the payload cwd so the local .ck.json is resolved against
+ *   the session's project, not the hook process's working directory.
  */
 function loadConfig(options = {}) {
-  const { includeProject = true, includeAssertions = true, includeLocale = true } = options;
-  const projectRoot = process.cwd();
+  const { includeProject = true, includeAssertions = true, includeLocale = true, cwd = process.cwd() } = options;
+  const projectRoot = cwd;
 
   // Load configs from both locations
   const globalConfig = loadConfigFromPath(GLOBAL_CONFIG_PATH);
-  const localConfig = loadConfigFromPath(LOCAL_CONFIG_PATH);
+  const localConfig = loadConfigFromPath(path.resolve(cwd, LOCAL_CONFIG_PATH));
 
   // No config files found - use defaults
   if (!globalConfig && !localConfig) {
@@ -893,10 +896,12 @@ function extractTaskListId(resolved) {
  * Returns true if hook is not defined (default enabled)
  *
  * @param {string} hookName - Hook name (script basename without .cjs)
+ * @param {string} [cwd] - Base dir for the local config; pass the hook payload
+ *   cwd so the enable check reads the same .ck.json as the hook's own settings
  * @returns {boolean} Whether hook is enabled
  */
-function isHookEnabled(hookName) {
-  const config = loadConfig({ includeProject: false, includeAssertions: false, includeLocale: false });
+function isHookEnabled(hookName, cwd) {
+  const config = loadConfig({ includeProject: false, includeAssertions: false, includeLocale: false, cwd });
   const hooks = config.hooks || {};
   // Return true if undefined (default enabled), otherwise return the boolean value
   return hooks[hookName] !== false;

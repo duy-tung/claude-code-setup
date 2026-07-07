@@ -75,8 +75,15 @@ User wants to...
 └── Create / edit / extract from .xlsx (spreadsheets) → /ck:xlsx
 ```
 
+## Output Style
+
+```
+User wants to...
+└── Match explanation depth / code complexity to their experience (0-5) → /ck:coding-level
+```
+
 ## Usage Notes
 
 - Pick ONE skill per distinct user intent
 - Domain skills combine with core workflow: `/ck:plan` → domain skill → `/ck:cook`
-- Skills not listed here are either core workflow skills (see `skill-workflow-routing.md`) or utility skills activated on demand (e.g. `/ck:ask`, `/ck:coding-level`, `/ck:preview`, `/ck:sequential-thinking`)
+- Skills not listed here are either core workflow skills (see `skill-workflow-routing.md`) or utility skills activated on demand (e.g. `/ck:ask`, `/ck:preview`, `/ck:sequential-thinking`)

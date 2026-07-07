@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-const { afterEach, beforeEach, describe, it } = require('node:test');
+const { beforeEach, describe, it } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-const LOG_FILE = path.join(__dirname, '..', '.logs', 'hook-log.jsonl');
+// Isolate the log in a temp dir: other test files spawn hooks that append to
+// the shared .logs/ file, which raced with this file's assertions.
+process.env.CK_HOOK_LOG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-logger-test-'));
+const LOG_FILE = path.join(process.env.CK_HOOK_LOG_DIR, 'hook-log.jsonl');
 const { createHookTimer, logHook, logHookCrash } = require('../lib/hook-logger.cjs');
-
-let originalExists = false;
-let originalContent = '';
 
 function readEntries() {
   if (!fs.existsSync(LOG_FILE)) return [];
@@ -20,18 +21,7 @@ function readEntries() {
 }
 
 beforeEach(() => {
-  originalExists = fs.existsSync(LOG_FILE);
-  originalContent = originalExists ? fs.readFileSync(LOG_FILE, 'utf8') : '';
-  fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
   fs.writeFileSync(LOG_FILE, '', 'utf8');
-});
-
-afterEach(() => {
-  if (originalExists) {
-    fs.writeFileSync(LOG_FILE, originalContent, 'utf8');
-  } else if (fs.existsSync(LOG_FILE)) {
-    fs.unlinkSync(LOG_FILE);
-  }
 });
 
 describe('hook-logger', () => {

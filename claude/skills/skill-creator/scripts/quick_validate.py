@@ -26,21 +26,22 @@ def validate_skill(skill_path):
     if not content.startswith('---'):
         return False, "No YAML frontmatter found"
     
-    # Extract frontmatter
-    match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+    # Extract frontmatter (delimiters tolerate trailing spaces/CRLF, matching
+    # the repo validators in claude/scripts/)
+    match = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
     if not match:
         return False, "Invalid frontmatter format"
-    
+
     frontmatter = match.group(1)
-    
-    # Check required fields
-    if 'name:' not in frontmatter:
+
+    # Check required fields (top-level keys only, not e.g. metadata.author name:)
+    if not re.search(r'^name:', frontmatter, re.MULTILINE):
         return False, "Missing 'name' in frontmatter"
-    if 'description:' not in frontmatter:
+    if not re.search(r'^description:', frontmatter, re.MULTILINE):
         return False, "Missing 'description' in frontmatter"
-    
+
     # Extract name for validation
-    name_match = re.search(r'name:\s*(.+)', frontmatter)
+    name_match = re.search(r'^name:\s*(.+)$', frontmatter, re.MULTILINE)
     if name_match:
         name = name_match.group(1).strip().strip('"').strip("'")
 
@@ -82,7 +83,7 @@ def validate_skill(skill_path):
             return False, f"Namespace '{namespace}' exceeds 64 characters ({len(namespace)})"
 
     # Extract and validate description
-    desc_match = re.search(r'description:\s*(.+)', frontmatter)
+    desc_match = re.search(r'^description:\s*(.+)$', frontmatter, re.MULTILINE)
     if desc_match:
         description = desc_match.group(1).strip().strip('"').strip("'")
 

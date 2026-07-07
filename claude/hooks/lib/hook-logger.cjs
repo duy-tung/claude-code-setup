@@ -11,7 +11,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOG_DIR = path.join(__dirname, '..', '.logs');
+// CK_HOOK_LOG_DIR overrides the log location (tests point it at a temp dir
+// so parallel test files don't contend on the shared .logs/ file).
+const LOG_DIR = process.env.CK_HOOK_LOG_DIR || path.join(__dirname, '..', '.logs');
 const LOG_FILE = path.join(LOG_DIR, 'hook-log.jsonl');
 const LOCK_FILE = path.join(LOG_DIR, 'hook-log.lock');
 const MAX_LINES = 1000;

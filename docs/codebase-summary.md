@@ -14,15 +14,14 @@ ClaudeKit Engineer is a comprehensive boilerplate template for building professi
 claudekit-engineer/
 ├── .claude/               # Claude Code configuration
 │   ├── agents/           # Specialized agent definitions (11 agents)
-│   ├── hooks/            # Git hooks and scripts
+│   ├── hooks/            # Claude Code lifecycle hooks (.cjs)
 │   ├── skills/           # Specialized skills library (40 skills)
 │   └── rules/            # AI-facing rules and workflows
 ├── docs/                # Project documentation
 │   └── research/        # Research reports directory
 ├── guide/               # User guides and references
 ├── plans/               # Implementation plans and reports
-│   ├── reports/         # Agent-to-agent communication
-│   └── templates/       # Plan templates
+│   └── templates/       # Plan templates (reports/ is created on demand)
 ├── README.md           # Project overview
 ├── package.json        # Node.js dependencies
 └── repomix-output.xml  # Codebase compaction file (generated on demand by `npx repomix`)
@@ -129,7 +128,7 @@ claudekit-engineer/
 - Crash Fail-Open: unexpected hook crashes exit 0 for graceful degradation
 - Policy Blocks: configured gates may intentionally return exit code 2
 - Performance: Optimized token consumption
-- Cross-Platform: Windows (PowerShell) & Unix (Bash) via Node.js dispatcher
+- Cross-Platform: single Node.js (`.cjs`) hook set runs identically on Windows & Unix
 - Comprehensive Test Coverage: scout-block and workflow-artifact-gate validated via Node.js test suite
 
 ### 5. Workflows

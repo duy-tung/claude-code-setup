@@ -398,8 +398,8 @@ Per-release history lives in git tags and commit messages (the standalone `CHANG
 
 #### Current Metrics (approximate)
 - 40 shipped skills under `claude/skills/` (40 `SKILL.md` files: 36 top-level + 4 document sub-skills)
-- Active hooks: 4 wired by default (~20 available in the kit, opt-in)
-- 5 MCP integrations (context7, memory, human-mcp, chrome-devtools, sequential-thinking)
+- Active hooks: 11 wired by default in `claude/settings.json` (16 hook entry points ship in the kit; the other 5 are documented opt-ins)
+- MCP servers: none wired by default; `claude/.mcp.json.example` carries optional examples (context7, human-mcp, chrome-devtools)
 
 ---
 

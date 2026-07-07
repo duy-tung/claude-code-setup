@@ -372,7 +372,7 @@ maps each event to the hooks it fires):
 |-------|------------------|
 | `SessionStart` | `session-init`, `usage-quota-cache-refresh` |
 | `SubagentStart` | `subagent-init` |
-| `UserPromptSubmit` | `dev-rules-reminder`, `simplify-gate`, `usage-quota-cache-refresh` |
+| `UserPromptSubmit` | `simplify-gate`, `dev-rules-reminder`, `usage-quota-cache-refresh` |
 | `PreToolUse` | `descriptive-name` (Write); `scout-block` + `privacy-block` (Bash\|Glob\|Grep\|Read\|Edit\|Write) |
 | `PostToolUse` | `plan-format-kanban`, `session-state`, `usage-quota-cache-refresh` |
 | `Stop` | `session-state` |
@@ -385,7 +385,7 @@ this default set — they fire only when added to `settings.json` explicitly.
 - Crash Fail-Open: unexpected hook crashes exit 0 for graceful degradation
 - Policy Blocks: configured gates such as scout-block and workflow-artifact-gate may exit 2 intentionally
 - Performance: Optimized token consumption
-- Cross-Platform: Windows (PowerShell) & Unix (Bash) support
+- Cross-Platform: single Node.js (`.cjs`) hook set runs identically on Windows & Unix
 - Context Cascade: Environment variables flow from session to agents
 - Smart Dedup: Prevent redundant context injection
 - Comprehensive Testing: Cross-platform test coverage
@@ -415,7 +415,7 @@ this default set — they fire only when added to `settings.json` explicitly.
 └── templates/        # architecture.html, data-table.html, mermaid-flowchart.html, slide-deck.html
 ```
 
-**Plans dashboard** — the interactive plan / kanban dashboard is no longer bundled as a preview HTTP server. It now lives in the external **claudekit CLI** (`ck config ui`, launched by `claude/skills/plans-kanban/scripts/open-dashboard.cjs`) and is invoked on demand through the `ck:plans-kanban` skill. Plan discovery and table parsing for that dashboard are shared via `claude/skills/_shared/lib/plan-table-parser.cjs`.
+**Plans dashboard** — the interactive plan / kanban dashboard is no longer bundled as a preview HTTP server. It now lives in the external **claudekit CLI** (`ck config ui`, launched by `claude/skills/plans-kanban/scripts/open-dashboard.cjs`) and is invoked on demand through the `ck:plans-kanban` skill. Plan discovery and table parsing for that dashboard are implemented inside the CLI itself (`src/domains/plan-parser/`); the kit no longer ships a parser copy.
 
 #### 6.4 External Service Integration
 
