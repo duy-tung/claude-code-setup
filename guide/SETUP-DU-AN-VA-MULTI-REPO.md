@@ -380,6 +380,126 @@ project_name/
 
 ---
 
+## Phần 5 — Walkthrough Từng Bước (cấu trúc service A/B/C + docs)
+
+Trình tự đầy đủ từ số 0 cho cấu trúc ở mục 4e. Mỗi giai đoạn có mục "kiểm tra" — đạt rồi mới sang giai đoạn sau.
+
+### GĐ 0 — Một lần cho máy dev
+
+```bash
+npm install -g claudekit-cli          # cần Node 18+, Git
+mkdir -p ~/.claude
+cat > ~/.claude/.env <<'EOF'
+GEMINI_API_KEY=...
+CONTEXT7_API_KEY=...
+EOF
+```
+
+*Kiểm tra:* `ck --version` chạy được.
+
+### GĐ 1 — Thư mục cha
+
+```bash
+mkdir project_name && cd project_name
+git clone <url-service-a> service-a
+git clone <url-service-b> service-b
+git clone <url-service-c> service-c
+git clone <url-docs> docs
+# git clone <url-proto> proto        # chỉ khi gRPC
+mkdir packs
+```
+
+Viết `project_name/CLAUDE.md` theo mẫu 4a (business + bảng bản đồ repo + quy tắc contract-first). Tạo `repos.json` từ `guide/templates/repos.microservices.example.json` (đổi tên path theo service thật, bỏ entry không có).
+
+*Kiểm tra:* mở Claude Code tại `service-a/`, hỏi "business của dự án này là gì" — trả lời được từ CLAUDE.md cha.
+
+### GĐ 2 — Golden service (service-a)
+
+```bash
+cd project_name/service-a
+ck init --kit engineer
+cd .claude/skills && ./install.sh && cd ../..   # tùy chọn — chỉ khi dùng tech-graph/pdf/repomix/office
+cp .claude/.env.example .claude/.env             # thường bỏ trống được nhờ ~/.claude/.env
+```
+
+Sửa `.claude/.ck.json`:
+```json
+{ "project": { "type": "api", "framework": "none" } }
+```
+(locale/issuePrefix đã có mặc định từ kit nguồn nếu bạn chuẩn hóa HUB.)
+
+Thêm `.ckignore` theo stack (Go: `vendor/`; Java: `target/`...). Tạo `.claude/settings.local.json`:
+```json
+{ "permissions": { "additionalDirectories": ["../docs", "../proto"] } }
+```
+
+Mở Claude Code tại `service-a/` và chạy lần lượt:
+```
+/ck:docs init          # sinh bộ docs nền từ code có sẵn
+/ck:harness audit      # chấm điểm agent-readiness, scaffold phần thiếu
+```
+
+*Kiểm tra:* `/ck:plan` một feature nhỏ → `plans/<tên>/plan.md` được tạo; statusline hiện đúng project; thử đọc `.env` thấy privacy-block chặn.
+
+### GĐ 3 — Nhân bản sang B, C
+
+```bash
+cd project_name
+for d in service-b service-c; do
+  (cd "$d" && ck init --kit engineer)
+  cp service-a/.claude/.ck.json           "$d/.claude/.ck.json"
+  cp service-a/.claude/.ckignore          "$d/.claude/.ckignore"
+  cp service-a/.claude/settings.local.json "$d/.claude/settings.local.json"
+done
+```
+
+Sau đó mở session tại từng service chạy `/ck:docs init` (docs nền là của riêng từng service, không copy được).
+
+*Kiểm tra:* diff `.claude/.ck.json` giữa 3 service — giống hệt nhau.
+
+### GĐ 4 — Repo docs (kiêm contracts, REST)
+
+```bash
+cd project_name/docs
+mkdir -p api
+touch api/service-a.openapi.yaml api/service-b.openapi.yaml api/service-c.openapi.yaml
+# tùy chọn: ck init --kit engineer  (để dùng /ck:docs khi viết tài liệu lớn)
+```
+
+Cập nhật `project_name/CLAUDE.md`: "Spec của service X ở `docs/api/service-x.openapi.yaml` — sửa spec TRƯỚC khi implement."
+
+*Kiểm tra:* từ session tại `service-a/`, yêu cầu Claude đọc `../docs/api/service-a.openapi.yaml` — không bị hỏi quyền (nhờ additionalDirectories).
+
+### GĐ 5 — Repo proto (chỉ khi gRPC)
+
+```bash
+cd project_name/proto
+ck init --kit engineer
+# .claude/.ck.json: { "project": { "type": "library" } }
+buf config init && buf lint                      # lint + breaking-change check
+```
+
+Thiết lập quy trình publish stubs thành package (Go module / npm / pip) để service bump phiên bản thay vì đọc repo proto trực tiếp. Ghi luồng này vào CLAUDE.md cha.
+
+*Kiểm tra:* `buf lint` pass; một service bump được stubs và compile.
+
+### GĐ 6 — Vận hành
+
+```bash
+cd project_name
+python3 service-a/.claude/skills/repomix/scripts/repomix_batch.py -f repos.json
+```
+
+Mở session tại `project_name/` (session phân tích, không kit), nạp các file trong `packs/` và yêu cầu so sánh consistency giữa các service.
+
+Hai luồng hằng ngày từ đây:
+- **Feature trong 1 service:** session tại service đó → `/ck:plan` → `/ck:cook` → `/ck:ship`
+- **Thay đổi API giữa service:** sửa spec/proto trước (session tại docs hoặc proto, có plan + review) → rồi mỗi service liên quan một session `/ck:cook`
+
+*Kiểm tra:* `packs/` có đủ file pack; session cha đọc được chúng.
+
+---
+
 ## Checklist Tóm Tắt
 
 **Một dự án:** `ck init --kit engineer` → `install.sh` (nếu cần) → khai báo `project.type` + `locale` trong `.ck.json` → `.env`/`.mcp.json` → `.ckignore` theo stack → `/ck:docs init` → tùy biến rules → `/ck:harness audit`.
@@ -388,4 +508,4 @@ project_name/
 
 **Microservice nhiều repo backend:** chuẩn hóa logging/error/tracing ở HUB → setup golden service rồi nhân bản `.ck.json`/`.ckignore` bằng vòng lặp shell → contracts repo nhúng submodule `api/contracts/` vào mọi service, mọi thay đổi API đi contract-first → service mới sinh từ golden service + `/ck:xia` → giữ nhất quán fleet bằng repomix batch + session so sánh consistency → infra repo dựng cả hệ cho integration test.
 
-**Thư mục cha workspace:** đặt mọi repo dưới `my-product/` → viết `my-product/CLAUDE.md` (business + bản đồ repo — tự nạp vào mọi session con) → `repos.json` + `packs/` ở thư mục cha → implement trong session tại repo con (có kit), phân tích xuyên repo trong session tại thư mục cha (không kit) → cần kit ở tầng cha thì dùng biến thể meta-repo → không có contracts repo riêng: `docs/api/` kiêm contracts (REST) hoặc repo `proto` + publish stubs (gRPC) — xem 4e.
+**Thư mục cha workspace:** đặt mọi repo dưới `my-product/` → viết `my-product/CLAUDE.md` (business + bản đồ repo — tự nạp vào mọi session con) → `repos.json` + `packs/` ở thư mục cha → implement trong session tại repo con (có kit), phân tích xuyên repo trong session tại thư mục cha (không kit) → cần kit ở tầng cha thì dùng biến thể meta-repo → không có contracts repo riêng: `docs/api/` kiêm contracts (REST) hoặc repo `proto` + publish stubs (gRPC) — xem 4e. Trình tự lệnh đầy đủ từ số 0: **Phần 5**.
