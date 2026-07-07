@@ -344,6 +344,40 @@ Khi đó CLAUDE.md, repos.json được version-control, hooks/skills hoạt đ�
 
 **Lưu ý:** đừng cài kit vào thư mục cha khi nó KHÔNG phải git repo — các tính năng giả định git root (simplify-gate, plan branch resolution, worktree) sẽ bất hoạt; kit được thiết kế per-repo.
 
+### 4e. Ví dụ thực tế: `docs` kiêm contracts (REST) và biến thể gRPC/proto
+
+Cấu trúc phổ biến — không có contracts repo riêng, đã có sẵn repo `docs`:
+
+```
+project_name/
+├── CLAUDE.md            ← THÊM: business + bản đồ repo
+├── repos.json + packs/  ← THÊM: fleet cho repomix batch
+├── service-a/           ← .claude/ riêng, .ck.json {"type":"api"}
+├── service-b/           ← nhân bản từ golden service
+├── service-c/           ← nt
+├── docs/                ← kiêm vai trò "product-docs" + contracts (REST)
+└── proto/               ← (chỉ khi gRPC) = contracts repo đúng nghĩa
+```
+
+**Repo `docs` kiêm contracts (REST):** đặt API spec tập trung tại `docs/api/<service>.openapi.yaml` — vì `docs` đã là repo chung, nó kiêm luôn nguồn sự thật giao tiếp. Contract-first giữ nguyên: **sửa spec trong `docs/api/` trước, service implement sau**. Ghi quy tắc này vào `project_name/CLAUDE.md` để mọi session đều biết.
+
+**Ba cách cho session tại service đọc `../docs` / `../proto`** (session mở tại `service-a/` có scope quyền là cây thư mục đó — đọc sang repo anh em sẽ bị hỏi quyền). Theo thứ tự ưu tiên:
+
+1. **Tinh túy → `project_name/CLAUDE.md`**: business tóm tắt, bản đồ service, quy tắc contract-first — tự nạp, không cần đọc file nào
+2. **Đọc đầy đủ thường xuyên** → thêm vào `.claude/settings.local.json` của từng service:
+   ```json
+   { "permissions": { "additionalDirectories": ["../docs", "../proto"] } }
+   ```
+3. **Submodule** — chỉ khi CI hoặc máy khác clone lẻ một service
+
+**Biến thể gRPC (`proto/`):** đây là contracts repo đúng nghĩa, chặt hơn OpenAPI vì có codegen:
+
+- Cài kit vào repo proto với `.ck.json` `{"type": "library"}` — `/ck:plan` cho thay đổi proto sẽ được phỏng vấn về breaking change trước khi codegen
+- Luồng chuẩn: sửa `.proto` (plan + review tại repo proto) → codegen stubs (khuyến nghị `buf`: lint + breaking-change check) → **publish stubs thành package** (Go module / npm / pip) → service bump phiên bản → mỗi service một session `/ck:cook`
+- Stubs được publish thành package thì service không cần đọc repo proto trực tiếp — sạch hơn submodule
+
+**Ghi chú `infra`:** chưa có repo riêng vẫn chạy được (compose nằm trong từng service). Khi cần integration test cả hệ trước khi ship, gom về một chỗ — repo riêng hoặc thư mục `project_name/infra/`.
+
 ---
 
 ## Checklist Tóm Tắt
@@ -354,4 +388,4 @@ Khi đó CLAUDE.md, repos.json được version-control, hooks/skills hoạt đ�
 
 **Microservice nhiều repo backend:** chuẩn hóa logging/error/tracing ở HUB → setup golden service rồi nhân bản `.ck.json`/`.ckignore` bằng vòng lặp shell → contracts repo nhúng submodule `api/contracts/` vào mọi service, mọi thay đổi API đi contract-first → service mới sinh từ golden service + `/ck:xia` → giữ nhất quán fleet bằng repomix batch + session so sánh consistency → infra repo dựng cả hệ cho integration test.
 
-**Thư mục cha workspace:** đặt mọi repo dưới `my-product/` → viết `my-product/CLAUDE.md` (business + bản đồ repo — tự nạp vào mọi session con) → `repos.json` + `packs/` ở thư mục cha → implement trong session tại repo con (có kit), phân tích xuyên repo trong session tại thư mục cha (không kit) → cần kit ở tầng cha thì dùng biến thể meta-repo.
+**Thư mục cha workspace:** đặt mọi repo dưới `my-product/` → viết `my-product/CLAUDE.md` (business + bản đồ repo — tự nạp vào mọi session con) → `repos.json` + `packs/` ở thư mục cha → implement trong session tại repo con (có kit), phân tích xuyên repo trong session tại thư mục cha (không kit) → cần kit ở tầng cha thì dùng biến thể meta-repo → không có contracts repo riêng: `docs/api/` kiêm contracts (REST) hoặc repo `proto` + publish stubs (gRPC) — xem 4e.
