@@ -1,10 +1,10 @@
 # Project Documentation Management
 
 ### Roadmap & Changelog Maintenance
-- **Project Roadmap** (`./docs/development-roadmap.md`): Living document tracking project phases, milestones, and progress
+- **Project Roadmap** (`./docs/project-roadmap.md`): Living document tracking project phases, milestones, and progress
 - **Project Changelog** (`./docs/project-changelog.md`): Detailed record of all significant changes, features, and fixes
-- **System Architecture** (`./docs/system-architecture.md`): Detailed record of all significant changes, features, and fixes
-- **Code Standards** (`./docs/code-standards.md`): Detailed record of all significant changes, features, and fixes
+- **System Architecture** (`./docs/system-architecture.md`): Living document describing system design, components, and data flow
+- **Code Standards** (`./docs/code-standards.md`): Living document defining coding conventions, patterns, and best practices
 
 ### Automatic Updates Required
 - **After Feature Implementation**: Update roadmap progress status and changelog entries
@@ -68,7 +68,7 @@ plans/
 - Key dependencies
 
 ##### Phase Files (phase-XX-name.md)
-Fully respect the `./docs/development-rules.md` file.
+Fully respect the `.claude/rules/development-rules.md` file.
 Each phase file should contain:
 
 **Context Links**
