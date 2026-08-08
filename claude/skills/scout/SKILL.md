@@ -66,7 +66,7 @@ Load appropriate reference based on decision tree:
 **Notes:**
 - `TaskUpdate` each task to `in_progress` before spawning its agent (skip if Task tools unavailable)
 - Prompt detailed instructions for each subagent with exact directories or files it should read
-- Remember that each subagent has less than 200K tokens of context window
+- Scope each subagent's prompt to what the subtask needs — not because context is scarce, but because a focused prompt gets a focused answer
 - Amount of subagents to-be-spawned depends on the current system resources available and amount of files to be scanned
 - Each subagent must return a detailed summary report to a main agent
 

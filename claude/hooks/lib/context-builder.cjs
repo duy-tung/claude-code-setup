@@ -427,8 +427,8 @@ function buildSessionSection(staticEnv = {}) {
     `- Locale: ${staticEnv.locale || process.env.LANG || ''}`,
     `- Memory usage: ${memUsed}MB/${memTotal}MB (${memPercent}%)`,
     `- CPU usage: ${cpuUsage}% user / ${cpuSystem}% system`,
-    `- Delegate independent subtasks to parallel subagents when that speeds up the work, and keep working while they run; keep each delegation scoped to the current request.`,
-    `- Remember that each subagent only has 200K tokens in context window; keep prompts scoped. Advisory subagents report findings and do not mutate plan/code unless explicitly tasked.`,
+    `- Delegate a subtask to a subagent when it is genuinely independent and parallelizable, or needs its own context budget; do work you can finish in a handful of tool calls yourself. When you do delegate, keep working while they run, and keep each delegation scoped to the current request.`,
+    `- Brief each subagent precisely the first time rather than launching, waiting, and re-briefing. Advisory subagents report findings and do not mutate plan/code unless explicitly tasked.`,
     `- IMPORTANT: Include these environment information when prompting subagents to perform tasks.`,
     ``
   ];

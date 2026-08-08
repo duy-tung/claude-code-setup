@@ -28,7 +28,7 @@ Best for tasks where parallel exploration adds real value:
 | | Subagents | Agent Teams |
 |---|---|---|
 | **Tool** | `Agent` (formerly `Task`) | `Agent` + `TeamCreate`/`TaskCreate`/`SendMessage` |
-| **Context** | Own 200K-token window; results return to caller | Own full Claude Code instance + context |
+| **Context** | Own context window sized by the session model; results return to caller | Own full Claude Code instance + context |
 | **Communication** | Report back to parent only | Message each other directly via SendMessage |
 | **Coordination** | Parent manages all work | Shared task list, self-coordination |
 | **Isolation** | Optional `isolation: "worktree"` | Each teammate = separate session |
