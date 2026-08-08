@@ -49,12 +49,25 @@ Predictable degradation as context grows. Not binary - a continuum.
 
 ## Model Degradation Thresholds
 
+Third-party estimates for older model generations. Treat as rough priors, not measurements — no vendor publishes a "degradation onset" figure, and the numbers below predate the current releases.
+
 | Model | Degradation Onset | Severe Degradation |
 |-------|-------------------|-------------------|
 | GPT-5.2 | ~64K tokens | ~200K tokens |
 | Claude Opus 4.5 | ~100K tokens | ~180K tokens |
 | Claude Sonnet 4.5 | ~80K tokens | ~150K tokens |
 | Gemini 3 Pro | ~500K tokens | ~800K tokens |
+
+**Claude Opus 5: no published figure.** Its context window is 1M by default (no smaller variant), which sets the ceiling but says nothing about where quality starts to slide. Do not carry a 4.x row over to it — and do not read the larger window as a larger usable budget.
+
+Degradation onset is workload-dependent (retrieval depth, tool-output volume, how much of the context is stale), so a single number would not transfer between projects anyway. Measure it instead:
+
+1. Pick a task in this repo with a checkable outcome (a test that passes, a known answer).
+2. Run it at rising context sizes — pad with real project material, not filler.
+3. Record where accuracy first drops and where it falls off. Those two points are this project's thresholds.
+4. Set the compaction and isolation triggers below off the measured onset, not off the table.
+
+Until measured, use the **Detection Heuristics** further down — they react to observed symptoms rather than to an assumed token count.
 
 ## Four-Bucket Mitigation
 
