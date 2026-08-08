@@ -24,6 +24,21 @@ const {
   getSessionTempPath
 } = require('../ck-config-utils.cjs');
 
+/**
+ * Create a temp dir and return its canonical path.
+ *
+ * On macOS `os.tmpdir()` yields `/var/folders/...`, but `/var` is a symlink to
+ * `/private/var`. `getGitRoot()` shells out to `git rev-parse --show-toplevel`,
+ * which always reports the canonical path — so a temp dir built straight from
+ * `os.tmpdir()` never compares equal to the value under test. Resolve at creation
+ * time and every downstream path derived from it is canonical too.
+ */
+function makeTempDir(name) {
+  const dir = path.join(os.tmpdir(), name);
+  fs.mkdirSync(dir, { recursive: true });
+  return fs.realpathSync(dir);
+}
+
 let passed = 0;
 let failed = 0;
 
@@ -418,8 +433,7 @@ test('getGitBranch returns null or empty in detached HEAD state', () => {
 });
 
 test('getGitRoot works in detached HEAD state', () => {
-  const tempDir = path.join(os.tmpdir(), 'ck-test-detached-root-' + Date.now());
-  fs.mkdirSync(tempDir, { recursive: true });
+  const tempDir = makeTempDir('ck-test-detached-root-' + Date.now());
   try {
     execSync('git init -q', { cwd: tempDir });
     execSync('git config user.email "test@test.com"', { cwd: tempDir });
@@ -475,7 +489,7 @@ test('getGitBranch returns null for bare repository (no HEAD ref)', () => {
 console.log('\n=== Nested git repos tests ===\n');
 
 test('getGitRoot returns innermost repo for nested git repos', () => {
-  const outerDir = path.join(os.tmpdir(), 'ck-test-nested-outer-' + Date.now());
+  const outerDir = makeTempDir('ck-test-nested-outer-' + Date.now());
   const innerDir = path.join(outerDir, 'inner');
   fs.mkdirSync(innerDir, { recursive: true });
   try {
@@ -498,7 +512,7 @@ test('getGitRoot returns innermost repo for nested git repos', () => {
 });
 
 test('getGitRoot from nested subdir returns correct root', () => {
-  const outerDir = path.join(os.tmpdir(), 'ck-test-nested-sub-' + Date.now());
+  const outerDir = makeTempDir('ck-test-nested-sub-' + Date.now());
   const innerDir = path.join(outerDir, 'inner');
   const deepDir = path.join(innerDir, 'deep', 'subdir');
   fs.mkdirSync(deepDir, { recursive: true });
@@ -565,9 +579,10 @@ test('getGitRoot with symlinked subdirectory', () => {
 console.log('\n=== Git worktree tests ===\n');
 
 test('getGitRoot works with git worktree', () => {
-  const mainDir = path.join(os.tmpdir(), 'ck-test-wt-main-' + Date.now());
+  const mainDir = makeTempDir('ck-test-wt-main-' + Date.now());
+  // Not makeTempDir: `git worktree add` creates this directory itself, so it is
+  // canonicalized after the fact rather than at creation.
   const worktreeDir = path.join(os.tmpdir(), 'ck-test-wt-tree-' + Date.now());
-  fs.mkdirSync(mainDir, { recursive: true });
   try {
     // Create main repo with a commit
     execSync('git init -q', { cwd: mainDir });
@@ -582,7 +597,7 @@ test('getGitRoot works with git worktree', () => {
 
     // getGitRoot from worktree should return worktree path
     const result = getGitRoot(worktreeDir);
-    assertEquals(result, worktreeDir);
+    assertEquals(result, fs.realpathSync(worktreeDir));
 
     // Cleanup worktree
     execSync(`git worktree remove -f "${worktreeDir}"`, { cwd: mainDir });
@@ -595,8 +610,7 @@ test('getGitRoot works with git worktree', () => {
 console.log('\n=== Unicode path tests ===\n');
 
 test('getGitRoot works with unicode characters in path', () => {
-  const tempDir = path.join(os.tmpdir(), 'ck-test-日本語-émoji-🔥-' + Date.now());
-  fs.mkdirSync(tempDir, { recursive: true });
+  const tempDir = makeTempDir('ck-test-日本語-émoji-🔥-' + Date.now());
   try {
     execSync('git init -q', { cwd: tempDir });
 
@@ -632,8 +646,7 @@ console.log('\n=== Special character path tests ===\n');
 
 test('getGitRoot works with special shell characters in path', () => {
   // Test paths with characters that need escaping in shell
-  const tempDir = path.join(os.tmpdir(), "ck-test-special-$var-'quote'-" + Date.now());
-  fs.mkdirSync(tempDir, { recursive: true });
+  const tempDir = makeTempDir("ck-test-special-$var-'quote'-" + Date.now());
   try {
     execSync('git init -q', { cwd: tempDir });
 
@@ -647,8 +660,7 @@ test('getGitRoot works with special shell characters in path', () => {
 console.log('\n=== Empty/new git repo tests ===\n');
 
 test('getGitRoot works on new repo with no commits', () => {
-  const tempDir = path.join(os.tmpdir(), 'ck-test-empty-repo-' + Date.now());
-  fs.mkdirSync(tempDir, { recursive: true });
+  const tempDir = makeTempDir('ck-test-empty-repo-' + Date.now());
   try {
     execSync('git init -q', { cwd: tempDir });
 
