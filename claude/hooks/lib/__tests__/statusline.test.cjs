@@ -352,6 +352,21 @@ const sampleTranscriptData = [
     }
   },
   {
+    // 'Agent' is the current name for the tool 'Task' above (renamed in 2.1.63).
+    // Both appear here so the parser is covered for new and legacy transcripts.
+    timestamp: '2026-01-06T12:03:30Z',
+    message: {
+      content: [
+        {
+          type: 'tool_use',
+          id: 'agent-2',
+          name: 'Agent',
+          input: { subagent_type: 'code-reviewer', model: 'claude-opus', description: 'Review diff' }
+        }
+      ]
+    }
+  },
+  {
     timestamp: '2026-01-06T12:04:00Z',
     message: {
       content: [
@@ -412,6 +427,15 @@ test('parseTranscript tracks agents correctly', async () => {
   const agent = result.agents[0];
   assertEquals(agent.type, 'researcher', 'Should capture agent type');
   assertEquals(agent.model, 'claude-opus', 'Should capture agent model');
+});
+
+test('parseTranscript tracks both Agent and legacy Task spawns', async () => {
+  const result = await parseTranscript(tmpTranscript);
+  const legacy = result.agents.find(a => a.id === 'agent-1');
+  const current = result.agents.find(a => a.id === 'agent-2');
+  assertTrue(Boolean(legacy), 'Should track a legacy Task spawn');
+  assertTrue(Boolean(current), 'Should track a current Agent spawn');
+  assertEquals(current.type, 'code-reviewer', 'Should capture Agent subagent_type');
 });
 
 test('parseTranscript tracks todos correctly', async () => {

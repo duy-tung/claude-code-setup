@@ -184,6 +184,42 @@ describe('session-state.cjs', () => {
     assert.strictEqual(sessionState.statusline.agents[0].status, 'completed', 'Should refresh the cached agent status without a direct transcript_path');
   });
 
+  it('refreshes the statusline snapshot for the current Agent tool name', async () => {
+    // 'Task' was renamed to 'Agent' in Claude Code 2.1.63; PostToolUse now delivers
+    // tool_name: 'Agent'. The sibling case above covers the legacy name.
+    const sessionId = `session-state-agent-tool-${Date.now()}`;
+    const transcriptPath = track(path.join(os.tmpdir(), `${sessionId}.jsonl`));
+    const sessionPath = track(path.join(os.tmpdir(), `ck-session-${sessionId}.json`));
+    const startTs = new Date(Date.now() - 100000).toISOString();
+
+    fs.writeFileSync(transcriptPath, JSON.stringify({
+      timestamp: startTs,
+      message: {
+        content: [{
+          type: 'tool_use',
+          id: 'agent-1',
+          name: 'Agent',
+          input: { subagent_type: 'researcher', description: 'Research startup regressions' }
+        }]
+      }
+    }) + '\n');
+
+    fs.writeFileSync(sessionPath, JSON.stringify({ statusline: { sessionStart: startTs, updatedAt: startTs, warmed: false, agents: [], todos: [] } }, null, 2));
+
+    const result = await runHook({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Agent',
+      session_id: sessionId,
+      cwd: process.cwd(),
+      transcript_path: transcriptPath
+    });
+
+    assert.strictEqual(result.exitCode, 0, 'Hook should exit with code 0');
+    const sessionState = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
+    assert.strictEqual(sessionState.statusline.agents.length, 1, 'Should record the Agent spawn in the snapshot');
+    assert.strictEqual(sessionState.statusline.agents[0].type, 'researcher', 'Should capture the subagent type');
+  });
+
   it('marks the matching agent completed on SubagentStop even without any transcript path', async () => {
     const sessionId = `session-state-stop-${Date.now()}`;
     const sessionPath = track(path.join(os.tmpdir(), `ck-session-${sessionId}.json`));

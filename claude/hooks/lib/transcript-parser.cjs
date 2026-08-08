@@ -9,6 +9,11 @@
 const fs = require('fs');
 const readline = require('readline');
 
+// Tool names that indicate a subagent spawn. 'Task' is the pre-2.1.63 name for
+// the Agent tool; transcripts already on disk still contain it, and parseTranscript
+// reads a session's full history, so both names must be recognized.
+const AGENT_SPAWN_TOOLS = new Set(['Agent', 'Task']);
+
 function isNativeTaskTodo(todo) {
   return Boolean(todo && todo._source === 'native_task');
 }
@@ -154,7 +159,7 @@ function processEntry(entry, toolMap, agentMap, latestTodos, result) {
   for (const block of content) {
     // Handle tool_use blocks
     if (block.type === 'tool_use' && block.id && block.name) {
-      if (block.name === 'Task') {
+      if (AGENT_SPAWN_TOOLS.has(block.name)) {
         result.statuslineActivityCount += 1;
         hadActivity = true;
         // Agent spawn
