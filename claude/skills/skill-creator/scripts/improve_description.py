@@ -114,9 +114,12 @@ Please respond with only the new description text in <new_description> tags, not
     response = client.messages.create(
         model=model,
         max_tokens=16000,
+        # Adaptive thinking replaces the removed budget_tokens form, which returns
+        # a 400 on Opus 5. display="summarized" keeps the transcript log below
+        # populated; the default ("omitted") would leave block.thinking empty.
         thinking={
-            "type": "enabled",
-            "budget_tokens": 10000,
+            "type": "adaptive",
+            "display": "summarized",
         },
         messages=[{"role": "user", "content": prompt}],
     )
@@ -152,8 +155,8 @@ Please respond with only the new description text in <new_description> tags, not
             model=model,
             max_tokens=16000,
             thinking={
-                "type": "enabled",
-                "budget_tokens": 10000,
+                "type": "adaptive",
+                "display": "summarized",
             },
             messages=[
                 {"role": "user", "content": prompt},
