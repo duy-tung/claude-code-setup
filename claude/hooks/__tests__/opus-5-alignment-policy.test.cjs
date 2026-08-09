@@ -27,6 +27,21 @@ function markdownFiles(relativeDir) {
   return files;
 }
 
+// Hook sources inject text into every session and every subagent, so they carry
+// the same prompt-policy weight as the Markdown rules. Test files are excluded:
+// they legitimately contain the forbidden strings as assertion patterns.
+function hookSourceFiles(relativeDir = 'claude/hooks') {
+  const directory = path.join(ROOT, relativeDir);
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === '__tests__') continue;
+    const relativePath = path.join(relativeDir, entry.name);
+    if (entry.isDirectory()) files.push(...hookSourceFiles(relativePath));
+    if (entry.isFile() && entry.name.endsWith('.cjs')) files.push(relativePath);
+  }
+  return files;
+}
+
 test('shipped profile pins Opus 5 while leaving experimental teams opt-in', () => {
   const settings = JSON.parse(read('claude/settings.json'));
   assert.equal(settings.model, 'claude-opus-5');
@@ -135,6 +150,51 @@ test('Claude-facing markdown has no pseudo-thinking or degraded-grammar setting'
       `${file} exposes legacy numbered thought markers`
     );
   }
+});
+
+test('runtime hook injections carry no pre-Opus-5 prompt scaffolding', () => {
+  const forbidden = [
+    // Contradicted the shipped calibration rule while being injected every turn.
+    /sacrifice grammar/i,
+    /\bUltrathink\b/i,
+    /Thinking level\s*:/i,
+    // Unconditional approval round after an already-authorized request.
+    /Stop here and ask the user/i,
+    // Unconditional scope-expansion nudge on every prompt.
+    /\[IMPORTANT\] Consider Modularization/i,
+    /\bMUST spawn\b/i,
+    /when unsure, delegate/i
+  ];
+
+  const files = hookSourceFiles();
+  assert.ok(files.length > 10, `expected to scan the hook tree, found ${files.length} files`);
+  for (const file of files) {
+    const source = read(file);
+    for (const pattern of forbidden) {
+      assert.doesNotMatch(source, pattern, `${file} matched ${pattern}`);
+    }
+  }
+});
+
+test('hook injections scope artifacts and restructuring to the request', () => {
+  const contextBuilder = read('claude/hooks/lib/context-builder.cjs');
+  // Modularization stays available but is no longer an unconditional directive.
+  assert.match(contextBuilder, /## Modularization \(when the change adds or grows code files\)/);
+  assert.match(contextBuilder, /Restructuring is in scope only when the request covers it/);
+
+  // Every subagent used to receive a report path with no condition attached.
+  const subagentInit = read('claude/hooks/subagent-init.cjs');
+  assert.match(subagentInit, /## Naming \(only when this task's deliverable is a written report or plan\)/);
+  assert.match(subagentInit, /write a file only when the task asks for one/);
+
+  // The plan checkpoint defers to the scope the user already authorized.
+  const planReminder = read('claude/hooks/cook-after-plan-reminder.cjs');
+  assert.match(planReminder, /already authorized implementation, continue into it/);
+
+  // Simplification is inline-first; the subagent is the large-diff escape hatch.
+  const simplifyGate = read('claude/hooks/simplify-gate.cjs');
+  assert.match(simplifyGate, /Do this inline/);
+  assert.match(simplifyGate, /Delegate only when/);
 });
 
 test('Agent Teams guidance uses the current shared-checkout lifecycle', () => {

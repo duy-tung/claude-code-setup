@@ -388,7 +388,7 @@ describe('context-builder.cjs', () => {
       try {
         const lines = Array(200).fill('x');
         lines[170] = `- CWD: ${scopeKey}`;
-        lines[180] = '[IMPORTANT] Consider Modularization';
+        lines[180] = contextBuilder.MODULARIZATION_HEADING;
         fs.writeFileSync(transcriptPath, lines.join('\n'));
         fs.writeFileSync(sessionStatePath, JSON.stringify({
           devRulesReminder: {

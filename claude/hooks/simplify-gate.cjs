@@ -138,7 +138,9 @@ function formatMessage(signals, breaches, severity) {
   const noun = severity === 'hard' ? 'shipping' : 'committing';
   return [
     `Unsimplified diff detected: ${breaches.join(', ')}.`,
-    `Run code-simplifier on the modified files before ${noun}:`,
+    `Simplify the modified files before ${noun}, keeping behavior identical.`,
+    `Do this inline — it is a read-and-edit pass over files you already know.`,
+    `Delegate only when the diff spans independent areas too large for one pass:`,
     `  Agent(subagent_type="code-simplifier", prompt="Simplify keeping behavior identical: <files>")`,
     `Bypass: set CK_SIMPLIFY_DISABLED=1 or reply 'force' to override.`
   ].join('\n');

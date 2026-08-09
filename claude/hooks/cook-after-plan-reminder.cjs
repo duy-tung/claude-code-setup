@@ -40,14 +40,18 @@ try {
       }
     }
 
-    // Output neutral next-step options with full absolute path if available
-    console.log('Planning complete. Stop here and ask the user which next step they want: implement, validate, red-team, revise, or end.');
+    // Output neutral next-step options with full absolute path if available.
+    // Scope the checkpoint to the original request: an unconditional stop turns
+    // an already-authorized "plan and build X" into a redundant approval round.
+    console.log('Planning complete. Lead with the outcome: what the plan does and the single recommended next step.');
+    console.log('If the original request already authorized implementation, continue into it without a separate approval round.');
+    console.log('Otherwise ask which next step the user wants — implement, validate, red-team, revise, or end — and ask only once.');
     if (planPath) {
       const planMdPath = path.join(planPath, 'plan.md');
-      console.log(`Optional implementation command after user approval: /ck:cook ${planMdPath}`);
+      console.log(`Implementation command: /ck:cook ${planMdPath}`);
     } else {
       // Fallback when plan path unavailable
-      console.log('Optional implementation command after user approval: /ck:cook {full-absolute-path-to-plan.md}');
+      console.log('Implementation command: /ck:cook {full-absolute-path-to-plan.md}');
     }
     console.log('Add --auto only if the user explicitly asks for autonomous implementation.');
 
