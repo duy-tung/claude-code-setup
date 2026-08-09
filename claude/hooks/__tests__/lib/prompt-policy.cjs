@@ -1,7 +1,7 @@
 /**
  * Prompt-policy scanner.
  *
- * The Opus 5 rules are written as prohibitions ("Do not invent numeric
+ * The behavior rules are written as prohibitions ("Do not invent numeric
  * confidence scores"), so a plain substring scan for a risky phrase flags the
  * very rule that bans it. Every naive guard we could write here would fire on
  * `model-calibration.md` first and get deleted.

@@ -2,7 +2,7 @@
 
 > Canonical source: https://code.claude.com/docs/en/agent-teams
 > Compatibility baseline: Claude Code 2.1.178+ implicit teams
-> Claude Opus 5 baseline: Claude Code 2.1.219+
+> Runtime baseline: Claude Code 2.1.219+
 > Reviewed: 2026-08-09
 
 This reference records only the runtime contracts CK depends on. Re-check the canonical source when Claude Code changes Agent Teams.
@@ -39,7 +39,7 @@ Check the runtime before diagnosing team behavior:
 claude --version
 ```
 
-CK targets Claude Code 2.1.219 or newer so the same installation also supports Claude Opus 5. Account and runtime policy can still make Agent Teams unavailable after the flag is set.
+CK targets Claude Code 2.1.219 or newer, matching the kit's runtime baseline. Account and runtime policy can still make Agent Teams unavailable after the flag is set.
 
 ## Implicit Lifecycle
 

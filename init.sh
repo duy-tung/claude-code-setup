@@ -29,15 +29,15 @@ npm run test:statusline --silent
 npm run test:worktree --silent
 
 echo
-echo "[verify] Opus 5 thinking continuation"
+echo "[verify] API helper thinking continuation"
 python3 -B -m unittest discover \
   -s claude/skills/skill-creator/scripts/tests -p 'test_*.py'
 
 echo
-echo "[verify] Opus 5 context defaults"
+echo "[verify] context analyzer defaults"
 python3 -B -m unittest discover \
   -s claude/skills/context-engineering/scripts/tests \
-  -p 'test_opus5_context_defaults.py'
+  -p 'test_context_defaults.py'
 
 echo
 echo "[verify] OK"

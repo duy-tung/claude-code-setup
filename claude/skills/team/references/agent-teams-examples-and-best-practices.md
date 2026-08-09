@@ -126,7 +126,7 @@ Agent Teams multiply context and output costs. Keep prompts focused, choose lowe
 ### Named Teammate Does Not Start
 
 - Confirm `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is visible to the session.
-- Confirm `claude --version` is 2.1.219 or newer for this Opus 5 kit.
+- Confirm `claude --version` is 2.1.219 or newer, the kit's runtime baseline.
 - Check account/runtime availability.
 - Spawn a named background agent directly; no setup call precedes it.
 

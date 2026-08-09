@@ -7,7 +7,7 @@ Canonical runtime documentation: https://code.claude.com/docs/en/agent-teams
 ## Compatibility
 
 - Claude Code `2.1.178+` provides the implicit Agent Teams lifecycle used by this guide.
-- ClaudeKit's Claude Opus 5 setup requires Claude Code `2.1.219+`.
+- ClaudeKit's runtime baseline requires Claude Code `2.1.219+`.
 - Agent Teams are experimental, disabled by default, and can depend on
   account/runtime availability.
 

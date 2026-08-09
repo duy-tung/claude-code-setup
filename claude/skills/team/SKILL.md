@@ -17,7 +17,7 @@ Coordinate named Claude Code teammates through one implicit, session-scoped team
 
 ## Requirements
 
-- Claude Code `2.1.219` or newer for Claude Opus 5 support. Implicit teams require `2.1.178` or newer.
+- Claude Code `2.1.219` or newer, matching the kit's runtime baseline. Implicit teams require `2.1.178` or newer.
 - Agent Teams are experimental and disabled by default. Opt in for one POSIX-shell invocation with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude`; use `settings.json` only for intentional persistent enablement.
 - Agent Teams availability can still depend on account and runtime support.
 

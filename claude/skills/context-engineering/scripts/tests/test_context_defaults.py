@@ -1,4 +1,4 @@
-"""Stdlib tests for the Opus 5 context analyzer defaults."""
+"""Stdlib tests for the context analyzer defaults."""
 
 import importlib.util
 import json

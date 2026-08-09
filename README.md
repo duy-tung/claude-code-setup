@@ -1,6 +1,8 @@
 # Claude Code Boilerplate
 
-A comprehensive boilerplate template for building professional software projects with **Claude Code**, calibrated for **Claude Opus 5**. The shipped profile pins `claude-opus-5` at `high` effort and scales planning, delegation, and verification to the task.
+A boilerplate for building software projects with **Claude Code**. It ships a set of skills, agents, hooks, and rules that scale planning, delegation, and verification to the size of the task — inline work stays inline, and specialists appear only when the work genuinely warrants them.
+
+The shipped profile pins a fixed model and effort level so runs are reproducible; see [Runtime Baseline](./docs/runtime-baseline.md).
 
 ## What is Claude Code?
 
@@ -53,7 +55,7 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 - **[Codebase Summary](./docs/codebase-summary.md)** - High-level overview of project structure, technologies, and components
 - **[Code Standards](./docs/code-standards.md)** - Coding standards, naming conventions, and best practices
 - **[System Architecture](./docs/system-architecture.md)** - Detailed architecture documentation, component interactions, and data flow
-- **[Opus 5 Migration Checklist](./docs/opus-5-migration-checklist.md)** - Runtime, API, prompting, eval, and rollback checks
+- **[Runtime Baseline](./docs/runtime-baseline.md)** - Required versions, shipped defaults, and the API constraints that error
 - **[Skills Reference](./guide/SKILLS.md)** - Auto-generated catalog of all available skills
 
 ### 📖 Additional Resources
@@ -63,7 +65,7 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 ## Quick Start
 
 ### Prerequisites
-- [Claude Code](https://code.claude.com/docs/en/setup) **2.1.219+** installed and configured (required for Opus 5)
+- [Claude Code](https://code.claude.com/docs/en/setup) **2.1.219+** installed and configured (older versions resolve the `opus` alias to a previous model)
 - Git for version control
 - Node.js 18+ (or your preferred runtime)
 - Operating Systems: macOS 10.15+, Ubuntu 20.04+/Debian 10+, or Windows 10+ (with WSL 1, WSL 2, or Git for Windows)
@@ -100,7 +102,7 @@ claude update  # run when the version is older than 2.1.219
 
 3. **Start development**:
    ```bash
-   # claude/settings.json starts new sessions on claude-opus-5 / high effort
+   # claude/settings.json pins the model and effort for new sessions
    claude
    # One-session equivalent:
    claude --model claude-opus-5 --effort high
@@ -117,18 +119,18 @@ claude update  # run when the version is older than 2.1.219
 
    Confirm the active model and effort in `/status`. `high` is the reproducible
    baseline; test `low`/`medium` for cost-sensitive work and reserve `xhigh`/`max` for
-   workloads where this repo's evals show a real gain. Opus 5 has a 1M-token context
-   window by default; Claude Code plan access can still depend on account/provider.
+   workloads where this repo's evals show a real gain. The context window is 1M tokens by
+   default; Claude Code plan access can still depend on account/provider.
 
    On Microsoft Foundry or a custom gateway, replace the model setting with the
-   deployment-specific Opus 5 name described in the
+   deployment-specific model name described in the
    [Claude Code model configuration](https://code.claude.com/docs/en/model-config).
 
    The kit intentionally omits `fallbackModel` so runs do not silently switch away
-   from the Opus 5 baseline. Claude Code fallback chains cover model overload,
+   from the pinned baseline. Claude Code fallback chains cover model overload,
    unavailability, and some server errors, but not authentication, billing,
    rate-limit, request-size, or transport errors. If your account or provider does
-   not expose Opus 5, choose a supported model explicitly for the session:
+   not expose the pinned model, choose a supported one explicitly for the session:
 
    ```bash
    claude --model sonnet --effort high
@@ -136,7 +138,7 @@ claude update  # run when the version is older than 2.1.219
 
    For a persistent personal override, set `"model": "sonnet"` in
    `.claude/settings.local.json` instead of changing the shared profile. Either
-   override intentionally stops representing the Opus 5 eval baseline.
+   override intentionally stops representing the pinned eval baseline.
 
    Agent Teams are experimental and disabled by default. Opt in for one Claude
    session from a POSIX shell (macOS, Linux, WSL, or Git Bash) with:
@@ -175,7 +177,7 @@ claude update  # run when the version is older than 2.1.219
 
 ## The AI Agent Team
 
-This boilerplate includes 11 optional specialists. Opus 5 handles small, clear tasks inline; use agents when a sizeable task has independent workstreams or needs domain-specific review. Agent Teams share one checkout, so assign non-overlapping files and nominate one integrator for shared files.
+This boilerplate includes 11 optional specialists. Small, clear tasks are handled inline; reach for an agent when a sizeable task has independent workstreams or needs domain-specific review. Agent Teams share one checkout, so assign non-overlapping files and nominate one integrator for shared files.
 
 ### 🎯 Core Development Agents
 

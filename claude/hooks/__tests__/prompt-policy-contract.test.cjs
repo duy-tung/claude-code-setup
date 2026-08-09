@@ -42,7 +42,7 @@ function hookSourceFiles(relativeDir = 'claude/hooks') {
   return files;
 }
 
-test('shipped profile pins Opus 5 while leaving experimental teams opt-in', () => {
+test('shipped profile pins the model and effort while leaving experimental teams opt-in', () => {
   const settings = JSON.parse(read('claude/settings.json'));
   assert.equal(settings.model, 'claude-opus-5');
   assert.equal(settings.effortLevel, 'high');
@@ -54,10 +54,13 @@ test('shipped profile pins Opus 5 while leaving experimental teams opt-in', () =
   assert.match(readme, /CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude/);
 });
 
-test('top-level guidance loads the Opus 5 calibration rules', () => {
+test('top-level guidance loads the calibration rules', () => {
   const rules = read('claude/rules/CLAUDE.md');
   assert.match(rules, /model-calibration\.md/);
-  assert.match(read('claude/rules/model-calibration.md'), /claude-opus-5/);
+  // Canon states behavior, not platform facts; those live in docs/runtime-baseline.md.
+  const canon = read('claude/rules/model-calibration.md');
+  assert.match(canon, /docs\/runtime-baseline\.md/);
+  assert.doesNotMatch(canon, /migration guide|Opus 4\.8/i);
 });
 
 // ── Always-loaded context budget ────────────────────────────────────────────
@@ -149,7 +152,7 @@ test('model-calibration.md declares itself the single normative source', () => {
   }
 });
 
-test('active runtime and command examples contain no pre-Opus-5 exact pin', () => {
+test('active runtime and command examples carry no superseded model pin', () => {
   const files = [
     'claude/settings.json',
     'README.md',
@@ -241,7 +244,7 @@ test('Claude-facing markdown has no pseudo-thinking or degraded-grammar setting'
   }
 });
 
-test('runtime hook injections carry no pre-Opus-5 prompt scaffolding', () => {
+test('runtime hook injections carry no legacy prompt scaffolding', () => {
   const forbidden = [
     // Contradicted the shipped calibration rule while being injected every turn.
     /sacrifice grammar/i,
@@ -326,7 +329,7 @@ test('agent allowlists use the current Agent parameter syntax', () => {
   }
 });
 
-test('context tooling uses Opus 5 one-million-token default', () => {
+test('context tooling uses the one-million-token context default', () => {
   assert.match(
     read('claude/skills/context-engineering/scripts/context_analyzer.py'),
     /DEFAULT_TOKEN_LIMIT\s*=\s*1_000_000/
@@ -384,8 +387,8 @@ test('no shipped skill chains another skill unconditionally', () => {
 });
 
 test('no shipped skill performs multi-persona role theater', () => {
-  // Personas as sections to fill produce padded answers on Opus 5; the same
-  // angles work as lenses to check.
+  // Personas as sections to fill produce padded answers; the same angles work
+  // as lenses to check.
   const personaTheater = /You orchestrate (?:four|three|five|several|\d+) (?:specialized )?\w+/i;
   for (const file of shippedSkillFiles()) {
     assert.doesNotMatch(read(file), personaTheater, `${file} scaffolds persona role-play`);
@@ -420,7 +423,7 @@ const PROMPT_POLICY_PATTERNS = {
 };
 
 // Verified legitimate on inspection. Each entry names why the phrase is domain
-// logic rather than Opus 5 over-verification. Keep this list short; a growing
+// logic rather than over-verification. Keep this list short; a growing
 // list means the pattern is wrong, not that the exceptions are.
 const PROMPT_POLICY_EXEMPTIONS = {
   // Re-runs the dependent test after a fix lands — not a recheck of reasoning.
@@ -431,7 +434,7 @@ const PROMPT_POLICY_EXEMPTIONS = {
   'claude/agents/planner.md': ['self-recheck']
 };
 
-test('no shipped guidance instructs Opus 5 to over-verify or self-score', () => {
+test('no shipped guidance instructs the model to over-verify or self-score', () => {
   const files = [
     ...markdownFiles('claude/skills'),
     ...markdownFiles('claude/agents'),

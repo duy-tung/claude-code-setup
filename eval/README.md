@@ -78,9 +78,9 @@ python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5 \
   export CK_EVAL_MODEL=claude-opus-5
   export CK_EVAL_EFFORT=high
   ```
-  Opus 5 uses the same tokenizer as Opus 4.8; the tokenizer changed relative to
-  Opus 4.6 and earlier. Its effort levels were recalibrated, so re-baseline cost,
-  latency, and quality rather than carrying an older effort choice forward.
+  Effort levels are not comparable across model generations, so measure cost,
+  latency, and quality on this suite rather than carrying an effort choice
+  forward from another model.
   Each live record stores the requested model/effort and `modelUsage`. Canonical
   model IDs are used when a provider-specific map key differs. A pinned run is
   intentionally strict-single-model: a missing requested model or any additional
@@ -90,7 +90,7 @@ python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5 \
 
 Results stream to `results/eval-<ts>.ndjson` (git-ignored).
 
-## Sweep Opus 5 effort
+## Sweep effort
 
 Start at `high`, then measure lower settings for cost/latency and reserve
 `xhigh`/`max` for capability-sensitive tasks. The helper runs one fixed model at

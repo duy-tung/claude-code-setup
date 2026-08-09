@@ -210,7 +210,9 @@
     "rules/review-audit-self-decision.md",
     "rules/skill-domain-routing.md",
     "rules/skill-workflow-routing.md",
-    "rules/team-coordination-rules.md"
+    "rules/team-coordination-rules.md",
+    "hooks/__tests__/opus-5-alignment-policy.test.cjs",
+    "skills/context-engineering/scripts/tests/test_opus5_context_defaults.py"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",

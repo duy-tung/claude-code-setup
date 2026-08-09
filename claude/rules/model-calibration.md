@@ -4,14 +4,9 @@
 skills, and agents reference it by section; they do not restate it. When behavior guidance
 needs to change, it changes here — one file, one place, no drift.
 
-Calibrated for Claude Opus 5. It complements task and safety rules; it does not replace
-project acceptance criteria or permission boundaries.
-
-Source baseline (checked 2026-08-09):
-[migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide),
-[prompting guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
-[Claude Code model configuration](https://code.claude.com/docs/en/model-config), and the
-[Opus 5 System Card](https://www-cdn.anthropic.com/c5fbac3f0b1280a933ebd26d3cb8bb9f5bdeaf48/Claude%20Opus%205%20System%20Card.pdf).
+It complements task and safety rules; it does not replace project acceptance criteria or
+permission boundaries. Platform facts and the constraints that produce errors live in
+`docs/runtime-baseline.md`, not here.
 
 ## 1. Response and deliverable length
 
@@ -28,8 +23,8 @@ Set length through instructions instead.
 
 ## 2. Task scope
 
-Opus 5 can expand narrow work and over-engineer marginal improvements. Deliver the
-requested outcome at the requested scope.
+The model tends to expand narrow work and over-engineer marginal improvements. Deliver
+the requested outcome at the requested scope.
 
 - Once you have enough information to act, act. Do not re-plan, and do not return a
   plan-only response when implementation was requested.
@@ -106,8 +101,9 @@ verification passes.
 
 ## 5. Evidence and questions
 
-Fluency is not evidence. The System Card reports higher factual accuracy than Opus 4.8
-alongside a slightly higher factual-claim hallucination rate on its closed-book test.
+Fluency is not evidence. Accuracy and hallucination rate move independently: a model can
+get more facts right while still stating a confident wrong one, so a claim's polish says
+nothing about whether it is grounded.
 
 - Read the source for version-sensitive APIs, configuration keys, prices, and current
   product behavior.
@@ -160,23 +156,22 @@ continue.
 
 ## 9. Effort and thinking
 
-Opus 5 uses adaptive thinking by default, and Claude Code can carry a previously chosen
-effort level into an Opus 5 session. This kit pins `high` as the reproducible baseline.
+Thinking is adaptive and on by default; effort is the control for its depth. Claude Code
+can carry a previously chosen effort level into a new session, so this kit pins `high`
+explicitly as the reproducible baseline. The API-level constraints — what errors, what
+leaks — are in `docs/runtime-baseline.md`.
 
 - Sweep effort on this repo's evals before changing the baseline. `low` and `medium`
   are the primary cost/latency controls where quality holds.
 - Use `xhigh` for demanding coding or agentic work. Use session-only `max` only when an
   eval shows capability gains justify the extra tokens; it can overthink.
-- Do not use fixed thinking budgets. Do not combine disabled thinking with `xhigh` or
-  `max`; the API rejects that combination.
-- Prefer thinking enabled at lower effort over disabling thinking. Never instruct the
-  model not to think or reason. With thinking disabled, tool calls can leak as text and
-  internal XML can appear in visible output.
-- Opus 5 has a 1M-token context window by default, but a larger window is not a target
-  to fill. Use runtime-reported utilization and keep only task-relevant context.
+- Prefer thinking enabled at lower effort over disabling it. Never instruct the model not
+  to think or reason.
+- The context window is a ceiling, not a target to fill. Use runtime-reported utilization
+  and keep only task-relevant context.
 
 ## 10. Review prompts
 
-Opus 5 follows restrictive review filters literally. For discovery, ask the reviewer to
+The model follows restrictive review filters literally. For discovery, ask the reviewer to
 report all supported findings, then rank or filter severity in a separate pass. Do not
 hide real issues by asking for only "critical" findings at discovery time.
