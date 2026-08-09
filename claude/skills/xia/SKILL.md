@@ -67,7 +67,7 @@ Security boundary:
    - Local source: use the local path directly.
    - Scope with include patterns if the feature hint is narrow.
 2. Read the source README or docs when available.
-3. Use the `researcher` agent to understand purpose, trade-offs, and community context.
+3. Establish purpose, trade-offs, and community context. Delegate to the `researcher` agent when this needs its own research track (issue history, ecosystem comparison); read it inline when the README and packed source already answer it.
 4. Use `/ck:scout` on the local project to map architecture, similar features, and integration points.
 
 Output:
