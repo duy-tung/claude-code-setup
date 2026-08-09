@@ -95,8 +95,8 @@ Results stream to `results/eval-<ts>.ndjson` (git-ignored).
 Start at `high`, then measure lower settings for cost/latency and reserve
 `xhigh`/`max` for capability-sensitive tasks. The helper runs one fixed model at
 each effort, verifies that the same actual model was reported, and prints solve
-rate, mean turns, input/output tokens, visible output length, workflow artifacts,
-cost, and latency:
+rate, behavior compliance, mean turns, input/output tokens, visible output length,
+workflow artifacts, cost, and latency:
 
 ```bash
 python3 eval/effort_sweep.py --all --variant full-kit --model claude-opus-5 \
@@ -131,7 +131,7 @@ Test a behavioral rule BEFORE adding it to `claude/rules/`:
 
 ```
 tasks/<id>/
-  task.json     { id, prompt, workflow_artifact_budget, protected_paths?, grade:{ test_cmd, fail_to_pass[], pass_to_pass[], timeout_sec } }
+  task.json     { id, prompt, workflow_artifact_budget, workflow_artifact_exempt_paths?, protected_paths?, grade:{ test_cmd, fail_to_pass[], pass_to_pass[], timeout_sec } }
   fixture/      starting repo state the agent sees and edits
   tests/        OPTIONAL hidden grading tests — copied into the workdir ONLY at
                 grade time, so the agent never sees them (SWE-bench style). Use
@@ -149,7 +149,20 @@ those actions so the eval can detect regressions in calibration.
 Set `workflow_artifact_budget: 0` on small tasks that should not create plan or
 journal files. Created Markdown outside the staged `.claude/` profile, files under
 `plans/`, `reports/`, or `docs/journals/`, and named report/summary artifacts count
-toward the budget; a live run that exceeds it is invalid even if code tests pass.
+toward the budget. A budget breach sets `behavior_ok: false` and records the reason
+in `behavior_issues`, but it does not change `solved`, `run_valid`, solve-rate, or
+the suite exit status. `run_valid` is reserved for harness/infrastructure failures,
+model-pin violations, and protected grader-file tampering.
+
+If Markdown is the requested task deliverable, exempt only its expected relative
+path (or a shell-style glob) so unrelated plan/report files are still measured:
+
+```json
+"workflow_artifact_exempt_paths": ["README.md", "docs/deliverable-*.md"]
+```
+
+The normal suite summary and effort sweep report behavior compliance separately
+from solve-rate, alongside the mean workflow-artifact count.
 For larger/representative suites, see SWE-smith / terminal-bench patterns in the research doc.
 
 ## Files

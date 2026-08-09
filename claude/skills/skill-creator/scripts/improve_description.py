@@ -17,11 +17,13 @@ from scripts.utils import parse_skill_md
 
 
 def thinking_request_kwargs(model: str) -> dict:
-    """Enable summarized adaptive thinking only for the pinned Opus 5 profile.
+    """Request thinking summaries only for the official Opus 5 API model ID.
 
-    The helper still accepts other models for backwards compatibility. Omitting
-    the field avoids sending an unsupported adaptive-thinking shape to older
-    Claude models; Opus 5 callers get the transcript summary used below.
+    This script calls the Claude Messages API directly, where ``claude-opus-5``
+    is the documented ID. Claude Code selectors such as ``opus`` and arbitrary
+    provider/gateway names are not inferred to have the same API capabilities.
+    Other identifiers are forwarded unchanged with the optional thinking field
+    omitted, avoiding an unsupported request shape.
     """
     if model.strip().lower() != "claude-opus-5":
         return {}

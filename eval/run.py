@@ -33,6 +33,7 @@ When a model is pinned, missing or mismatched modelUsage invalidates the live ru
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import re
@@ -175,10 +176,18 @@ def model_pin_error(requested_model: str | None,
     return None
 
 
-def is_workflow_artifact(relative_path: str) -> bool:
-    """Identify unrequested durable workflow prose, excluding staged kit state."""
+def is_workflow_artifact(
+    relative_path: str,
+    exempt_paths: list[str] | None = None,
+) -> bool:
+    """Identify unrequested workflow prose, honoring task deliverable exemptions."""
     normalized = relative_path.replace("\\", "/")
     if normalized.startswith(".claude/"):
+        return False
+    if any(
+        fnmatch.fnmatchcase(normalized, pattern.replace("\\", "/"))
+        for pattern in (exempt_paths or [])
+    ):
         return False
     lowered = normalized.lower()
     if lowered.endswith(".md"):
@@ -199,6 +208,7 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                "workflow_artifact_count": 0,
                "workflow_artifacts": [],
                "workflow_artifact_budget": task.get("workflow_artifact_budget"),
+               "behavior_ok": True, "behavior_issues": [],
                "protected_file_violations": [],
                "models": [], "raw_models": [], "model_pin_ok": None,
                "requested_model": requested_model,
@@ -266,19 +276,21 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
         created_files = current_files - baseline_files
         metrics["created_file_count"] = len(created_files)
         metrics["workflow_artifacts"] = sorted(
-            path for path in created_files if is_workflow_artifact(path)
+            path for path in created_files
+            if is_workflow_artifact(
+                path, task.get("workflow_artifact_exempt_paths")
+            )
         )
         metrics["workflow_artifact_count"] = len(metrics["workflow_artifacts"])
         artifact_budget = metrics["workflow_artifact_budget"]
         if (mode == "claude" and isinstance(artifact_budget, int)
                 and metrics["workflow_artifact_count"] > artifact_budget):
-            artifact_error = (
+            artifact_issue = (
                 "workflow artifact budget exceeded: "
                 f"{metrics['workflow_artifact_count']} > {artifact_budget}"
             )
-            metrics["error"] = "; ".join(
-                error for error in (metrics.get("error"), artifact_error) if error
-            )
+            metrics["behavior_issues"].append(artifact_issue)
+            metrics["behavior_ok"] = False
 
         # Visible tests give the agent useful feedback but remain part of the
         # grader contract. Detect edits/deletions, restore pristine bytes, and
@@ -487,7 +499,12 @@ def run_suite(task_ids: list[str], variant_names: list[str | None],
                     icon = "[OK]" if not rec["solved"] else "[X] "
                 else:
                     icon = "[OK]" if rec["solved"] else "[--]"
-                note = rec.get("error") or rec.get("grade_detail") or ""
+                note_parts = [rec.get("error") or rec.get("grade_detail") or ""]
+                if not rec.get("behavior_ok", True):
+                    note_parts.append(
+                        "behavior: " + "; ".join(rec.get("behavior_issues") or [])
+                    )
+                note = "; ".join(part for part in note_parts if part)
                 print(f"{icon} {task_id} / {variant['label']} "
                       f"run {i + 1}/{runs} ({rec['agent_ms']}ms) {note}".rstrip())
             results[variant["label"]][task_id] = solved_runs
@@ -531,11 +548,13 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
                                    if r.get("requested_model")})
         requested_efforts = sorted({r["requested_effort"] for r in v_recs
                                     if r.get("requested_effort")})
+        behavior_ok = sum(r.get("behavior_ok", True) for r in v_recs)
         print(f"• {label}: solved {total_solved}/{total_runs}  "
               f"(mean turns={_fmt(_mean([r['num_turns'] for r in v_recs]))}, "
               f"cost=${_fmt(_mean([r['cost_usd'] for r in v_recs]))}, "
               f"agent_ms={_fmt(_mean([r['agent_ms'] for r in v_recs]))}, "
               f"output_chars={_fmt(_mean([r['output_chars'] for r in v_recs]))}, "
+              f"behavior_ok={behavior_ok}/{len(v_recs)}, "
               f"workflow_artifacts="
               f"{_fmt(_mean([r['workflow_artifact_count'] for r in v_recs]))})")
         models = sorted({m for r in v_recs for m in (r.get("models") or [])})
@@ -546,6 +565,13 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
             s = per_task[task_id]
             print(f"    - {task_id}: {sum(s)}/{len(s)} "
                   f"(solve_rate={stats.solve_rate(s):.2f}, pass^{len(s)}={stats.pass_hat_k(s):.0f})")
+        for rec in v_recs:
+            if rec.get("behavior_ok", True):
+                continue
+            for issue in rec.get("behavior_issues") or ["unspecified behavior issue"]:
+                print(
+                    f"    ! behavior {rec['task']} run {rec['run'] + 1}: {issue}"
+                )
 
     # Paired A/B comparison (only when exactly two variants).
     if len(variants) == 2:

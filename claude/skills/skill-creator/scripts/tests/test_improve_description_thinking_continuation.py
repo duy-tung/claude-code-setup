@@ -18,10 +18,23 @@ except ModuleNotFoundError:
 SKILL_CREATOR_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(SKILL_CREATOR_DIR))
 
-from scripts.improve_description import improve_description
+from scripts.improve_description import improve_description, thinking_request_kwargs
 
 
 class ImproveDescriptionThinkingContinuationTest(unittest.TestCase):
+    def test_thinking_summary_uses_official_opus_5_api_id_only(self):
+        self.assertEqual(
+            thinking_request_kwargs(" claude-opus-5 "),
+            {"thinking": {"type": "adaptive", "display": "summarized"}},
+        )
+        # `opus` is a Claude Code selector, not the Messages API model ID used
+        # by this direct-SDK helper. Provider-specific names are also opaque.
+        self.assertEqual(thinking_request_kwargs("opus"), {})
+        self.assertEqual(
+            thinking_request_kwargs("gateway/claude-opus-5"),
+            {},
+        )
+
     def test_rewrite_reuses_complete_assistant_content(self):
         long_description = "x" * 1025
         thinking_block = SimpleNamespace(

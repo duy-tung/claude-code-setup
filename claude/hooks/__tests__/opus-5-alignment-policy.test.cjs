@@ -27,15 +27,16 @@ function markdownFiles(relativeDir) {
   return files;
 }
 
-test('shipped Claude Code profile pins Opus 5 and high effort', () => {
+test('shipped profile pins Opus 5 while leaving experimental teams opt-in', () => {
   const settings = JSON.parse(read('claude/settings.json'));
   assert.equal(settings.model, 'claude-opus-5');
   assert.equal(settings.effortLevel, 'high');
-  assert.equal(settings.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, '1');
+  assert.equal(settings.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, undefined);
 
   const readme = read('README.md');
   assert.match(readme, /Claude Code[^\n]*\*\*2\.1\.219\+\*\*/);
   assert.match(readme, /claude --model claude-opus-5 --effort high/);
+  assert.match(readme, /CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude/);
 });
 
 test('top-level guidance loads the Opus 5 calibration rules', () => {

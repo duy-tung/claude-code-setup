@@ -34,6 +34,8 @@ def record(**overrides) -> dict:
         "created_file_count": 0,
         "workflow_artifact_count": 0,
         "workflow_artifact_budget": 0,
+        "behavior_ok": True,
+        "behavior_issues": [],
         "cost_usd": 0.25,
         "agent_ms": 1000,
         "models": ["claude-opus-5"],
@@ -130,8 +132,13 @@ class RequestedSettingsTests(unittest.TestCase):
 
         self.assertEqual(result["created_file_count"], 1)
         self.assertEqual(result["workflow_artifact_count"], 1)
-        self.assertFalse(result["run_valid"])
-        self.assertIn("workflow artifact budget exceeded", result["error"])
+        self.assertTrue(result["solved"])
+        self.assertTrue(result["run_valid"])
+        self.assertIsNone(result["error"])
+        self.assertFalse(result["behavior_ok"])
+        self.assertIn(
+            "workflow artifact budget exceeded", result["behavior_issues"][0]
+        )
 
     def test_run_trial_counts_root_summary_and_docs_report(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -162,12 +169,45 @@ class RequestedSettingsTests(unittest.TestCase):
                     task, {"claude_args": []}, "claude", 1, False
                 )
 
-        self.assertFalse(result["run_valid"])
+        self.assertTrue(result["run_valid"])
+        self.assertFalse(result["behavior_ok"])
         self.assertEqual(result["workflow_artifact_count"], 2)
         self.assertEqual(
             result["workflow_artifacts"],
             ["IMPLEMENTATION_SUMMARY.md", "docs/report.md"],
         )
+
+    def test_run_trial_exempts_requested_markdown_deliverable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            task_dir = Path(tmp)
+            (task_dir / "fixture").mkdir()
+            task = {
+                "_dir": task_dir,
+                "grade": {},
+                "workflow_artifact_budget": 0,
+                "workflow_artifact_exempt_paths": ["docs/deliverable-*.md"],
+            }
+            grade_result = SimpleNamespace(solved=True, returncode=0, detail="")
+
+            def create_deliverable(_task, _variant, workdir, *_args, **_kwargs):
+                deliverable = workdir / "docs" / "deliverable-report.md"
+                deliverable.parent.mkdir()
+                deliverable.write_text("requested output", encoding="utf-8")
+                return {}
+
+            with patch.object(
+                eval_run, "_invoke_claude", side_effect=create_deliverable
+            ), patch.object(
+                eval_run.grader, "grade", return_value=grade_result
+            ):
+                result = eval_run.run_trial(
+                    task, {"claude_args": []}, "claude", 1, False
+                )
+
+        self.assertEqual(result["workflow_artifact_count"], 0)
+        self.assertTrue(result["behavior_ok"])
+        self.assertEqual(result["behavior_issues"], [])
+        self.assertTrue(result["run_valid"])
 
     def test_run_trial_rejects_and_restores_visible_test_tampering(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -518,6 +558,38 @@ class SuiteValidityTests(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("requested model mismatch", issues[0])
 
+    def test_live_behavior_issue_does_not_invalidate_suite(self):
+        valid, issues = eval_run.assess_suite(
+            [record(
+                solved=True,
+                behavior_ok=False,
+                behavior_issues=["workflow artifact budget exceeded: 1 > 0"],
+            )],
+            "claude",
+        )
+        self.assertTrue(valid)
+        self.assertEqual(issues, [])
+
+    def test_run_suite_reports_behavior_issue_without_failing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_file = Path(tmp) / "live.ndjson"
+            output = io.StringIO()
+            behavior_record = record(
+                solved=True,
+                behavior_ok=False,
+                behavior_issues=["workflow artifact budget exceeded: 1 > 0"],
+            )
+            with patch.object(eval_run, "load_task", return_value={}), \
+                 patch.object(eval_run, "run_trial", return_value=behavior_record), \
+                 contextlib.redirect_stdout(output):
+                valid = eval_run.run_suite(
+                    ["task-a"], [None], 1, "claude", 1, False, out_file
+                )
+        self.assertTrue(valid)
+        self.assertIn("solved 1/1", output.getvalue())
+        self.assertIn("behavior_ok=0/1", output.getvalue())
+        self.assertIn("! behavior task-a run 1", output.getvalue())
+
     def test_run_suite_returns_false_for_broken_mock(self):
         with tempfile.TemporaryDirectory() as tmp:
             out_file = Path(tmp) / "mock.ndjson"
@@ -575,12 +647,19 @@ class EffortSweepTests(unittest.TestCase):
         summary = effort_sweep.summarize_records(
             "high",
             [record(solved=True, num_turns=2, input_tokens=100,
-                    output_tokens=20, cost_usd=1.0, agent_ms=1000),
+                    output_tokens=20, cost_usd=1.0, agent_ms=1000,
+                    behavior_ok=False,
+                    behavior_issues=["workflow artifact budget exceeded"]),
              record(solved=False, num_turns=4, input_tokens=300,
                     output_tokens=60, cost_usd=3.0, agent_ms=3000)],
             "claude-opus-5",
         )
         self.assertEqual(summary["solve_rate"], 0.5)
+        self.assertEqual(summary["behavior_ok"], 1)
+        self.assertEqual(summary["behavior_rate"], 0.5)
+        self.assertEqual(
+            summary["behavior_issues"], ["workflow artifact budget exceeded"]
+        )
         self.assertEqual(summary["mean_turns"], 3.0)
         self.assertEqual(summary["mean_input_tokens"], 200.0)
         self.assertEqual(summary["mean_output_tokens"], 40.0)
@@ -588,6 +667,23 @@ class EffortSweepTests(unittest.TestCase):
         self.assertEqual(summary["mean_workflow_artifacts"], 0.0)
         self.assertEqual(summary["mean_cost_usd"], 2.0)
         self.assertEqual(summary["mean_latency_ms"], 2000.0)
+
+    def test_report_prints_behavior_compliance_and_issues(self):
+        summary = effort_sweep.summarize_records(
+            "high",
+            [record(
+                solved=True,
+                behavior_ok=False,
+                behavior_issues=["workflow artifact budget exceeded"],
+            )],
+            "claude-opus-5",
+        )
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            effort_sweep.print_report([summary], "claude-opus-5")
+        self.assertIn("Behavior", output.getvalue())
+        self.assertIn("0/1", output.getvalue())
+        self.assertIn("do not affect solve-rate or exit status", output.getvalue())
 
     def test_summary_does_not_count_invalid_live_run_as_solved(self):
         summary = effort_sweep.summarize_records(

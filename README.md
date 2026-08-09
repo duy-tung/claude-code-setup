@@ -124,6 +124,32 @@ claude update  # run when the version is older than 2.1.219
    deployment-specific Opus 5 name described in the
    [Claude Code model configuration](https://code.claude.com/docs/en/model-config).
 
+   The kit intentionally omits `fallbackModel` so runs do not silently switch away
+   from the Opus 5 baseline. Claude Code fallback chains cover model overload,
+   unavailability, and some server errors, but not authentication, billing,
+   rate-limit, request-size, or transport errors. If your account or provider does
+   not expose Opus 5, choose a supported model explicitly for the session:
+
+   ```bash
+   claude --model sonnet --effort high
+   ```
+
+   For a persistent personal override, set `"model": "sonnet"` in
+   `.claude/settings.local.json` instead of changing the shared profile. Either
+   override intentionally stops representing the Opus 5 eval baseline.
+
+   Agent Teams are experimental and disabled by default. Opt in for one Claude
+   session from a POSIX shell (macOS, Linux, WSL, or Git Bash) with:
+
+   ```bash
+   CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
+   ```
+
+   Current limitations include no restoration of in-process teammates after
+   `/resume` or `/rewind`, task status that can lag, and shutdown that can wait for
+   an in-flight request or tool call. See the
+   [Agent Teams guide](./docs/agent-teams-guide.md) before enabling it persistently.
+
 📖 **Learn more from our docs:** [https://docs.claudekit.cc](https://docs.claudekit.cc)
 
 ## Project Structure

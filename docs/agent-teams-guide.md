@@ -8,7 +8,8 @@ Canonical runtime documentation: https://code.claude.com/docs/en/agent-teams
 
 - Claude Code `2.1.178+` provides the implicit Agent Teams lifecycle used by this guide.
 - ClaudeKit's Claude Opus 5 setup requires Claude Code `2.1.219+`.
-- Agent Teams are experimental and can depend on account/runtime availability.
+- Agent Teams are experimental, disabled by default, and can depend on
+  account/runtime availability.
 
 Check and update Claude Code before using the command:
 
@@ -17,7 +18,15 @@ claude --version
 claude update
 ```
 
-Enable Agent Teams in your environment or Claude Code settings:
+Opt in for one Claude invocation from a POSIX shell (macOS, Linux, WSL, or Git
+Bash):
+
+```bash
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
+```
+
+Only add the flag to Claude Code settings if you intentionally want Agent Teams
+enabled for every session that loads that settings file:
 
 ```json
 {
@@ -27,7 +36,7 @@ Enable Agent Teams in your environment or Claude Code settings:
 }
 ```
 
-Restart the session after changing the environment.
+Restart the session after changing persistent settings.
 
 ## Quick Start
 
@@ -209,6 +218,19 @@ Every teammate has a separate context window, so token use grows with team size 
 - Use lower-cost models where evals preserve quality.
 - Avoid duplicate research and repeated verification.
 - Shut down teammates after their follow-up work is complete.
+
+## Known Limitations
+
+- `/resume` and `/rewind` do not restore in-process teammates. After resuming,
+  spawn replacement teammates instead of messaging stale names.
+- Task status can lag when a teammate finishes without marking its task complete.
+  Check the work, then update or reassign the task deliberately.
+- Shutdown can be slow because a teammate finishes its current request or tool
+  call before stopping.
+- A session has one team, teams cannot be nested, and the original lead cannot be
+  replaced.
+- Split-pane mode requires a supported tmux or iTerm2 setup; in-process mode is
+  the portable default.
 
 ## Troubleshooting
 

@@ -36,6 +36,8 @@ def summarize_records(effort: str, records: list[dict],
                       requested_model: str) -> dict:
     solved = sum(bool(record.get("solved") and record.get("run_valid", True))
                  for record in records)
+    behavior_ok = sum(bool(record.get("behavior_ok", True))
+                      for record in records)
     actual_models = sorted({model for record in records
                             for model in (record.get("models") or [])})
     return {
@@ -43,6 +45,13 @@ def summarize_records(effort: str, records: list[dict],
         "trials": len(records),
         "solved": solved,
         "solve_rate": solved / len(records) if records else 0.0,
+        "behavior_ok": behavior_ok,
+        "behavior_rate": behavior_ok / len(records) if records else 0.0,
+        "behavior_issues": sorted({
+            issue
+            for record in records
+            for issue in (record.get("behavior_issues") or [])
+        }),
         "mean_turns": _mean([record.get("num_turns") for record in records]),
         "mean_input_tokens": _mean(
             [record.get("input_tokens") for record in records]
@@ -90,11 +99,12 @@ def _format_number(value: float | None, digits: int = 3) -> str:
 def print_report(summaries: list[dict], requested_model: str) -> None:
     print("\n=== Effort Sweep Summary ===")
     print(f"Pinned model: {requested_model}")
-    print("\nEffort  Solved  Rate   Turns  Input tok  Output tok  Chars  Artifacts  Cost      Latency  Actual model(s)")
-    print("------  ------  -----  -----  ---------  ----------  -----  ---------  --------  -------  ---------------")
+    print("\nEffort  Solved  Rate   Behavior  Turns  Input tok  Output tok  Chars  Artifacts  Cost      Latency  Actual model(s)")
+    print("------  ------  -----  --------  -----  ---------  ----------  -----  ---------  --------  -------  ---------------")
     for summary in summaries:
         solved = f"{summary['solved']}/{summary['trials']}"
         rate = f"{summary['solve_rate']:.2f}"
+        behavior = f"{summary['behavior_ok']}/{summary['trials']}"
         turns = _format_number(summary["mean_turns"], 1)
         input_tokens = _format_number(summary["mean_input_tokens"], 0)
         output_tokens = _format_number(summary["mean_output_tokens"], 0)
@@ -105,9 +115,19 @@ def print_report(summaries: list[dict], requested_model: str) -> None:
                    if summary["mean_latency_ms"] is not None else "n/a")
         models = ",".join(summary["actual_models"]) or "unknown"
         print(f"{summary['effort']:<6}  {solved:<6}  {rate:<5}  "
+              f"{behavior:<8}  "
               f"{turns:<5}  {input_tokens:<9}  {output_tokens:<10}  "
               f"{output_chars:<5}  {artifacts:<9}  ${cost:<7}  "
               f"{latency:<7}  {models}")
+    behavior_issues = [
+        (summary["effort"], issue)
+        for summary in summaries
+        for issue in summary["behavior_issues"]
+    ]
+    if behavior_issues:
+        print("\nBehavior observations (do not affect solve-rate or exit status):")
+        for effort, issue in behavior_issues:
+            print(f"    - {effort}: {issue}")
 
 
 def parse_efforts(raw: str) -> list[str]:

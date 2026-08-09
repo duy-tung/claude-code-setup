@@ -15,7 +15,15 @@ Use teams when independent workstreams need to exchange findings or coordinate. 
 
 ## Enablement and Version
 
-Agent Teams remain experimental. Enable them in the shell or project/user settings:
+Agent Teams remain experimental and disabled by default. Prefer an explicit,
+per-invocation opt-in from a POSIX shell:
+
+```bash
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
+```
+
+For intentional persistent enablement, add the variable to project or user
+settings:
 
 ```json
 {
@@ -126,6 +134,7 @@ Token use grows with the number and lifetime of active teammates. Keep teams sma
 ## Known Constraints
 
 - Experimental availability can vary by account/runtime.
+- `/resume` and `/rewind` do not restore in-process teammates; spawn replacements after resuming.
 - Teammates share the checkout, so same-file parallel writes are unsafe.
 - Each teammate has its own context and does not inherit lead conversation history.
 - Task state can lag if a teammate fails to update its task.
