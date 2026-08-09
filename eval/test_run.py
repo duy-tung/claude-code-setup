@@ -2,6 +2,7 @@
 """Stdlib regression tests for the eval runner and effort sweep."""
 from __future__ import annotations
 
+import pathlib
 import contextlib
 import io
 import json
@@ -314,21 +315,37 @@ class RequestedSettingsTests(unittest.TestCase):
 class ModelPinTests(unittest.TestCase):
     def test_fixed_model_requires_exact_model_usage_key(self):
         self.assertIsNone(
-            eval_run.model_pin_error("claude-opus-5", ["claude-opus-5"])
+            eval_run.model_pin_error("claude-opus-5", {"claude-opus-5": 1000})
         )
         self.assertIn(
             "modelUsage reported",
-            eval_run.model_pin_error(
-                "claude-opus-5", ["claude-opus-4-8"]
-            ),
+            eval_run.model_pin_error("claude-opus-5", {"claude-opus-4-8": 1000}),
         )
 
-    def test_fixed_model_rejects_mixed_model_usage(self):
+    def test_rejects_another_model_that_did_material_work(self):
+        # A fallback or stray delegation shows up as real output tokens.
         error = eval_run.model_pin_error(
-            "claude-opus-5", ["claude-opus-5", "claude-haiku-4-5"]
+            "claude-opus-5", {"claude-opus-5": 500, "claude-haiku-4-5": 500}
         )
-        self.assertIn("also reported", error)
+        self.assertIn("material share", error)
         self.assertIn("claude-haiku-4-5", error)
+
+    def test_tolerates_claude_code_bookkeeping_model(self):
+        # Claude Code runs a small model for summaries/titles alongside the
+        # task model. Counting that as a violation invalidates every run of an
+        # un-pinned arm, which is the arm an A/B needs.
+        usage = {"claude-opus-5": 2600, "claude-haiku-4-5": 24}
+        self.assertIsNone(eval_run.model_pin_error("claude-opus-5", usage))
+        self.assertEqual(
+            eval_run.auxiliary_models("claude-opus-5", usage),
+            ["claude-haiku-4-5"],
+        )
+
+    def test_untracked_token_attribution_stays_strict(self):
+        error = eval_run.model_pin_error(
+            "claude-opus-5", {"claude-opus-5": 0, "claude-haiku-4-5": 0}
+        )
+        self.assertIn("no token attribution", error)
 
     def test_alias_matches_family_but_missing_usage_fails(self):
         self.assertEqual(
@@ -337,12 +354,12 @@ class ModelPinTests(unittest.TestCase):
         )
         self.assertIn(
             "omitted modelUsage",
-            eval_run.model_pin_error("opus", []),
+            eval_run.model_pin_error("opus", {}),
         )
         self.assertIn(
-            "also reported",
+            "material share",
             eval_run.model_pin_error(
-                "opus", ["claude-opus-5", "claude-haiku-4-5"]
+                "opus", {"claude-opus-5": 500, "claude-haiku-4-5": 500}
             ),
         )
 
@@ -714,3 +731,50 @@ class EffortSweepTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PairedComparisonValidityTests(unittest.TestCase):
+    """The A/B verdict must never be computed from discarded runs."""
+
+    @staticmethod
+    def _summary(records, results):
+        variants = [{"label": "baseline"}, {"label": "full-kit"}]
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            eval_run._print_summary(
+                results, records, variants, ["t1"], 2,
+                pathlib.Path("out.ndjson"), "claude",
+            )
+        return buffer.getvalue()
+
+    @staticmethod
+    def _rec(variant, run, solved, run_valid):
+        return {"variant": variant, "task": "t1", "run": run, "solved": solved,
+                "run_valid": run_valid, "num_turns": 3, "cost_usd": 0.1,
+                "agent_ms": 100, "output_chars": 10, "behavior_ok": True,
+                "workflow_artifact_count": 0, "requested_model": "claude-opus-5",
+                "requested_effort": "high", "models": ["claude-opus-5"]}
+
+    def test_refuses_a_verdict_when_one_arm_is_entirely_invalid(self):
+        # Reproduces the false "+1.000, B significantly better" result: the
+        # baseline arm solved everything but every run was invalidated, and
+        # invalid runs count as unsolved.
+        records = [self._rec("baseline", i, True, False) for i in range(2)]
+        records += [self._rec("full-kit", i, True, True) for i in range(2)]
+        out = self._summary(records, {"baseline": {"t1": [False, False]},
+                                      "full-kit": {"t1": [True, True]}})
+        self.assertIn("NOT COMPUTED", out)
+        self.assertIn("dropped 2 pair(s)", out)
+        self.assertNotIn("significantly better", out)
+
+    def test_compares_only_the_pairs_where_both_runs_are_valid(self):
+        records = [self._rec("baseline", 0, True, True),
+                   self._rec("baseline", 1, True, False),
+                   self._rec("full-kit", 0, True, True),
+                   self._rec("full-kit", 1, True, True)]
+        out = self._summary(records, {"baseline": {"t1": [True, False]},
+                                      "full-kit": {"t1": [True, True]}})
+        self.assertIn("dropped 1 pair(s)", out)
+        self.assertIn("pairs compared = 1", out)
+        self.assertIn("no significant difference", out)
+

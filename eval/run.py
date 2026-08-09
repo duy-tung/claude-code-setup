@@ -66,6 +66,9 @@ RESULT_SUBTYPES = {
     "error_max_budget_usd",
     "error_max_structured_output_retries",
 }
+# Share of total output tokens below which a non-requested model reads as
+# Claude Code's own bookkeeping rather than a fallback doing the task.
+AUXILIARY_OUTPUT_SHARE_MAX = 0.10
 WORKFLOW_ARTIFACT_NAME_RE = re.compile(
     r"(?:^|[-_])(plan|report|summary|journal)(?:[-_][^.]*)?\.(?:md|txt|json|ya?ml)$",
     re.I,
@@ -157,22 +160,67 @@ def matching_models(requested_model: str, actual_models: list[str]) -> list[str]
     return [model for model in actual if model.lower() == requested]
 
 
+def _split_by_work(requested_model: str,
+                   model_output_tokens: dict) -> tuple[dict, dict, int]:
+    """Partition modelUsage into requested vs other, with their output totals."""
+    actual = {
+        str(model): (tokens if isinstance(tokens, (int, float))
+                     and not isinstance(tokens, bool) else 0)
+        for model, tokens in (model_output_tokens or {}).items()
+    }
+    matched = set(matching_models(requested_model, list(actual)))
+    requested = {m: t for m, t in actual.items() if m in matched}
+    other = {m: t for m, t in actual.items() if m not in matched}
+    return requested, other, sum(actual.values())
+
+
+def auxiliary_models(requested_model: str | None,
+                     model_output_tokens: dict) -> list[str]:
+    """Non-requested models tolerated as Claude Code's own bookkeeping."""
+    if not requested_model:
+        return []
+    _, other, total = _split_by_work(requested_model, model_output_tokens)
+    if not other or total <= 0:
+        return []
+    return sorted(m for m, t in other.items()
+                  if t / total <= AUXILIARY_OUTPUT_SHARE_MAX)
+
+
 def model_pin_error(requested_model: str | None,
-                    actual_models: list[str]) -> str | None:
-    """Explain why modelUsage does not prove only the requested model ran."""
+                    model_output_tokens: dict) -> str | None:
+    """Explain why modelUsage does not prove the requested model did the work.
+
+    Presence alone is the wrong test. Claude Code runs a small auxiliary model
+    for its own bookkeeping — summaries, titles — alongside the model doing the
+    task, so a strict "no other model may appear" rule invalidates every run of
+    an un-pinned arm. That is precisely the arm an A/B needs, and invalid runs
+    count as unsolved, so the strict rule manufactures a false effect.
+
+    Judge by work share instead: a model that produced a negligible slice of the
+    output is bookkeeping; one that produced a material slice is a fallback or a
+    stray delegation, which is what this check exists to catch.
+    """
     if not requested_model:
         return None
-    if not actual_models:
+    requested, other, total = _split_by_work(requested_model, model_output_tokens)
+    if not (requested or other):
         return (f"requested model {requested_model!r}, but live result omitted "
                 "modelUsage")
-    matches = matching_models(requested_model, actual_models)
-    if not matches:
+    if not requested:
         return (f"requested model {requested_model!r}, but modelUsage reported "
-                f"{', '.join(actual_models)}")
-    mismatches = sorted(set(actual_models) - set(matches))
-    if mismatches:
+                f"{', '.join(sorted(other))}")
+    if not other:
+        return None
+    if total <= 0:
+        # Nothing to judge share by; stay strict rather than silently passing.
         return (f"requested model {requested_model!r}, but modelUsage also "
-                f"reported {', '.join(mismatches)}")
+                f"reported {', '.join(sorted(other))} with no token attribution")
+    working = sorted(m for m, t in other.items()
+                     if t / total > AUXILIARY_OUTPUT_SHARE_MAX)
+    if working:
+        detail = ", ".join(f"{m} ({other[m] / total:.0%} of output)" for m in working)
+        return (f"requested model {requested_model!r}, but {detail} did a "
+                "material share of the work")
     return None
 
 
@@ -210,7 +258,8 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                "workflow_artifact_budget": task.get("workflow_artifact_budget"),
                "behavior_ok": True, "behavior_issues": [],
                "protected_file_violations": [],
-               "models": [], "raw_models": [], "model_pin_ok": None,
+               "models": [], "raw_models": [], "model_output_tokens": {},
+               "auxiliary_models": [], "model_pin_ok": None,
                "requested_model": requested_model,
                "requested_effort": requested_effort}
 
@@ -391,12 +440,16 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
     model_usage = raw_model_usage if isinstance(raw_model_usage, dict) else {}
     result_text = data.get("result")
     raw_models = sorted(model_usage.keys())
-    models = sorted({
-        str(details.get("canonicalModel") or raw_model)
-        if isinstance(details, dict) else str(raw_model)
-        for raw_model, details in model_usage.items()
-    })
-    pin_error = model_pin_error(requested_model, models)
+    model_output = {}
+    for raw_model, details in model_usage.items():
+        canonical = (str(details.get("canonicalModel") or raw_model)
+                     if isinstance(details, dict) else str(raw_model))
+        tokens = details.get("outputTokens") if isinstance(details, dict) else None
+        if not isinstance(tokens, (int, float)) or isinstance(tokens, bool):
+            tokens = 0
+        model_output[canonical] = model_output.get(canonical, 0) + tokens
+    models = sorted(model_output)
+    pin_error = model_pin_error(requested_model, model_output)
     process_errors = []
     schema_error = result_message_error(data)
     if schema_error:
@@ -453,6 +506,8 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
         "output_chars": len(result_text) if isinstance(result_text, str) else None,
         "models": models,  # canonical model IDs for pin verification
         "raw_models": raw_models,  # provider/runtime keys from modelUsage
+        "model_output_tokens": model_output,
+        "auxiliary_models": auxiliary_models(requested_model, model_output),
         "model_pin_ok": pin_error is None if requested_model else None,
         "error": "; ".join(errors) or None,
     }
@@ -561,6 +616,9 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
         print(f"    requested model: {', '.join(requested_models) if requested_models else 'un-pinned'}")
         print(f"    requested effort: {', '.join(requested_efforts) if requested_efforts else 'default'}")
         print(f"    model(s) actually run: {', '.join(models) if models else 'unknown (mock or no modelUsage)'}")
+        aux = sorted({m for r in v_recs for m in (r.get("auxiliary_models") or [])})
+        if aux:
+            print(f"    tolerated as auxiliary (<{AUXILIARY_OUTPUT_SHARE_MAX:.0%} of output): {', '.join(aux)}")
         for task_id in task_ids:
             s = per_task[task_id]
             print(f"    - {task_id}: {sum(s)}/{len(s)} "
@@ -574,26 +632,46 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
                 )
 
     # Paired A/B comparison (only when exactly two variants).
+    #
+    # An invalid run is counted as unsolved, so comparing across invalid records
+    # manufactures an effect out of discarded data: an arm whose runs were all
+    # invalidated reads as 0% solved and the other arm looks perfect. Pair on
+    # validity first and refuse a verdict when there is nothing valid to compare.
     if len(variants) == 2:
         a, b = variants[0]["label"], variants[1]["label"]
-        diffs, bb, cc = [], 0, 0
+        valid = {(r["variant"], r["task"], r["run"]): r.get("run_valid", True)
+                 for r in records}
+        diffs, bb, cc, dropped = [], 0, 0, 0
         for task_id in task_ids:
             sa, sb = results[a][task_id], results[b][task_id]
-            for x, y in zip(sa, sb):
+            for i, (x, y) in enumerate(zip(sa, sb)):
+                if not (valid.get((a, task_id, i), True)
+                        and valid.get((b, task_id, i), True)):
+                    dropped += 1
+                    continue
                 diffs.append(int(y) - int(x))
                 if x and not y:
                     bb += 1
                 if y and not x:
                     cc += 1
-        point, lo, hi = stats.bootstrap_diff_ci(diffs)
-        p = stats.mcnemar_exact(bb, cc)
+
         print(f"\nPaired A/B  ({b} − {a}):")
-        print(f"    Δ solve-rate = {point:+.3f}  (95% CI [{lo:+.3f}, {hi:+.3f}])")
-        print(f"    McNemar exact p = {p:.4f}  (discordant: {a}-only={bb}, {b}-only={cc})")
-        verdict = ("B significantly better" if cc > bb and p < 0.05 else
-                   "A significantly better" if bb > cc and p < 0.05 else
-                   "no significant difference")
-        print(f"    Verdict: {verdict}")
+        if dropped:
+            print(f"    dropped {dropped} pair(s): one or both runs were invalid")
+        if not diffs:
+            print("    Verdict: NOT COMPUTED — no valid paired runs remain.")
+            print("    Fix the harness validation errors below and re-run; the "
+                  "solve counts above treat every invalid run as unsolved.")
+        else:
+            point, lo, hi = stats.bootstrap_diff_ci(diffs)
+            p = stats.mcnemar_exact(bb, cc)
+            print(f"    pairs compared = {len(diffs)}")
+            print(f"    Δ solve-rate = {point:+.3f}  (95% CI [{lo:+.3f}, {hi:+.3f}])")
+            print(f"    McNemar exact p = {p:.4f}  (discordant: {a}-only={bb}, {b}-only={cc})")
+            verdict = ("B significantly better" if cc > bb and p < 0.05 else
+                       "A significantly better" if bb > cc and p < 0.05 else
+                       "no significant difference")
+            print(f"    Verdict: {verdict}")
 
     print(f"\nResults → {out_file}")
     ok, issues = assess_suite(records, mode)

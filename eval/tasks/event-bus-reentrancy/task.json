@@ -1,0 +1,20 @@
+{
+  "id": "event-bus-reentrancy",
+  "kind": "feature",
+  "workflow_artifact_budget": 0,
+  "prompt": "events.py implements a synchronous EventBus with subscribe/unsubscribe/publish. It has dispatch-semantics defects and is missing a feature. Required behavior: (1) add once(event, handler) that delivers at most one event to that handler; (2) unsubscribing a handler from inside another handler must take effect immediately without skipping the remaining handlers for that dispatch; (3) subscribing from inside a handler must not extend the current dispatch — the new handler starts at the next publish; (4) a publish issued from inside a handler must be delivered after the current dispatch finishes, in FIFO order, without nesting or growing the Python call stack. Keep the existing public API and make all tests in test_events.py pass. Do not edit the test file.",
+  "grade": {
+    "test_cmd": ["python3", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
+    "fail_to_pass": [
+      "test_events.TestEventBus.test_once_fires_a_single_time",
+      "test_semantics.TestDispatchSemantics.test_unsubscribe_during_dispatch_skips_only_that_handler",
+      "test_semantics.TestDispatchSemantics.test_nested_publish_is_queued_fifo_not_recursive",
+      "test_semantics.TestDispatchSemantics.test_deep_chain_does_not_grow_the_python_stack"
+    ],
+    "pass_to_pass": [
+      "test_events.TestEventBus.test_subscribe_and_publish",
+      "test_events.TestEventBus.test_unsubscribe_stops_delivery"
+    ],
+    "timeout_sec": 60
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "ttl-lru-cache",
+  "kind": "bugfix",
+  "workflow_artifact_budget": 0,
+  "prompt": "cache.py implements TTLCache, an LRU cache with a per-entry time-to-live and an injectable clock. Expiry is currently recorded but never enforced. Required behavior: (1) reading an expired key returns the default and removes the entry; (2) len() reports only live entries; (3) when the cache is at capacity, expired entries are reclaimed before any live entry is evicted; (4) reading a key refreshes its LRU recency but does not extend its expiry deadline, while overwriting a key does renew it. Keep the constructor signature, including the injectable clock, and make all tests in test_cache.py pass. Do not edit the test file.",
+  "grade": {
+    "test_cmd": ["python3", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
+    "fail_to_pass": [
+      "test_cache.TestTTLCache.test_expired_entry_is_a_miss",
+      "test_expiry_contract.TestExpiryContract.test_len_reports_only_live_entries",
+      "test_expiry_contract.TestExpiryContract.test_capacity_reclaims_expired_before_evicting_a_live_entry",
+      "test_expiry_contract.TestExpiryContract.test_read_refreshes_recency_but_not_the_deadline"
+    ],
+    "pass_to_pass": [
+      "test_cache.TestTTLCache.test_set_and_get",
+      "test_cache.TestTTLCache.test_evicts_least_recently_used_when_full"
+    ],
+    "timeout_sec": 60
+  }
+}
