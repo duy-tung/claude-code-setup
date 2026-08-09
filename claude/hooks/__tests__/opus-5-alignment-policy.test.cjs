@@ -255,3 +255,63 @@ test('recalibrated skills keep their delegation and output guidance conditional'
   const xia = read('claude/skills/xia/SKILL.md');
   assert.match(xia, /read it inline when/i);
 });
+
+// Tree-wide prompt-policy scan. The patterns below are phrased as the risky
+// *instruction*; the scanner suppresses the prohibitions that state the same
+// words, so the kit's own rules do not trip their own guard.
+const { findInstructionHits } = require('./lib/prompt-policy.cjs');
+
+const PROMPT_POLICY_PATTERNS = {
+  'self-recheck': /\b(?:double[- ]check|re-?verify)\b/,
+  'subagent-verify': /(?:subagent|agent) to (?:verify|double[- ]check|review your)/,
+  'restrictive-review-filter': /only report (?:the )?(?:critical|high|severe|blocking)|be conservative\b/,
+  'numeric-confidence': /confidence score|\d{1,3}% confiden/,
+  'final-verification': /final verification (?:step|pass)/
+};
+
+// Verified legitimate on inspection. Each entry names why the phrase is domain
+// logic rather than Opus 5 over-verification. Keep this list short; a growing
+// list means the pattern is wrong, not that the exceptions are.
+const PROMPT_POLICY_EXEMPTIONS = {
+  // Re-runs the dependent test after a fix lands — not a recheck of reasoning.
+  'claude/skills/ck-code-review/references/task-management-reviews.md': ['self-recheck'],
+  // Conditional re-measurement to rule out noise in a benchmarking loop.
+  'claude/skills/ck-loop/references/guard-and-noise.md': ['self-recheck'],
+  // Re-greps stale third-party scout output, which calibration §5 requires.
+  'claude/agents/planner.md': ['self-recheck']
+};
+
+test('no shipped guidance instructs Opus 5 to over-verify or self-score', () => {
+  const files = [
+    ...markdownFiles('claude/skills'),
+    ...markdownFiles('claude/agents'),
+    ...markdownFiles('claude/rules'),
+    ...markdownFiles('docs')
+  ].filter((file) => !file.includes(`${path.sep}document-skills${path.sep}`));
+  assert.ok(files.length > 200, `expected the full guidance tree, found ${files.length} files`);
+
+  const failures = [];
+  for (const file of files) {
+    const source = read(file);
+    const exempt = PROMPT_POLICY_EXEMPTIONS[file.split(path.sep).join('/')] || [];
+    for (const [name, pattern] of Object.entries(PROMPT_POLICY_PATTERNS)) {
+      if (exempt.includes(name)) continue;
+      const hits = findInstructionHits(source, pattern);
+      if (hits.length) failures.push(`${file} [${name}] → ${hits.join(' | ')}`);
+    }
+  }
+  assert.deepEqual(failures, [], `prompt-policy violations:\n${failures.join('\n')}`);
+});
+
+test('every prompt-policy exemption still points at a real file and pattern', () => {
+  for (const [file, names] of Object.entries(PROMPT_POLICY_EXEMPTIONS)) {
+    const source = read(file);
+    for (const name of names) {
+      assert.ok(PROMPT_POLICY_PATTERNS[name], `exemption names unknown pattern ${name}`);
+      assert.ok(
+        findInstructionHits(source, PROMPT_POLICY_PATTERNS[name]).length > 0,
+        `${file} no longer needs its ${name} exemption — remove it`
+      );
+    }
+  }
+});
