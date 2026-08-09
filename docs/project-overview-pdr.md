@@ -265,7 +265,7 @@ workflow reruns the repository gate on pull requests and pushes to `main` (see
 
 **2. Skill Routing System** (replaces the original Command System as of v2.17)
 - Frontmatter-driven skill registry (`name:`, `description:`, `user-invocable: true`)
-- Domain + workflow routing rules (`claude/rules/skill-domain-routing.md`, `skill-workflow-routing.md`)
+- Skill routing rules (`claude/rules/skill-routing.md`)
 - Cross-reference, description, frontmatter, Opus policy, eval-harness, statusline,
   and worktree checks run through `npm run verify` locally and in GitHub Actions
 - `metadata.deletions[]` to retire stale commands/skills on user upgrade

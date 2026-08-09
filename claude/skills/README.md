@@ -15,7 +15,7 @@ Naming convention: the directory may carry a `ck-` prefix, but the invocation na
 
 ## Skill Catalog
 
-Invoke any skill as a slash command, or just describe the task — the routing rules in `.claude/rules/skill-domain-routing.md` and `skill-workflow-routing.md` guide Claude to the right one. `/ck:find-skills` searches the catalog by capability.
+Invoke any skill as a slash command, or just describe the task — Claude Code lists every skill with its description, and `.claude/rules/skill-routing.md` adds the escalation chains and disambiguation between look-alike skills. `/ck:find-skills` searches the catalog by capability.
 
 | Category | Skills |
 |----------|--------|

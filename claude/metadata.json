@@ -207,7 +207,10 @@
     "skills/_shared/tests/plan-table-parser.test.cjs",
     "rules/opus-5-calibration.md",
     "rules/primary-workflow.md",
-    "rules/review-audit-self-decision.md"
+    "rules/review-audit-self-decision.md",
+    "rules/skill-domain-routing.md",
+    "rules/skill-workflow-routing.md",
+    "rules/team-coordination-rules.md"
   ],
   "version": "2.19.1",
   "name": "claudekit-engineer",

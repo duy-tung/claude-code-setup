@@ -66,7 +66,7 @@ test('top-level guidance loads the Opus 5 calibration rules', () => {
 // file, and warns that longer files reduce adherence and that contradictory
 // rules get resolved arbitrarily. The budget is what stops this directory from
 // silently growing back into the 946-line set this consolidation replaced.
-const ALWAYS_LOADED_LINE_BUDGET = 820; // Phase 1 ceiling; tightens each phase.
+const ALWAYS_LOADED_LINE_BUDGET = 440; // Ratcheted 946 → 815 → 426. Lower it, never raise it.
 
 function alwaysLoadedRules() {
   return markdownFiles('claude/rules')
@@ -105,7 +105,8 @@ test('always-loaded rules stay within the session context budget', () => {
 const CANONICAL_BEHAVIOR_PHRASES = {
   'delegation threshold': /delegate work (?:that is )?finishable in a handful of tool calls|Do not delegate work finishable/i,
   'evidence states': /\*\*Verified\*\*|verified.{0,12}inferred.{0,12}unknown/i,
-  'effort ladder': /\bxhigh\b/i
+  'effort ladder': /\bxhigh\b/i,
+  'workflow tiering': /\*\*Small and clear:\*\*|\*\*Multi-step:\*\*/i
 };
 
 test('canonical behavior rules are stated only in model-calibration.md', () => {
@@ -291,7 +292,7 @@ test('Agent Teams guidance uses the current shared-checkout lifecycle', () => {
     'claude/skills/team/references/agent-teams-official-docs.md',
     'claude/skills/team/references/agent-teams-controls-and-modes.md',
     'claude/skills/team/references/agent-teams-examples-and-best-practices.md',
-    'claude/rules/team-coordination-rules.md',
+    'claude/skills/team/references/team-coordination-rules.md',
     'docs/agent-teams-guide.md',
   ];
   const combined = files.map(read).join('\n');
