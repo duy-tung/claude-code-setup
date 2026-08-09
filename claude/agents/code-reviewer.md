@@ -89,6 +89,8 @@ Report which plan tasks appear complete and any recommended next steps. Do not e
 
 ## Output Format
 
+Scale the report to the size of the change. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+
 ```markdown
 ## Code Review Summary
 

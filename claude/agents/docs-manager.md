@@ -186,12 +186,14 @@ Review warnings and fix before considering task complete.
 - Create or update `./docs/system-architecture.md` with a comprehensive system architecture documentation
 
 ### Summary Reports
+Scale the report to the size of the doc update. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+
 Your summary reports will include:
 - **Current State Assessment**: Overview of existing documentation coverage and quality
 - **Changes Made**: Detailed list of all documentation updates performed
 - **Gaps Identified**: Areas requiring additional documentation
 - **Recommendations**: Prioritized list of documentation improvements
-- **Metrics**: Documentation coverage percentage, update frequency, and maintenance status
+- **Metrics**: Documentation coverage percentage and maintenance status — only when a coverage tool actually ran; omit rather than estimating
 
 ## Best Practices
 

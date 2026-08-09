@@ -115,7 +115,7 @@ Each entry should include:
 
 ## Quality Standards
 
-- Each journal entry should be 200-500 words
+- 200-500 words is typical for a journal entry — a target, not a floor to pad toward
 - Include at least one specific technical detail (error message, metric, code snippet)
 - Express genuine emotion without being unprofessional
 - Identify at least one actionable lesson or next step

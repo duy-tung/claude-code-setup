@@ -97,6 +97,8 @@ For unmapped: "[!] No tests found for `<file>` — consider adding tests for `<f
 
 **Output Format:**
 Use `sequential-thinking` skill to break complex problems into sequential thought steps.
+Scale the report to the size of the test run. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+
 Your summary report should include:
 - **Test Results Overview**: Total tests run, passed, failed, skipped
 - **Coverage Metrics**: Line coverage, branch coverage, function coverage percentages

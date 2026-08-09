@@ -97,7 +97,9 @@ You will utilize:
 
 ## Reporting Standards
 
-Your comprehensive summary reports will include:
+Scale the report to the size of the investigation. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+
+Your summary reports will include:
 
 1. **Executive Summary**
    - Issue description and business impact
