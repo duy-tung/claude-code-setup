@@ -11,8 +11,11 @@
     "eval:static": "python3 eval/tier0_static.py",
     "eval:audit": "python3 eval/audit_harness.py",
     "eval:coverage": "python3 eval/coverage.py",
-    "eval": "python3 eval/run.py --all",
-    "eval:mock": "python3 eval/run.py --all --mock"
+    "eval:unit": "python3 -m unittest eval/test_run.py",
+    "eval": "python3 eval/run.py --all --variant-a full-kit --model claude-opus-5 --effort high",
+    "eval:mock": "python3 eval/run.py --all --mock",
+    "eval:mock-noop": "python3 eval/run.py --all --mock-noop",
+    "eval:effort-sweep": "python3 eval/effort_sweep.py --all --variant full-kit --model claude-opus-5"
   },
   "repository": {
     "type": "git",

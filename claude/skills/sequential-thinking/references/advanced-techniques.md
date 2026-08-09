@@ -1,76 +1,40 @@
-# Advanced Sequential Thinking Techniques
+# Advanced Evidence Techniques
 
-Complex problem-solving patterns.
+## Spiral refinement
 
-## Spiral Refinement
+Start with the smallest decision model that can work. Add a constraint only when
+source evidence, a failing check, or a contract requires it. Re-evaluate the
+affected conclusion, not the entire problem by default.
 
-Return to concepts with progressively deeper understanding.
+## Hypothesis testing
 
-```
-Thought 1/7: Initial design (surface)
-Thought 2/7: Discover constraint A
-Thought 3/7: Refine for A
-Thought 4/7: Discover constraint B
-Thought 5/7: Refine for both A and B
-Thought 6/7: Integration reveals edge case
-Thought 7/7: Final design addressing all constraints
-```
+For each plausible cause, specify:
 
-**Use for**: Complex systems where constraints emerge iteratively.
-**Key**: Each return is refinement, not restart.
+- predicted observation if true;
+- cheapest check that distinguishes it from alternatives;
+- observed result and evidence location;
+- disposition: verified, refuted, or still unknown.
 
-## Hypothesis-Driven Investigation
+Stop testing a refuted hypothesis unless later evidence invalidates the check.
 
-Systematic hypothesis generation and testing.
+## Alternative convergence
 
-```
-Thought 1/6: Observe symptoms
-Thought 2/6 [HYPOTHESIS]: Explanation X
-Thought 3/6 [VERIFICATION]: Test X—partial match
-Thought 4/6 [REFINED HYPOTHESIS]: Adjusted Y
-Thought 5/6 [VERIFICATION]: Test Y—confirmed
-Thought 6/6 [FINAL]: Solution based on verified Y
-```
+Compare independent options first, then consider a hybrid only when it preserves
+verified advantages without combining their major costs. A hybrid is not
+automatically safer or more complete.
 
-**Use for**: Debugging, root cause analysis, diagnostics.
-**Pattern**: Generate → Test → Refine → Re-test loop.
+## System decomposition
 
-## Multi-Branch Convergence
+Decompose by contracts or independently testable boundaries. Track only
+interactions that affect the requested outcome. When an interaction changes a
+local conclusion, revise that conclusion and its consumers rather than expanding
+to unrelated components.
 
-Explore alternatives, then synthesize best approach.
+## Evidence sufficiency
 
-```
-Thought 2/8: Multiple viable approaches
-Thought 3/8 [BRANCH A]: Approach A benefits
-Thought 4/8 [BRANCH A]: Approach A drawbacks
-Thought 5/8 [BRANCH B]: Approach B benefits
-Thought 6/8 [BRANCH B]: Approach B drawbacks
-Thought 7/8 [CONVERGENCE]: Hybrid combining A's X with B's Y
-Thought 8/8 [FINAL]: Hybrid superior to either alone
-```
+A decision is ready when:
 
-**Use for**: Complex decisions where neither option clearly best.
-**Key**: Convergence often yields better solution than either branch.
-
-## Progressive Context Deepening
-
-Build understanding in layers from abstract to concrete.
-
-```
-Thought 1/9: High-level problem
-Thought 2/9: Identify major components
-Thought 3/9: Zoom into component A (detailed)
-Thought 4/9: Zoom into component B (detailed)
-Thought 5/9: Identify A-B interactions
-Thought 6/9: Discover emergent constraint
-Thought 7/9 [REVISION of 3-4]: Adjust for interaction
-Thought 8/9: Verify complete system
-Thought 9/9 [FINAL]: Integrated solution
-```
-
-**Use for**: System design, architecture, integration problems.
-**Pattern**: Abstract → Components → Details → Interactions → Integration.
-
-## Reference
-
-See `advanced-strategies.md` for: Uncertainty Management, Revision Cascade Management, Meta-Thinking Calibration, Parallel Constraint Satisfaction.
+- the success condition is explicit;
+- material claims are verified or clearly labeled as inferred;
+- no unresolved unknown can reverse the choice without a stated next check;
+- the chosen action fits the requested scope and authority.

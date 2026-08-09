@@ -23,7 +23,11 @@ Tasks are **session-scoped** — they disappear when the session ends. Plan file
 
 ## Tool Availability
 
-Task tools (`TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList`) are **CLI-only** — disabled in VSCode extension. If unavailable, use `TodoWrite` for progress tracking. The hydration pattern still works: plan files remain source of truth, sync-back updates checkboxes regardless of Task tool availability.
+Native task-list tools (`TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList`) are
+**CLI-only** — disabled in the VS Code extension. If unavailable, use `TodoWrite`
+for progress tracking. The hydration pattern still works: plan files remain the
+source of truth, and sync-back updates checkboxes regardless of task-list tool
+availability.
 
 ## Session Start: Hydration
 

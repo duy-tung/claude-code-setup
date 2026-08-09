@@ -36,8 +36,8 @@ Context engineering curates the smallest high-signal token set for LLM tasks. Th
 5. **Measure before optimizing** - Know your baseline
 
 **IMPORTANT:**
-- Sacrifice grammar for the sake of concision.
-- Ensure token efficiency while maintaining high quality.
+- Be concise while preserving grammar and clarity.
+- Optimize only after measuring the task's quality, cost, and latency.
 - Pass these rules to subagents.
 
 ## Quick Reference
@@ -55,13 +55,15 @@ Context engineering curates the smallest high-signal token set for LLM tasks. Th
 | **Pipelines** | Project development, batch processing | [project-development.md](./references/project-development.md) |
 | **Runtime Awareness** | Usage limits, context window monitoring | [runtime-awareness.md](./references/runtime-awareness.md) |
 
-## Key Metrics
+## Opus 5 runtime baseline
 
-- **Token utilization**: Warning at 70%, trigger optimization at 80%
-- **Token variance**: Explains 80% of agent performance variance
-- **Multi-agent cost**: ~15x single agent baseline
-- **Compaction target**: 50-70% reduction, <5% quality loss
-- **Cache hit target**: 70%+ for stable workloads
+- The default and maximum context window is 1M tokens.
+- Anthropic has not published an Opus 5 quality-degradation onset inside that
+  window. A percentage is capacity telemetry, not a quality guarantee.
+- Treat warning/compaction thresholds as workload-specific operating heuristics.
+  Tune them from remaining work, retrieval quality, latency, and measured evals.
+- Measure multi-agent cost and cache hit rate on the actual workload; do not carry
+  universal percentages or multipliers forward from another model or harness.
 
 ## Four-Bucket Strategy
 
@@ -75,14 +77,15 @@ Context engineering curates the smallest high-signal token set for LLM tasks. Th
 - Exhaustive context over curated context
 - Critical info in middle positions
 - No compaction triggers before limits
-- Single agent for parallelizable tasks
+- Delegation used only to create context isolation, without an independent payoff
 - Tools without clear descriptions
 
 ## Guidelines
 
 1. Place critical info at beginning/end of context
-2. Implement compaction at 70-80% utilization
-3. Use sub-agents for context isolation, not role-play
+2. Compact when projected remaining work, signal density, or runtime capacity calls
+   for it; do not infer a quality cliff from a fixed percentage
+3. Use sub-agents for independent context isolation when the coordination cost pays
 4. Design tools with 4-question framework (what, when, inputs, returns)
 5. Optimize for tokens-per-task, not tokens-per-request
 6. Validate with probe-based evaluation
@@ -100,9 +103,11 @@ Context Window Usage: 67%
 </usage-awareness>
 ```
 
-**Thresholds:**
-- 70%: WARNING - consider optimization/compaction
-- 90%: CRITICAL - immediate action needed
+**Operational indicators:**
+- Warning thresholds are configurable heuristics, not published Opus 5 quality
+  boundaries.
+- Near-capacity alerts should account for the remaining task and the runtime's own
+  compaction reserve before recommending a reset.
 
 **Data Sources:**
 - Usage limits: Anthropic OAuth API (`https://api.anthropic.com/api/oauth/usage`)

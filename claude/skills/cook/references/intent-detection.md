@@ -1,109 +1,116 @@
-# Intent Detection Logic
+# Intent and Scale Detection
 
-Detect user intent from natural language and route to appropriate workflow.
+Classify scale before selecting a workflow mode. The scale gate in
+`../SKILL.md` takes precedence over keyword routing.
 
 ## Detection Algorithm
 
-```
-FUNCTION detectMode(input):
-  # Priority 1: Explicit flags (override all)
-  IF input contains "--interactive": RETURN "interactive"
-  IF input contains "--fast": RETURN "fast"
-  IF input contains "--parallel": RETURN "parallel"
-  IF input contains "--auto": RETURN "auto"
-  IF input contains "--no-test": RETURN "no-test"
-  # "--tdd" is composable and does not change mode selection
+```text
+FUNCTION detectWorkflow(input, scoutSignals):
+  flags = parseExplicitFlags(input)
+  IF flags conflict: resolve by explicit user priority or ask only if the
+                     difference materially changes behavior or risk
 
-  # Priority 2: Plan path detection
-  IF input matches path pattern (./plans/*, plan.md, phase-*.md):
-    RETURN "code"
+  IF input points to plan.md or phase-*.md:
+    mode = "code"
+  ELSE IF flags contains --interactive: mode = "interactive"
+  ELSE IF flags contains --fast:        mode = "fast"
+  ELSE IF flags contains --parallel:    mode = "parallel"
+  ELSE IF flags contains --auto:        mode = "auto"
+  ELSE IF flags contains --no-test:     mode = "no-test"
+  ELSE:
+    mode = inferModeFromIntent(input)
 
-  # Priority 3: Keyword detection (case-insensitive)
-  keywords = lowercase(input)
+  scale = classifyScale(input, scoutSignals)
+  IF scale == "small-clear":
+    RETURN {mode: "proportional", path: "inline", composableFlags: flags}
 
-  IF keywords contains ["fast", "quick", "rapidly", "asap"]:
-    RETURN "fast"
+  IF mode == "parallel":
+    workstreams = identifyIndependentWorkstreams(input, scoutSignals)
+    IF count(workstreams) < 2: mode = "proportional"
+    ELSE: fanout = min(count(workstreams), 3)
 
-  IF keywords contains ["trust me", "auto", "yolo", "just do it"]:
-    RETURN "auto"
-
-  IF keywords contains ["no test", "skip test", "without test"]:
-    RETURN "no-test"
-
-  # Priority 4: Complexity detection
-  features = extractFeatures(input)  # comma-separated or "and"-joined items
-  IF count(features) >= 3 OR keywords contains "parallel":
-    RETURN "parallel"
-
-  # Default: interactive workflow
-  RETURN "interactive"
+  RETURN {mode, path: "structured", composableFlags: flags}
 ```
 
-## Feature Extraction
+`--tdd` composes with any mode and does not select a mode. `--no-test` records an
+evidence gap; it does not waive type/build checks needed to establish that the
+changed code is usable.
 
-Detect multiple features from natural language:
+## Scale Signals
 
-```
-"implement auth, payments, and notifications" → ["auth", "payments", "notifications"]
-"add login + signup + password reset"        → ["login", "signup", "password reset"]
-"create dashboard with charts and tables"    → single feature (dashboard)
-```
+| Scale | Typical signals | Workflow consequence |
+|---|---|---|
+| Small and clear | Localized change, known contract, routine reversible choices | Targeted inspect, inline intent, implementation, one proportional evidence bundle |
+| Standard | Multiple touchpoints, non-obvious contract, useful resumability | Short plan, targeted research/testing, conditional delegation |
+| Large/high-risk | Public API/schema, auth/secrets/payments, destructive action, deploy/release, broad migration | Durable plan and evidence, risk-specific review, material human gates |
 
-**Parallel trigger:** 3+ distinct features = parallel mode
+Feature count is only a routing signal. Three closely related edits can remain
+one inline or sequential change; three genuinely independent workstreams may use
+parallel mode. Never exceed three ordinary concurrent workers.
+
+## Intent Signals
+
+After scale classification, use these signals:
+
+1. Explicit flags (`--interactive`, `--fast`, `--parallel`, `--auto`,
+   `--no-test`) override inferred mode.
+2. A current plan path selects `code` mode.
+3. “fast”, “quick”, or “rapidly” suggests `fast`.
+4. “trust me”, “auto”, “yolo”, or “just do it” suggests `auto`, but never
+   bypasses a high-risk external-effect gate.
+5. “no test”, “skip test”, or “without test” selects `no-test`.
+6. “parallel”, or three or more independent deliverables, suggests `parallel`.
+7. Otherwise select `proportional`.
 
 ## Mode Behaviors
 
-| Mode | Skip Research | Skip Test | Review Gates | Auto-Approve | Parallel Exec |
-|------|---------------|-----------|--------------|--------------|---------------|
-| interactive | ✗ | ✗ | **Yes (stops)** | ✗ | ✗ |
-| auto | ✗ | ✗ | Low-risk only | ✓ (artifact-gated) | ✓ (low-risk phases) |
-| fast | ✓ | ✗ | Yes (stops) | ✗ | ✗ |
-| parallel | Optional | ✗ | Yes (stops) | ✗ | ✓ |
-| no-test | ✗ | ✓ | Yes (stops) | ✗ | ✗ |
-| code | ✓ | ✗ | Yes (stops) | Per plan | Per plan |
+| Mode | Research | Testing | Human checkpoint | Parallel execution |
+|---|---|---|---|---|
+| proportional | When uncertainty warrants it | Proportional | Material decisions only | No by default |
+| interactive | Conditional | Proportional | Material decisions plus checkpoints explicitly requested by the user | No by default |
+| auto | Conditional | Proportional | High-risk external effects, contract choices, or a blocking evidence gap | Up to 3 independent workers |
+| fast | Skip broad research | Targeted | Material decisions only | No by default |
+| parallel | Conditional | Proportional | Material decisions only | Up to 3 independent workers |
+| no-test | Conditional | Skipped as requested; report gap | Material decisions only | Only if independently useful |
+| code | Use current plan evidence | Per plan and risk | Material deviations only | Per plan, capped at 3 workers |
 
-**Review Gates:** Human approval checkpoints between major steps (see `workflow-steps.md`).
-- All modes EXCEPT low-risk `auto` stop at review gates for human approval.
-- `auto` mode runs continuously only when review artifacts pass and `risk-gate.autoStopRequired` is false.
+A completed phase is not itself a reason to ask for approval. Routine,
+reversible decisions should be inferred from the request, nearby code, and
+existing conventions.
 
 ## Examples
 
-```
-"/ck:cook implement user auth --interactive"
-→ Mode: interactive (explicit flag, stops at review gates)
+```text
+"/ck:cook rename the local helper and update its unit test"
+-> Scale: small-clear; inline proportional flow
 
-"/ck:cook implement user auth"
-→ Mode: interactive (default, stops at review gates)
+"/ck:cook implement user auth --interactive"
+-> Structured interactive flow; checkpoints only for material choices
 
 "/ck:cook plans/260120-auth/phase-02-api.md"
-→ Mode: code (path detected, stops at review gates)
+-> Code mode; execute the current plan without re-planning ceremony
 
-"/ck:cook quick fix for the login bug"
-→ Mode: fast ("quick" keyword, stops at review gates)
-
-"/ck:cook implement auth, payments, notifications, shipping"
-→ Mode: parallel (4 features, stops at review gates)
-
-"/ck:cook implement dashboard --fast"
-→ Mode: fast (explicit flag, stops at review gates)
-
-"/ck:cook refactor auth middleware --tdd"
-→ Mode: interactive (default mode, with tests-first implementation behavior)
+"/ck:cook implement auth, payments, notifications, shipping --parallel"
+-> Parallel mode if scout confirms independent streams; maximum fanout 3
 
 "/ck:cook implement everything --auto"
-→ Mode: auto (continuous only for low-risk, artifact-validated work)
+-> Auto mode; low-risk artifact-validated steps continue, high-risk effects stop
 
-"/ck:cook implement dashboard trust me"
-→ Mode: auto ("trust me" keyword, still stops on high-risk changes)
+"/ck:cook refactor auth middleware --tdd"
+-> Proportional mode with tests-first behavior
 ```
-
-**Note:** Only `--auto` flag or "trust me"/"auto"/"yolo" keywords enable continuous execution.
 
 ## Conflict Resolution
 
-When multiple signals detected, priority order:
-1. Explicit flags (`--fast`, `--auto`, etc.)
-2. Path detection (plan files)
-3. Keywords in text
-4. Feature count analysis
-5. Default (interactive)
+Use this priority:
+
+1. Explicit user instruction and compatible flags
+2. Safety and authorization boundaries
+3. Current plan path
+4. Scale classification
+5. Intent keywords
+6. Proportional default
+
+Ask the user only when resolving a conflict would materially change observable
+behavior, public contracts, risk, cost, or external side effects.

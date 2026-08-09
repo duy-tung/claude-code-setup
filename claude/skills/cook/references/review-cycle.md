@@ -1,25 +1,32 @@
-# Code Review Cycle
+# Risk-Calibrated Review Cycle
 
-Interactive review-fix cycle used in code workflows.
+Review is an evidence activity, not a mandatory subagent or human-approval phase.
+Small, clear work is reviewed inline through the proportional verification bundle.
+Use the structured cycle below only when breadth, difficulty, risk, an explicit
+workflow flag, or a ship-like action justifies durable review evidence.
 
 Shared artifact contract: `../../_shared/references/workflow-artifacts.md`.
 
-## Required Review Artifacts
+## When Review Artifacts Apply
 
-Before finalize, commit, ship, push, PR, or deploy, create/update:
+Create/update the artifact bundle when an `--auto` structured workflow, a
+large/high-risk change, or a finalize/commit/ship/push/PR/deploy workflow relies
+on the artifact gate:
 
 - `context-snippets.json`
 - `risk-gate.json`
 - `verification.json`
 - `review-decision.json`
-- `adversarial-validation.json` when auto, high-risk, large-diff, or ship-like
+- `adversarial-validation.json` for auto, high-risk, large-diff, or ship-like work
 
 Artifact directory:
+
 - Plan workflow: `plans/<plan-dir>/reports/harness/`
-- No-plan workflow: `plans/reports/harness/<timestamp-slug>/`
+- No-plan structured workflow: `plans/reports/harness/<timestamp-slug>/`
 - Active pointer: `.claude/workflow-artifacts.json`
 
-Run:
+Do not create this bundle for a small inline change merely to satisfy ceremony.
+When the bundle applies, validate it with:
 
 ```bash
 node claude/hooks/workflow-artifact-gate.cjs --stage finalize --artifact-dir <artifact-dir>
@@ -27,74 +34,67 @@ node claude/hooks/workflow-artifact-gate.cjs --stage finalize --artifact-dir <ar
 
 ## Risk Triggers
 
-Add adversarial validation for:
-
-| Trigger | Required Lens |
+| Trigger | Additional evidence |
 |---|---|
-| `--auto` | adversarial validator |
-| auth, secrets, payments | domain-risk reviewer |
-| DB schema, migration | domain-risk reviewer |
-| public API, exported contract | domain-risk reviewer |
-| CI, deploy, release, production config | domain-risk reviewer |
-| destructive filesystem operation | domain-risk reviewer |
-| large diff or ship/push/PR/deploy | adversarial validator |
+| `--auto` structured workflow | Adversarial validation before artifact-gated finalize |
+| Auth, secrets, payments | Domain-risk review |
+| DB schema or migration | Domain-risk review and rollback evidence |
+| Public API or exported contract | Compatibility review |
+| CI, deploy, release, production config | Operational-risk review |
+| Destructive filesystem operation | Target and recovery validation |
+| Large diff or ship/push/PR/deploy | Adversarial validation when it adds independent evidence |
 
-No majority vote. Any evidenced critical issue blocks.
+No vote or numeric score overrides an evidenced critical issue. Findings must be
+tied to observable behavior, file/line evidence, or a missing verification step.
 
-## Interactive Cycle (max 3 cycles)
+## Structured Interactive Cycle (maximum 3 fix cycles)
 
-```
+```text
 cycle = 0
 LOOP:
-  1. Run code-reviewer -> review-decision.json
-  2. If risk trigger exists, run adversarial/domain reviewer -> adversarial-validation.json/risk-gate.json
-  3. Run artifact validator
-  4. Display score, decision, criticals, warnings, artifact dir, validator command
-  5. AskUserQuestion:
-     IF validator blocks OR critical_count > 0:
-       - "Fix blocking issues" -> fix, re-run tester, cycle++, LOOP
-       - "Abort" -> stop
-     ELSE:
-       - "Approve" -> PROCEED
-       - "Fix warnings/suggestions" -> fix, cycle++, LOOP
-       - "Abort" -> stop
-  6. IF cycle >= 3 AND user selects fix:
-     -> "3 review cycles completed. Final decision required."
-     -> AskUserQuestion: "Approve with noted risks" / "Abort workflow"
+  1. Review inline, or delegate one independent reviewer when risk/breadth warrants it.
+  2. If a risk trigger exists, obtain the matching adversarial/domain evidence.
+  3. If this workflow uses artifacts, update them and run the validator.
+  4. Fix clear, in-scope, reversible blockers and re-run the affected checks.
+  5. Continue autonomously when evidence passes and no material choice remains.
+  6. Ask the user only when:
+     - a blocking fix changes scope or a public contract,
+     - authority is needed for an external/high-risk effect,
+     - alternatives materially change behavior, risk, or cost, or
+     - three fix cycles leave an unresolved blocker.
 ```
+
+Do not stop after research, planning, implementation, testing, or review solely
+because a phase ended. `--interactive` may add a checkpoint the user explicitly
+requested, but routine phase approvals remain unnecessary.
 
 ## Auto-Handling Cycle
 
-```
+```text
 cycle = 0
 LOOP:
-  1. Run code-reviewer -> review-decision.json
-  2. Run risk gate -> risk-gate.json
-  3. If auto/high-risk/large-diff/ship-like, run adversarial validator
-  4. Run artifact validator
+  1. Produce verification and risk evidence.
+  2. Add independent/adversarial review only when triggered.
+  3. Update artifacts and run the validator.
 
-  5. IF risk-gate.autoStopRequired == true AND humanApproved != true:
-     -> STOP via AskUserQuestion before finalize/commit/ship
+  4. IF risk-gate.autoStopRequired == true AND humanApproved != true:
+       STOP before the high-risk finalize/commit/ship effect and ask for approval.
 
-  6. IF review-decision.decision == PASS
-     AND validator passes
-     AND risk-gate.autoStopRequired == false:
-     -> Auto-approve, PROCEED
+  5. IF review-decision.decision == PASS
+       AND validator passes
+       AND risk-gate.autoStopRequired == false:
+       PROCEED.
 
-  7. ELSE IF critical/blocking issue exists AND cycle < 3:
-     -> Auto-fix critical issues
-     -> Re-run tester and validator
-     -> cycle++, LOOP
+  6. ELSE IF a clear in-scope blocker exists AND cycle < 3:
+       fix it, re-run the affected evidence, increment cycle, and repeat.
 
-  8. ELSE:
-     -> ESCALATE TO USER
+  7. ELSE:
+       ask the user for the material decision or additional authority required.
 ```
-
-Score is never sufficient for approval. `score >= 9.5` is only a confidence signal.
 
 ## Adversarial Validator Prompt
 
-```
+```text
 Disprove implementation claims for <phase>.
 Scope: correctness, acceptance coverage, regression reachability, contracts.
 Forbidden: style polish, broad rewrites, preference-only feedback.
@@ -108,7 +108,10 @@ Return JSON-ready fields:
 
 ## Output Formats
 
-- Waiting: `Step 5: Code reviewed - [decision], validator [pass|warn|block] - WAITING`
-- After fix: `Step 5: Fixed [N] blockers - validator pass - Approved`
-- Auto-approved: `Step 5: Review PASS - validator pass - Auto-approved`
-- High-risk stop: `Step 5: High-risk auto stop - human approval required before finalize`
+- Inline: `Step 5: Inline review complete - relevant evidence passed`
+- Fixed: `Step 5: Fixed [N] blockers - affected checks passed`
+- Auto: `Step 5: Review PASS - artifact validator passed - continuing`
+- High risk: `Step 5: High-risk effect requires approval before finalize`
+
+Report verified facts, reasoned inferences, and remaining unknowns directly.
+Do not convert them into a numeric confidence score.

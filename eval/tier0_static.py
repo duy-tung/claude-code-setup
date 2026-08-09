@@ -21,6 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CHECKS: list[tuple[str, list[str]]] = [
     ("skill-frontmatter", ["python3", "claude/scripts/validate-skill-frontmatter.py"]),
     ("skill-crossrefs", ["python3", "claude/scripts/validate-skill-crossrefs.py", "claude/skills/"]),
+    ("eval-runner-unit", [sys.executable, "-m", "unittest", "eval/test_run.py"]),
 ]
 
 

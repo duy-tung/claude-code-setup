@@ -123,7 +123,7 @@ Every markdown file MUST have consistent structure based on its type.
 - Use frontmatter (`---`) for metadata when the file is consumed by tools
 - Keep sections ordered: context → content → next steps
 - Use tables for structured data, lists for sequences
-- Sacrifice grammar for concision
+- Use concise, complete grammatical sentences
 
 **Quick reference — required sections by type:**
 

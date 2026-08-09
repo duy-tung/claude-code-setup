@@ -167,6 +167,9 @@ class TestContextAnalyzerEdgeCases:
         assert result.returncode == 0
         output = json.loads(result.stdout)
         assert "health_status" in output or "health_score" in output
+        assert output["token_limit"] == 1_000_000
+        assert output["warning_utilization"] == "80%"
+        assert output["critical_utilization"] == "90%"
 
     def test_utf8_content(self, tmp_path):
         """Test UTF-8 encoding with international characters."""
@@ -225,6 +228,27 @@ class TestContextAnalyzerEdgeCases:
         """Test analyze with limit parameter."""
         result = self.run_script("analyze", valid_context_file, "--limit", "10")
         assert result.returncode == 0
+        assert json.loads(result.stdout)["token_limit"] == 10
+
+    def test_with_custom_capacity_thresholds(self, valid_context_file):
+        result = self.run_script(
+            "analyze", valid_context_file,
+            "--warning-threshold", "0.75",
+            "--critical-threshold", "0.95",
+        )
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        assert output["warning_utilization"] == "75%"
+        assert output["critical_utilization"] == "95%"
+
+    def test_rejects_invalid_capacity_thresholds(self, valid_context_file):
+        result = self.run_script(
+            "analyze", valid_context_file,
+            "--warning-threshold", "0.95",
+            "--critical-threshold", "0.80",
+        )
+        assert result.returncode == 2
+        assert "0 < warning < critical <= 1" in result.stderr
 
 
 class TestFileSizeValidation:

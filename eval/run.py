@@ -14,6 +14,7 @@ This is the harness scaffold — it is verifiable WITHOUT a live `claude` CLI vi
 Usage:
   python3 eval/run.py --all                                  # run every task, default variant
   python3 eval/run.py --task fix-off-by-one --runs 5
+  python3 eval/run.py --all --model claude-opus-5 --effort high
   python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5
   python3 eval/run.py --all --mock                           # apply oracle (no claude needed)
   python3 eval/run.py --all --mock-noop                      # sanity: tasks must FAIL
@@ -22,16 +23,17 @@ Env:
   CK_EVAL_CMD           AI CLI to spawn (default "claude"; e.g. "ccs glm")
   CK_EVAL_CLAUDE_ARGS   extra args appended to the claude invocation
                         (default "--permission-mode bypassPermissions")
-  CK_EVAL_MODEL         pin the model, e.g. "claude-opus-5" -> --model <id>
-  CK_EVAL_EFFORT        pin reasoning effort, e.g. "xhigh" -> --effort <level>
+  CK_EVAL_MODEL         fallback for --model, e.g. "claude-opus-5"
+  CK_EVAL_EFFORT        fallback for --effort, e.g. "high"
   CK_EVAL_TIMEOUT_SEC   per-run agent timeout (default 180)
 
-The summary prints "model(s) actually run" (from the result JSON's modelUsage)
-so every run records — and proves — which model executed it.
+The summary prints "model(s) actually run" (from the result JSON's modelUsage).
+When a model is pinned, missing or mismatched modelUsage invalidates the live run.
 """
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import re
@@ -56,6 +58,18 @@ import stats  # noqa: E402
 
 DEFAULT_CLAUDE_ARGS = ["--permission-mode", "bypassPermissions"]
 JSON_OBJ_RE = re.compile(r"\{.*\}", re.DOTALL)
+EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
+RESULT_SUBTYPES = {
+    "success",
+    "error_during_execution",
+    "error_max_turns",
+    "error_max_budget_usd",
+    "error_max_structured_output_retries",
+}
+WORKFLOW_ARTIFACT_NAME_RE = re.compile(
+    r"(?:^|[-_])(plan|report|summary|journal)(?:[-_][^.]*)?\.(?:md|txt|json|ya?ml)$",
+    re.I,
+)
 
 
 # ── Task / variant loading ───────────────────────────────────────────────────
@@ -97,16 +111,144 @@ def _extract_result_json(stdout: str) -> dict:
     return {}
 
 
+def resolve_requested_setting(cli_value: str | None, env_name: str) -> str | None:
+    """Resolve a CLI setting with an environment fallback (CLI wins)."""
+    value = cli_value if cli_value is not None else os.environ.get(env_name)
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
+def result_message_error(data: dict) -> str | None:
+    """Validate the minimum current Claude Code terminal-result contract."""
+    if not data:
+        return "CLI produced no parseable ResultMessage JSON"
+    if data.get("type") != "result":
+        return f"CLI JSON is not a ResultMessage (type={data.get('type')!r})"
+    if data.get("subtype") not in RESULT_SUBTYPES:
+        return (
+            "CLI ResultMessage has unknown or missing subtype: "
+            f"{data.get('subtype')!r}"
+        )
+    if not isinstance(data.get("is_error"), bool):
+        return "CLI ResultMessage omitted boolean is_error"
+    session_id = data.get("session_id")
+    if not isinstance(session_id, str) or not session_id.strip():
+        return "CLI ResultMessage omitted session_id"
+    num_turns = data.get("num_turns")
+    if (not isinstance(num_turns, int) or isinstance(num_turns, bool)
+            or num_turns < 0):
+        return "CLI ResultMessage omitted non-negative integer num_turns"
+    if not isinstance(data.get("usage"), dict):
+        return "CLI ResultMessage omitted usage"
+    if data.get("subtype") == "success" and not isinstance(data.get("result"), str):
+        return "CLI success ResultMessage omitted string result"
+    return None
+
+
+def matching_models(requested_model: str, actual_models: list[str]) -> list[str]:
+    """Return modelUsage keys that satisfy a fixed ID or Claude Code alias pin."""
+    requested = requested_model.strip().lower()
+    actual = sorted({str(model) for model in actual_models})
+    if requested in {"opus", "sonnet", "haiku"}:
+        family = re.compile(rf"(?:^|[-_/]){re.escape(requested)}(?:[-_/]|$)", re.I)
+        return [model for model in actual if family.search(model)]
+    return [model for model in actual if model.lower() == requested]
+
+
+def model_pin_error(requested_model: str | None,
+                    actual_models: list[str]) -> str | None:
+    """Explain why modelUsage does not prove only the requested model ran."""
+    if not requested_model:
+        return None
+    if not actual_models:
+        return (f"requested model {requested_model!r}, but live result omitted "
+                "modelUsage")
+    matches = matching_models(requested_model, actual_models)
+    if not matches:
+        return (f"requested model {requested_model!r}, but modelUsage reported "
+                f"{', '.join(actual_models)}")
+    mismatches = sorted(set(actual_models) - set(matches))
+    if mismatches:
+        return (f"requested model {requested_model!r}, but modelUsage also "
+                f"reported {', '.join(mismatches)}")
+    return None
+
+
+def is_workflow_artifact(
+    relative_path: str,
+    exempt_paths: list[str] | None = None,
+) -> bool:
+    """Identify unrequested workflow prose, honoring task deliverable exemptions."""
+    normalized = relative_path.replace("\\", "/")
+    if normalized.startswith(".claude/"):
+        return False
+    if any(
+        fnmatch.fnmatchcase(normalized, pattern.replace("\\", "/"))
+        for pattern in (exempt_paths or [])
+    ):
+        return False
+    lowered = normalized.lower()
+    if lowered.endswith(".md"):
+        return True
+    if lowered.startswith(("plans/", "reports/", "docs/journals/")):
+        return True
+    return bool(WORKFLOW_ARTIFACT_NAME_RE.search(Path(normalized).name))
+
+
 def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
-              verbose: bool) -> dict:
+              verbose: bool, requested_model: str | None = None,
+              requested_effort: str | None = None) -> dict:
     """mode ∈ {'claude', 'mock', 'mock-noop'}. Returns a metrics record."""
     fixture = task["_dir"] / "fixture"
     metrics = {"subtype": None, "num_turns": None,
-               "cost_usd": None, "agent_ms": None, "error": None}
+               "cost_usd": None, "agent_ms": None, "error": None,
+               "output_chars": None, "created_file_count": 0,
+               "workflow_artifact_count": 0,
+               "workflow_artifacts": [],
+               "workflow_artifact_budget": task.get("workflow_artifact_budget"),
+               "behavior_ok": True, "behavior_issues": [],
+               "protected_file_violations": [],
+               "models": [], "raw_models": [], "model_pin_ok": None,
+               "requested_model": requested_model,
+               "requested_effort": requested_effort}
 
     with tempfile.TemporaryDirectory(prefix="ckeval-") as tmp:
         workdir = Path(tmp) / "work"
         shutil.copytree(fixture, workdir)
+        fixture_files = {
+            path.relative_to(workdir).as_posix()
+            for path in workdir.rglob("*") if path.is_file()
+        }
+        protected_paths = {
+            path for path in fixture_files
+            if Path(path).name.startswith("test_")
+            or Path(path).name.endswith("_test.py")
+        }
+        protected_paths.update(task.get("protected_paths", []))
+        protected_contents = {
+            path: (workdir / path).read_bytes()
+            for path in protected_paths
+            if (workdir / path).is_file()
+        }
+
+        if variant.get("stage_kit"):
+            # The repository stores the installable project profile in `claude/`.
+            # Stage it as `.claude/` inside the isolated fixture so this variant
+            # exercises the current branch rather than the caller's project cwd.
+            shutil.copytree(
+                REPO_ROOT / "claude",
+                workdir / ".claude",
+                ignore=shutil.ignore_patterns(
+                    "__pycache__", "*.pyc", ".DS_Store", ".logs"
+                ),
+            )
+
+        baseline_files = {
+            path.relative_to(workdir).as_posix()
+            for path in workdir.rglob("*") if path.is_file()
+        }
         start = time.time()
 
         if mode == "mock":
@@ -120,9 +262,70 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
         elif mode == "mock-noop":
             metrics["subtype"] = "mock-noop"
         else:
-            metrics.update(_invoke_claude(task, variant, workdir, max_turns, verbose))
+            metrics.update(_invoke_claude(
+                task, variant, workdir, max_turns, verbose,
+                requested_model=requested_model,
+                requested_effort=requested_effort,
+            ))
 
         metrics["agent_ms"] = int((time.time() - start) * 1000)
+        current_files = {
+            path.relative_to(workdir).as_posix()
+            for path in workdir.rglob("*") if path.is_file()
+        }
+        created_files = current_files - baseline_files
+        metrics["created_file_count"] = len(created_files)
+        metrics["workflow_artifacts"] = sorted(
+            path for path in created_files
+            if is_workflow_artifact(
+                path, task.get("workflow_artifact_exempt_paths")
+            )
+        )
+        metrics["workflow_artifact_count"] = len(metrics["workflow_artifacts"])
+        artifact_budget = metrics["workflow_artifact_budget"]
+        if (mode == "claude" and isinstance(artifact_budget, int)
+                and metrics["workflow_artifact_count"] > artifact_budget):
+            artifact_issue = (
+                "workflow artifact budget exceeded: "
+                f"{metrics['workflow_artifact_count']} > {artifact_budget}"
+            )
+            metrics["behavior_issues"].append(artifact_issue)
+            metrics["behavior_ok"] = False
+
+        # Visible tests give the agent useful feedback but remain part of the
+        # grader contract. Detect edits/deletions, restore pristine bytes, and
+        # invalidate the run so test tampering cannot manufacture a solve.
+        protected_violations = []
+        for relative_path, expected in protected_contents.items():
+            protected_path = workdir / relative_path
+            try:
+                current = (
+                    protected_path.read_bytes()
+                    if protected_path.is_file() and not protected_path.is_symlink()
+                    else None
+                )
+            except OSError:
+                current = None
+            if current == expected:
+                continue
+
+            protected_violations.append(relative_path)
+            if protected_path.is_symlink() or protected_path.is_file():
+                protected_path.unlink()
+            elif protected_path.exists():
+                shutil.rmtree(protected_path)
+            protected_path.parent.mkdir(parents=True, exist_ok=True)
+            protected_path.write_bytes(expected)
+
+        if protected_violations:
+            metrics["protected_file_violations"] = sorted(protected_violations)
+            protected_error = (
+                "protected grader file modified: "
+                + ", ".join(sorted(protected_violations))
+            )
+            metrics["error"] = "; ".join(
+                error for error in (metrics.get("error"), protected_error) if error
+            )
 
         # Hidden tests (SWE-bench style): a task's tests/ dir is NOT in the
         # fixture the agent sees — copy it in only now, at grade time, so the
@@ -137,12 +340,16 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
 
         grade_res = grader.grade(workdir, task["grade"])
 
+    run_valid = not metrics.get("error")
     return {"solved": grade_res.solved, "grade_rc": grade_res.returncode,
-            "grade_detail": grade_res.detail, **metrics}
+            "grade_detail": grade_res.detail, "run_valid": run_valid,
+            **metrics}
 
 
 def _invoke_claude(task: dict, variant: dict, workdir: Path,
-                   max_turns: int, verbose: bool) -> dict:
+                   max_turns: int, verbose: bool,
+                   requested_model: str | None = None,
+                   requested_effort: str | None = None) -> dict:
     base = shlex.split(os.environ.get("CK_EVAL_CMD", "claude"))
     extra = shlex.split(os.environ["CK_EVAL_CLAUDE_ARGS"]) \
         if os.environ.get("CK_EVAL_CLAUDE_ARGS") else list(DEFAULT_CLAUDE_ARGS)
@@ -152,12 +359,12 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
                     for a in variant.get("claude_args", [])]
     # Pin model / reasoning effort for reproducible runs (recorded + verified below).
     model_args = []
-    if os.environ.get("CK_EVAL_MODEL"):
-        model_args += ["--model", os.environ["CK_EVAL_MODEL"]]
-    if os.environ.get("CK_EVAL_EFFORT"):
-        model_args += ["--effort", os.environ["CK_EVAL_EFFORT"]]
+    if requested_model:
+        model_args += ["--model", requested_model]
+    if requested_effort:
+        model_args += ["--effort", requested_effort]
     cmd = (base + ["-p", task["prompt"], "--output-format", "json"]
-           + extra + model_args + variant_args
+           + extra + variant_args + model_args
            + ["--max-turns", str(max_turns)])
     if verbose:
         print(f"       $ {' '.join(shlex.quote(c) for c in cmd)}")
@@ -166,23 +373,88 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
         proc = subprocess.run(cmd, cwd=workdir, capture_output=True,
                               text=True, timeout=timeout)
     except FileNotFoundError:
-        return {"error": f"CLI not found: {base[0]} "
+        return {"models": [], "model_pin_ok": False if requested_model else None,
+                "error": f"CLI not found: {base[0]} "
                          "(set CK_EVAL_CMD or use --mock to test the harness)"}
     except subprocess.TimeoutExpired:
-        return {"subtype": "timeout", "error": f"agent timeout after {timeout}s"}
+        return {"subtype": "timeout", "models": [],
+                "model_pin_ok": False if requested_model else None,
+                "error": f"agent timeout after {timeout}s"}
 
     data = _extract_result_json(proc.stdout)
+    if not isinstance(data, dict):
+        data = {}
     usage = data.get("usage") or {}
-    model_usage = data.get("modelUsage") or data.get("model_usage") or {}
+    if not isinstance(usage, dict):
+        usage = {}
+    raw_model_usage = data.get("modelUsage") or data.get("model_usage") or {}
+    model_usage = raw_model_usage if isinstance(raw_model_usage, dict) else {}
+    result_text = data.get("result")
+    raw_models = sorted(model_usage.keys())
+    models = sorted({
+        str(details.get("canonicalModel") or raw_model)
+        if isinstance(details, dict) else str(raw_model)
+        for raw_model, details in model_usage.items()
+    })
+    pin_error = model_pin_error(requested_model, models)
+    process_errors = []
+    schema_error = result_message_error(data)
+    if schema_error:
+        process_errors.append(schema_error)
+    data_error = data.get("error")
+    if data_error:
+        process_errors.append(str(data_error)[:200])
+    raw_errors = data.get("errors")
+    if isinstance(raw_errors, list):
+        process_errors.extend(str(error)[:200] for error in raw_errors if error)
+    api_error_status = data.get("api_error_status")
+    if api_error_status:
+        process_errors.append(f"CLI API error status={api_error_status}")
+    if proc.returncode != 0:
+        detail = proc.stderr.strip() or (
+            str(data.get("result", "")).strip() if data else ""
+        )
+        message = f"CLI exited with status {proc.returncode}"
+        if detail:
+            message += f": {detail[:200]}"
+        process_errors.append(message)
+    if data.get("is_error") is True:
+        process_errors.append("CLI result marked is_error=true")
+    subtype = data.get("subtype")
+    if subtype in RESULT_SUBTYPES and subtype != "success":
+        process_errors.append(f"CLI result subtype={subtype}")
+    if data.get("stop_reason") == "refusal":
+        process_errors.append("CLI result stop_reason=refusal; partial output discarded")
+    terminal_reason = data.get("terminal_reason")
+    if terminal_reason is not None and terminal_reason != "completed":
+        process_errors.append(
+            f"CLI result terminal_reason={terminal_reason}; turn did not complete"
+        )
+    errors = list(dict.fromkeys(
+        error for error in (*process_errors, pin_error) if error
+    ))
+
+    def whole_tree_tokens(field: str, fallback_field: str):
+        values = [
+            details.get(field)
+            for details in model_usage.values()
+            if isinstance(details, dict)
+            and isinstance(details.get(field), (int, float))
+            and not isinstance(details.get(field), bool)
+        ]
+        return sum(values) if values else usage.get(fallback_field)
+
     return {
-        "subtype": data.get("subtype") or ("ok" if proc.returncode == 0 else "error"),
+        "subtype": data.get("subtype") or "invalid-result",
         "num_turns": data.get("num_turns"),
         "cost_usd": data.get("total_cost_usd"),
-        "input_tokens": usage.get("input_tokens"),
-        "output_tokens": usage.get("output_tokens"),
-        "models": sorted(model_usage.keys()),  # which model(s) ACTUALLY ran
-        "error": data.get("error") or (proc.stderr.strip()[:200] or None
-                                       if proc.returncode != 0 else None),
+        "input_tokens": whole_tree_tokens("inputTokens", "input_tokens"),
+        "output_tokens": whole_tree_tokens("outputTokens", "output_tokens"),
+        "output_chars": len(result_text) if isinstance(result_text, str) else None,
+        "models": models,  # canonical model IDs for pin verification
+        "raw_models": raw_models,  # provider/runtime keys from modelUsage
+        "model_pin_ok": pin_error is None if requested_model else None,
+        "error": "; ".join(errors) or None,
     }
 
 
@@ -195,13 +467,14 @@ def _mean(xs: list) -> float | None:
 
 def run_suite(task_ids: list[str], variant_names: list[str | None],
               runs: int, mode: str, max_turns: int, verbose: bool,
-              out_file: Path) -> bool:
+              out_file: Path, requested_model: str | None = None,
+              requested_effort: str | None = None) -> bool:
     variants = [load_variant(n) for n in variant_names]
     records: list[dict] = []
     # results[variant_label][task_id] = [solved bool per run]
     results: dict[str, dict[str, list[bool]]] = {v["label"]: {} for v in variants}
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     fh = out_file.open("w", encoding="utf-8")
 
     for task_id in task_ids:
@@ -209,24 +482,59 @@ def run_suite(task_ids: list[str], variant_names: list[str | None],
         for variant in variants:
             solved_runs: list[bool] = []
             for i in range(runs):
-                rec = run_trial(task, variant, mode, max_turns, verbose)
+                rec = run_trial(
+                    task, variant, mode, max_turns, verbose,
+                    requested_model=requested_model,
+                    requested_effort=requested_effort,
+                )
                 rec.update({"task": task_id, "variant": variant["label"],
                             "run": i, "mode": mode})
                 records.append(rec)
-                solved_runs.append(rec["solved"])
+                counted_solved = rec["solved"] and rec["run_valid"]
+                solved_runs.append(counted_solved)
                 fh.write(json.dumps(rec) + "\n")
-                icon = "[OK]" if rec["solved"] else "[X] "
-                note = rec.get("error") or rec.get("grade_detail") or ""
+                if not rec["run_valid"]:
+                    icon = "[X] "
+                elif mode == "mock-noop":
+                    icon = "[OK]" if not rec["solved"] else "[X] "
+                else:
+                    icon = "[OK]" if rec["solved"] else "[--]"
+                note_parts = [rec.get("error") or rec.get("grade_detail") or ""]
+                if not rec.get("behavior_ok", True):
+                    note_parts.append(
+                        "behavior: " + "; ".join(rec.get("behavior_issues") or [])
+                    )
+                note = "; ".join(part for part in note_parts if part)
                 print(f"{icon} {task_id} / {variant['label']} "
                       f"run {i + 1}/{runs} ({rec['agent_ms']}ms) {note}".rstrip())
             results[variant["label"]][task_id] = solved_runs
 
     fh.close()
-    ok = _print_summary(results, records, variants, task_ids, runs, out_file)
+    ok = _print_summary(results, records, variants, task_ids, runs, out_file, mode)
     return ok
 
 
-def _print_summary(results, records, variants, task_ids, runs, out_file) -> bool:
+def assess_suite(records: list[dict], mode: str) -> tuple[bool, list[str]]:
+    """Apply mode-aware harness validity rules without grading live solve-rate."""
+    issues: list[str] = []
+    if not records:
+        return False, ["suite produced no records"]
+
+    for rec in records:
+        run_number = rec.get("run", 0) + 1
+        label = (f"{rec.get('task', '?')} / {rec.get('variant', '?')} "
+                 f"run {run_number}")
+        if not rec.get("run_valid", not rec.get("error")):
+            issues.append(f"{label}: {rec.get('error') or 'invalid run'}")
+        elif mode == "mock" and not rec.get("solved"):
+            issues.append(f"{label}: oracle did not solve task")
+        elif mode == "mock-noop" and rec.get("solved"):
+            issues.append(f"{label}: no-op unexpectedly solved task")
+    return not issues, issues
+
+
+def _print_summary(results, records, variants, task_ids, runs, out_file,
+                   mode: str) -> bool:
     print("\n" + "=" * 64)
     print(f"Summary  (runs={runs} per task/variant, mode-aware)\n")
 
@@ -236,16 +544,34 @@ def _print_summary(results, records, variants, task_ids, runs, out_file) -> bool
         total_solved = sum(sum(s) for s in per_task.values())
         total_runs = sum(len(s) for s in per_task.values())
         v_recs = [r for r in records if r["variant"] == label]
+        requested_models = sorted({r["requested_model"] for r in v_recs
+                                   if r.get("requested_model")})
+        requested_efforts = sorted({r["requested_effort"] for r in v_recs
+                                    if r.get("requested_effort")})
+        behavior_ok = sum(r.get("behavior_ok", True) for r in v_recs)
         print(f"• {label}: solved {total_solved}/{total_runs}  "
               f"(mean turns={_fmt(_mean([r['num_turns'] for r in v_recs]))}, "
               f"cost=${_fmt(_mean([r['cost_usd'] for r in v_recs]))}, "
-              f"agent_ms={_fmt(_mean([r['agent_ms'] for r in v_recs]))})")
+              f"agent_ms={_fmt(_mean([r['agent_ms'] for r in v_recs]))}, "
+              f"output_chars={_fmt(_mean([r['output_chars'] for r in v_recs]))}, "
+              f"behavior_ok={behavior_ok}/{len(v_recs)}, "
+              f"workflow_artifacts="
+              f"{_fmt(_mean([r['workflow_artifact_count'] for r in v_recs]))})")
         models = sorted({m for r in v_recs for m in (r.get("models") or [])})
+        print(f"    requested model: {', '.join(requested_models) if requested_models else 'un-pinned'}")
+        print(f"    requested effort: {', '.join(requested_efforts) if requested_efforts else 'default'}")
         print(f"    model(s) actually run: {', '.join(models) if models else 'unknown (mock or no modelUsage)'}")
         for task_id in task_ids:
             s = per_task[task_id]
             print(f"    - {task_id}: {sum(s)}/{len(s)} "
                   f"(solve_rate={stats.solve_rate(s):.2f}, pass^{len(s)}={stats.pass_hat_k(s):.0f})")
+        for rec in v_recs:
+            if rec.get("behavior_ok", True):
+                continue
+            for issue in rec.get("behavior_issues") or ["unspecified behavior issue"]:
+                print(
+                    f"    ! behavior {rec['task']} run {rec['run'] + 1}: {issue}"
+                )
 
     # Paired A/B comparison (only when exactly two variants).
     if len(variants) == 2:
@@ -270,8 +596,12 @@ def _print_summary(results, records, variants, task_ids, runs, out_file) -> bool
         print(f"    Verdict: {verdict}")
 
     print(f"\nResults → {out_file}")
-    # Exit non-zero only if a task is unsolvable in mock mode (harness broken).
-    return True
+    ok, issues = assess_suite(records, mode)
+    if issues:
+        print("\nHarness validation failed:")
+        for issue in issues:
+            print(f"    - {issue}")
+    return ok
 
 
 def _fmt(x) -> str:
@@ -284,13 +614,28 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="run every task")
     ap.add_argument("--variant-a", help="variant json name (eval/variants/<name>.json)")
     ap.add_argument("--variant-b", help="second variant for paired A/B")
+    ap.add_argument("--model", help="pin model (overrides CK_EVAL_MODEL)")
+    ap.add_argument("--effort", choices=EFFORT_LEVELS,
+                    help="pin reasoning effort (overrides CK_EVAL_EFFORT)")
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--max-turns", type=int, default=30)
-    ap.add_argument("--mock", action="store_true", help="apply oracle instead of calling claude")
-    ap.add_argument("--mock-noop", action="store_true", help="do nothing (tasks must fail)")
+    mode_group = ap.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--mock", action="store_true",
+        help="apply oracle instead of calling claude",
+    )
+    mode_group.add_argument(
+        "--mock-noop", action="store_true",
+        help="do nothing (tasks must fail)",
+    )
     ap.add_argument("--out", help="results ndjson path")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
+
+    requested_model = resolve_requested_setting(args.model, "CK_EVAL_MODEL")
+    requested_effort = resolve_requested_setting(args.effort, "CK_EVAL_EFFORT")
+    if requested_effort and requested_effort not in EFFORT_LEVELS:
+        ap.error(f"invalid effort {requested_effort!r}; choose from {', '.join(EFFORT_LEVELS)}")
 
     task_ids = args.task or (all_task_ids() if args.all else [])
     if not task_ids:
@@ -305,12 +650,16 @@ def main() -> int:
     out_file = Path(args.out) if args.out else RESULTS_DIR / f"eval-{ts}.ndjson"
 
     print(f"=== Tier 1: Task Suite ===  mode={mode}  tasks={task_ids}\n")
-    run_suite(task_ids, variant_names, args.runs, mode, args.max_turns,
-              args.verbose, out_file)
+    ok = run_suite(
+        task_ids, variant_names, args.runs, mode, args.max_turns,
+        args.verbose, out_file,
+        requested_model=requested_model,
+        requested_effort=requested_effort,
+    )
 
     # In mock mode the suite is a self-test: every task MUST be solved by its
     # oracle, and (with --mock-noop) MUST NOT be solved with no edits.
-    return 0
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

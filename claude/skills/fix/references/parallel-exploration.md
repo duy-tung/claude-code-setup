@@ -1,100 +1,43 @@
 # Parallel Exploration
 
-Patterns for launching multiple subagents in parallel to scout codebase, verify implementation, and coordinate via native Tasks.
+Parallelism is an optimization for independent, substantial work. Quick fixes use
+targeted search, diagnosis, and checks inline.
 
-## Parallel Exploration (Scouting)
+## Good Uses
 
-Launch multiple `Explore` subagents simultaneously when needing to find:
-- Related files across different areas
-- Similar implementations/patterns
-- Dependencies and usage
+- separate modules must be mapped independently;
+- two or three competing hypotheses have distinct evidence sources;
+- external research can proceed without blocking local reproduction;
+- independent issue trees have non-overlapping edits;
+- long type, build, or test commands can run concurrently and their combined
+  result forms one verification bundle.
 
-**Pattern:**
-```
-Task(subagent_type="Explore", prompt="Find [X] in [area1]", description="Scout area1")
-Task(subagent_type="Explore", prompt="Find [Y] in [area2]", description="Scout area2")
-Task(subagent_type="Explore", prompt="Find [Z] in [area3]", description="Scout area3")
-```
+Give each worker a bounded surface, concrete question, and expected evidence. Keep
+one owner responsible for reconciling results into the root-cause chain.
 
-**Example - Multi-area scouting:**
-```
-// Launch in SINGLE message with multiple Task calls:
-Task("Explore", "Find auth-related files in src/", "Scout auth")
-Task("Explore", "Find API routes handling users", "Scout API")
-Task("Explore", "Find test files for auth module", "Scout tests")
-```
+## Avoid Parallelism When
 
-## Parallel Verification (Bash)
+- the failing line and relevant check are already known;
+- workers would read the same files or test the same hypothesis;
+- shared-checkout edits could conflict;
+- coordination takes longer than the targeted command;
+- multiple reviewers would repeat the same risk assessment.
 
-Launch multiple `Bash` subagents to verify implementation from different angles.
+## Independent Issue Pattern
 
-**Pattern:**
-```
-Task(subagent_type="Bash", prompt="Run [command1]", description="Verify X")
-Task(subagent_type="Bash", prompt="Run [command2]", description="Verify Y")
+```text
+Issue A owner: reproduce -> diagnose -> fix -> targeted verify
+Issue B owner: reproduce -> diagnose -> fix -> targeted verify
+Integration owner: inspect combined diff -> run shared-contract checks
 ```
 
-**Example - Multi-verification:**
-```
-// Launch in SINGLE message:
-Task("Bash", "Run typecheck: bun run typecheck", "Verify types")
-Task("Bash", "Run lint: bun run lint", "Verify lint")
-Task("Bash", "Run build: bun run build", "Verify build")
-```
+## Verification
 
-## Task-Coordinated Parallel (Moderate+)
+Run checks inline by default. For a large suite, independent commands such as
+typecheck, lint, build, and tests may run concurrently, but summarize them as one
+proportional evidence bundle. Do not require separate Bash agents merely because
+several commands exist.
 
-For multi-phase fixes, use native Tasks to coordinate parallel agents.
-See `references/task-orchestration.md` for full patterns.
-
-**Pattern - Parallel issue trees:**
-```
-// Create separate task trees per independent issue
-T_A1 = TaskCreate(subject="[Issue A] Debug", activeForm="Debugging A")
-T_A2 = TaskCreate(subject="[Issue A] Fix",   activeForm="Fixing A",   addBlockedBy=[T_A1])
-T_B1 = TaskCreate(subject="[Issue B] Debug", activeForm="Debugging B")
-T_B2 = TaskCreate(subject="[Issue B] Fix",   activeForm="Fixing B",   addBlockedBy=[T_B1])
-T_final = TaskCreate(subject="Integration verify", addBlockedBy=[T_A2, T_B2])
-
-// Spawn agents per issue tree
-Task("general-purpose", "Fix Issue A. Claim tasks via TaskUpdate.", "Fix A")
-Task("general-purpose", "Fix Issue B. Claim tasks via TaskUpdate.", "Fix B")
-```
-
-Agents claim work via `TaskUpdate(status="in_progress")` and complete via `TaskUpdate(status="completed")`. Blocked tasks auto-unblock when dependencies resolve.
-
-## When to Use Parallel
-
-| Scenario | Parallel Strategy |
-|----------|-------------------|
-| Root cause unclear, multiple suspects | 2-3 Explore agents on different areas |
-| Multi-module fix | Explore each module in parallel |
-| After implementation | Bash agents for typecheck + lint + build |
-| Before commit | Bash agents for test + build + lint |
-| 2+ independent issues | Task trees per issue + general-purpose agents |
-
-## Combining Explore + Tasks + Bash
-
-**Step 1:** Parallel Explore to scout
-**Step 2:** Sequential implementation (update Tasks as phases complete)
-**Step 3:** Parallel Bash to verify
-
-```
-// Scout phase - parallel
-Task("Explore", "Find payment handlers", "Scout payments")
-Task("Explore", "Find order processors", "Scout orders")
-
-// Wait for results, implement fix, TaskUpdate each phase
-
-// Verify phase - parallel
-Task("Bash", "Run tests: bun test", "Run tests")
-Task("Bash", "Run typecheck", "Check types")
-Task("Bash", "Run build", "Verify build")
-```
-
-## Resource Limits
-
-- Max 3 parallel agents recommended (system resources)
-- Each subagent gets its own context window, sized by the session's model — do not assume a fixed ceiling
-- Keep prompts concise: a focused prompt gets a focused answer
-- Use `TaskList()` to check for available unblocked work
+Limit ordinary fan-out to three workers. Agents share the checkout unless explicit
+isolation has been arranged, so assign non-overlapping write scopes and coordinate
+before touching shared files.

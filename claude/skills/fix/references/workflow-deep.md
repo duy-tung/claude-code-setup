@@ -1,157 +1,94 @@
 # Deep Workflow
 
-Full pipeline with research, brainstorming, and planning for complex issues. Uses native Claude Tasks with dependency chains.
+Use this workflow for complex, production-critical, security-sensitive, or
+architectural failures. It may use durable tasks, research, design artifacts, and
+independent review because the risk and handoff value justify them.
 
-## Task Setup (Before Starting)
+## Suggested Work Graph
 
-Create all phase tasks upfront. Steps 1+2+3 run in parallel (scout + diagnose + research).
+Create only the phases the incident needs. A common graph is:
 
-```
-T1 = TaskCreate(subject="Scout codebase",              activeForm="Scouting codebase",          metadata={phase: "investigate"})
-T2 = TaskCreate(subject="Diagnose root cause",          activeForm="Diagnosing root cause",      metadata={phase: "investigate"})
-T3 = TaskCreate(subject="Research solutions",            activeForm="Researching solutions",      metadata={phase: "investigate"})
-T4 = TaskCreate(subject="Brainstorm approaches",         activeForm="Brainstorming",              metadata={phase: "design"},       addBlockedBy=[T1, T2, T3])
-T5 = TaskCreate(subject="Create implementation plan",    activeForm="Planning implementation",    metadata={phase: "design"},       addBlockedBy=[T4])
-T6 = TaskCreate(subject="Implement fix",                 activeForm="Implementing fix",           metadata={phase: "implement"},    addBlockedBy=[T5])
-T7 = TaskCreate(subject="Verify + prevent",              activeForm="Verifying fix",              metadata={phase: "verify"},       addBlockedBy=[T6])
-T8 = TaskCreate(subject="Code review",                   activeForm="Reviewing code",             metadata={phase: "verify"},       addBlockedBy=[T7])
-T9 = TaskCreate(subject="Finalize & docs",               activeForm="Finalizing",                 metadata={phase: "finalize"},     addBlockedBy=[T8])
-```
-
-## Steps
-
-### Step 1: Scout Codebase (parallel with Steps 2+3)
-`TaskUpdate(T1, status="in_progress")`
-
-**Mandatory:** Activate `ck:scout` skill or launch 2-3 `Explore` subagents in parallel:
-```
-Task("Explore", "Find error origin and affected components", "Trace error")
-Task("Explore", "Find module boundaries and dependencies", "Map deps")
-Task("Explore", "Find related tests and similar patterns", "Find patterns")
+```text
+investigate (scout + reproduce + diagnose)
+  -> design (research/alternatives when needed)
+  -> implement
+  -> verify (repro + regression + blast radius)
+  -> independent review / approval when risk requires it
+  -> finalize
 ```
 
-Map: all affected files, module boundaries, call chains, test coverage gaps.
+Parallelize bounded research or independent hypotheses when they do not duplicate
+context. Keep one owner for the integrated diagnosis and shared implementation.
 
-See `references/parallel-exploration.md` for patterns.
+## 1. Establish the Evidence Chain
 
-`TaskUpdate(T1, status="completed")`
-**Output:** `✓ Step 1: Scouted - [N] files, system impact: [scope]`
+Capture the exact symptom, reproduction, expected behavior, relevant environment,
+recent changes, call chain, shared contracts, and affected tests. Form competing
+hypotheses and test the cheapest discriminating evidence. Trace the confirmed
+chain from symptom to the original defect.
 
-### Step 2: Diagnose Root Cause (parallel with Steps 1+3)
-`TaskUpdate(T2, status="in_progress")`
+Use focused exploration workers, `ck:debug`, or structured reasoning when useful;
+none is mandatory merely because this mode is named Deep. If three fix attempts
+fail, stop and discuss whether the architecture or original assumptions are wrong.
 
-**Mandatory skill chain:**
-1. **Capture pre-fix state:** Record ALL error messages, failing tests, stack traces, logs.
-2. Activate `ck:debug` skill (systematic-debugging + root-cause-tracing).
-3. Activate `ck:sequential-thinking` — structured hypothesis formation.
-4. Spawn parallel `Explore` subagents to test each hypothesis.
-5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking`.
-6. Trace backward through call chain to ROOT CAUSE origin.
+## 2. Research and Choose an Approach
 
-See `references/diagnosis-protocol.md` for full methodology.
+Research external behavior only when framework, provider, security, or versioned
+contracts are relevant. Compare viable approaches against:
 
-`TaskUpdate(T2, status="completed")`
-**Output:** `✓ Step 2: Diagnosed - Root cause: [summary], Evidence: [chain]`
+- ability to remove the root cause;
+- compatibility and migration impact;
+- data, security, performance, and rollback risk;
+- verification cost and observable success criteria.
 
-### Step 3: Research (parallel with Steps 1+2)
-`TaskUpdate(T3, status="in_progress")`
-Use `researcher` subagent for external knowledge.
+Ask the user only if the decision changes a public contract, intended scope,
+destructive action, external authority, or acceptable regression. Otherwise choose
+the conservative reversible option and record why.
 
-- Search latest docs, best practices
-- Find similar issues/solutions
-- Gather security advisories if relevant
+Create a durable plan or design note when multiple owners, sessions, or risky
+phases benefit from it. Do not generate artifacts solely to satisfy a template.
 
-`TaskUpdate(T3, status="completed")`
-**Output:** `✓ Step 3: Research complete - [key findings]`
+## 3. Implement
 
-### Step 4: Brainstorm
-`TaskUpdate(T4, status="in_progress")` — auto-unblocks when T1 + T2 + T3 complete.
-Activate `ck:brainstorm` skill.
+- Fix the root cause in cohesive, reviewable phases.
+- Preserve contracts by default and surface intentional migrations explicitly.
+- Reassess the diagnosis whenever implementation evidence expands the scope.
+- Avoid unrelated cleanup that obscures causality or rollback.
 
-- Evaluate multiple approaches using scout + diagnosis + research findings
-- Consider trade-offs
-- Get user input on preferred direction
+## 4. Proportional Evidence Bundle
 
-`TaskUpdate(T4, status="completed")`
-**Output:** `✓ Step 4: Approach selected - [chosen approach]`
+For deep work, the bundle usually includes:
 
-### Step 5: Plan
-`TaskUpdate(T5, status="in_progress")`
-Use `planner` subagent to create implementation plan.
+1. exact pre-fix repro rerun with before/after evidence;
+2. focused regression tests that distinguish the defect;
+3. affected integration, contract, and dependent checks;
+4. applicable type, lint, build, security, performance, or migration checks;
+5. edge cases identified by the diagnosis;
+6. final-diff and rollback inspection.
 
-- Break down into phases
-- Identify dependencies
-- Define success criteria
-- Include prevention measures in plan
+Run independent checks in parallel only when their duration makes that useful.
+Write machine-readable workflow artifacts when a CI gate, release process, or
+high-risk approval consumes them. Otherwise a concise evidence summary is enough.
 
-`TaskUpdate(T5, status="completed")`
-**Output:** `✓ Step 5: Plan created - [N] phases`
+## 5. Independent Review and Approval
 
-### Step 6: Implement
-`TaskUpdate(T6, status="in_progress")`
-Implement per plan. Use `ck:context-engineering`, `ck:sequential-thinking`.
+Use one independent reviewer for broad, difficult, security-sensitive, data-risk,
+or production-critical changes. Add domain/adversarial review only for a distinct
+risk that the first review cannot cover. Findings and executable evidence approve
+the change; numeric scores do not.
 
-- Fix ROOT CAUSE per diagnosis — not symptoms
-- Follow plan phases
-- Minimal changes per phase
+Pause for the user when a material contract/scope/authority choice remains or a
+known regression would need acceptance. Repair clear in-scope reversible issues
+without creating an unnecessary checkpoint.
 
-`TaskUpdate(T6, status="completed")`
-**Output:** `✓ Step 6: Implemented - [N] files, [M] phases`
+## 6. Finalize
 
-### Step 7: Verify + Prevent
-`TaskUpdate(T7, status="in_progress")`
+Report the root cause, evidence chain, implementation, fresh verification,
+rollback notes, and unresolved risks using `verified`, `inferred`, or `unknown`.
+Sync an existing plan and update public docs when relevant. Journal a durable
+technical lesson only when it will help future work. Commit, push, or deploy only
+with the required authority.
 
-**Mandatory skill chain:**
-1. **Iron-law verify:** Re-run EXACT commands from pre-fix state. Compare before/after.
-2. **Regression test:** Add comprehensive tests. Tests MUST fail without fix, pass with fix.
-3. **Side-effect sweep (HARD-GATE-NO-SIDE-EFFECTS):** Walk each dependent caller of changed functions from Step 1 blast-radius. Run tests in modules that share files/contracts. Confirm public contracts (signatures, schemas, APIs, env vars) unchanged. See SKILL.md HARD-GATE-NO-SIDE-EFFECTS.
-4. **Defense-in-depth:** Apply all relevant prevention layers (see `references/prevention-gate.md`).
-5. **Parallel verification:** Launch `Bash` agents: typecheck + lint + build + test.
-6. **Edge cases:** Test boundary conditions, security implications, performance impact.
-
-**On regression / side effect:** `AskUserQuestion` with 2-4 concrete options (revert / narrow scope / update dependents / accept). Never silently patch.
-
-**If verification fails:** Loop back to Step 2 (re-diagnose). Max 3 attempts → question architecture.
-
-See `references/prevention-gate.md` for prevention requirements.
-
-`TaskUpdate(T7, status="completed")`
-**Output:** `✓ Step 7: Verified + Prevented - [before/after], [N] tests, [M] guards`
-
-### Step 8: Code Review
-`TaskUpdate(T8, status="in_progress")`
-Use `code-reviewer` subagent.
-
-See `references/review-cycle.md` for mode-specific handling.
-
-`TaskUpdate(T8, status="completed")`
-**Output:** `✓ Step 8: Review [score]/10 - [status]`
-
-### Step 9: Finalize
-`TaskUpdate(T9, status="in_progress")`
-- Report summary: root cause, evidence chain, changes, prevention measures, confidence score
-- Activate `ck:project-management` for task sync-back, plan status updates, and progress tracking
-- Use `docs-manager` subagent for documentation
-- Use `git-manager` subagent for commit
-- Run `/ck:journal`
-
-`TaskUpdate(T9, status="completed")`
-**Output:** `✓ Step 9: Complete - [actions taken]`
-
-## Skills/Subagents Activated
-
-| Step | Skills/Subagents |
-|------|------------------|
-| 1 | `ck:scout` OR parallel `Explore` subagents |
-| 2 | `ck:debug`, `ck:sequential-thinking`, parallel `Explore` |
-| 3 | `researcher` (runs parallel with steps 1+2) |
-| 4 | `ck:brainstorm` |
-| 5 | `planner` |
-| 6 | `ck:sequential-thinking`, `ck:context-engineering` |
-| 7 | `tester`, parallel `Bash` verification |
-| 8 | `code-reviewer` |
-| 9 | `ck:project-management`, `docs-manager`, `git-manager` |
-
-**Rules:** Don't skip steps. Validate before proceeding. One phase at a time.
-**Frontend:** Use Chrome MCP / `chrome-devtools-mcp` or any relevant project-native browser tests to verify.
-**Visual Assets:** Use an image-generation tool to generate visual assets, and a vision/multimodal model to analyze and verify them.
+For frontend incidents, include project-native browser and visual checks. For
+AI/LLM behavior, use `ck:context-engineering` when context or prompt mechanics are
+part of the root cause.

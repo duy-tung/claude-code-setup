@@ -61,23 +61,23 @@ Checks performed:
 
 Fix all errors before distributing.
 
-## Subagent Delegation Enforcement
+## Subagent Delegation Design
 
-When a skill requires subagent delegation (via Task tool):
+Make delegation conditional on an independent, parallelizable deliverable:
 
-1. **Use MUST language** - "Use subagent" is weak; "MUST spawn subagent" is enforceable
-2. **Include Task pattern** - Show exact syntax: `Task(subagent_type="X", prompt="Y", description="Z")`
-3. **Add validation rule** - "If Task tool calls = 0 at end, workflow is INCOMPLETE"
-4. **Mark requirements clearly** - Use table with "MUST spawn" column
-5. **Forbid direct implementation** - "DO NOT implement X yourself - DELEGATE to subagent"
+1. State the evidence or artifact the worker owns.
+2. Set a small fan-out cap and partition scope to avoid duplicate work.
+3. Require source paths, command output, or diffs in the worker report.
+4. Provide an inline path when coordination would cost more than the task.
+5. Do not add verifier agents solely to verify another agent's report.
 
-**Anti-pattern (weak):**
+**Anti-pattern (unconditional):**
 ```
-- Use `tester` agent for testing
+- Always delegate every test run; direct testing is forbidden
 ```
 
-**Correct pattern (enforceable):**
+**Correct pattern (calibrated):**
 ```
-- **MUST** spawn `tester` subagent: `Task(subagent_type="tester", prompt="Run tests", description="Test")`
-- DO NOT run tests yourself - DELEGATE
+- For a broad independent test matrix, delegate one partition per worker (max 3)
+  and require command output. For a targeted check, run it inline.
 ```

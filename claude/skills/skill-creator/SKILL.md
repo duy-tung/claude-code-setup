@@ -122,7 +122,7 @@ Optimization patterns: `references/benchmark-optimization-guide.md`
 - **Third-person metadata:** "This skill should be used when..."
 - **Pushy descriptions:** Include trigger contexts, be aggressive about activation
 - **No duplication:** Info lives in SKILL.md OR references, never both
-- **Concise:** Sacrifice grammar for brevity
+- **Concise:** Omit filler while preserving clear grammar
 
 ## Scripts
 

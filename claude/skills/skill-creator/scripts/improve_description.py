@@ -2,7 +2,7 @@
 """Improve a skill description based on eval results.
 
 Takes eval results (from run_eval.py) and generates an improved description
-using Claude with extended thinking.
+using Claude with adaptive thinking.
 """
 
 import argparse
@@ -14,6 +14,33 @@ from pathlib import Path
 import anthropic
 
 from scripts.utils import parse_skill_md
+
+
+def thinking_request_kwargs(model: str) -> dict:
+    """Request thinking summaries only for the official Opus 5 API model ID.
+
+    This script calls the Claude Messages API directly, where ``claude-opus-5``
+    is the documented ID. Claude Code selectors such as ``opus`` and arbitrary
+    provider/gateway names are not inferred to have the same API capabilities.
+    Other identifiers are forwarded unchanged with the optional thinking field
+    omitted, avoiding an unsupported request shape.
+    """
+    if model.strip().lower() != "claude-opus-5":
+        return {}
+    return {
+        "thinking": {
+            "type": "adaptive",
+            "display": "summarized",
+        }
+    }
+
+
+def reject_refusal(response, stage: str) -> None:
+    """Discard HTTP-200 classifier refusals instead of parsing partial output."""
+    if getattr(response, "stop_reason", None) == "refusal":
+        raise RuntimeError(
+            f"Claude refusal during {stage}; partial response was discarded"
+        )
 
 
 def improve_description(
@@ -114,15 +141,15 @@ Please respond with only the new description text in <new_description> tags, not
     response = client.messages.create(
         model=model,
         max_tokens=16000,
-        # Adaptive thinking replaces the removed budget_tokens form, which returns
-        # a 400 on Opus 5. display="summarized" keeps the transcript log below
-        # populated; the default ("omitted") would leave block.thinking empty.
-        thinking={
-            "type": "adaptive",
-            "display": "summarized",
-        },
+        # Opus 5 has two breaking changes from Opus 4.8: thinking is on by
+        # default, and disabling it is limited to high effort or below. Adaptive
+        # thinking is the default, not a direct replacement for budget_tokens.
+        # display="summarized" keeps the transcript log below populated; the
+        # default ("omitted") would leave block.thinking empty.
+        **thinking_request_kwargs(model),
         messages=[{"role": "user", "content": prompt}],
     )
+    reject_refusal(response, "description improvement")
 
     # Extract thinking and text from response
     thinking_text = ""
@@ -154,16 +181,16 @@ Please respond with only the new description text in <new_description> tags, not
         shorten_response = client.messages.create(
             model=model,
             max_tokens=16000,
-            thinking={
-                "type": "adaptive",
-                "display": "summarized",
-            },
+            **thinking_request_kwargs(model),
             messages=[
                 {"role": "user", "content": prompt},
-                {"role": "assistant", "content": text},
+                # Same-model continuations must replay thinking and
+                # redacted_thinking blocks exactly as the API returned them.
+                {"role": "assistant", "content": response.content},
                 {"role": "user", "content": shorten_prompt},
             ],
         )
+        reject_refusal(shorten_response, "description shortening")
 
         shorten_thinking = ""
         shorten_text = ""

@@ -28,10 +28,19 @@ def grade(workdir: Path, grade_cfg: dict) -> GradeResult:
 
     for setup_cmd in grade_cfg.get("setup", []):
         try:
-            subprocess.run(setup_cmd, cwd=workdir, capture_output=True,
-                           text=True, timeout=timeout)
+            setup_proc = subprocess.run(
+                setup_cmd, cwd=workdir, capture_output=True,
+                text=True, timeout=timeout
+            )
         except (subprocess.TimeoutExpired, OSError) as exc:
             return GradeResult(False, -1, f"setup failed: {exc}")
+        if setup_proc.returncode != 0:
+            detail = (setup_proc.stderr or setup_proc.stdout or "").strip().splitlines()
+            tail = " | ".join(detail[-3:]) if detail else ""
+            message = f"setup failed with exit {setup_proc.returncode}"
+            if tail:
+                message += f": {tail}"
+            return GradeResult(False, setup_proc.returncode, message)
 
     test_cmd = grade_cfg["test_cmd"]
     try:

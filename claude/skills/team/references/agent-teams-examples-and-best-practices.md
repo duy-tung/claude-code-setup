@@ -1,220 +1,148 @@
-# Agent Teams -- Examples, Best Practices & Troubleshooting
+# Agent Teams -- Examples and Best Practices
 
-> **Source:** https://code.claude.com/docs/en/agent-teams
-> **Version captured:** Claude Code v2.1.80 (March 2026)
+> Source: https://code.claude.com/docs/en/agent-teams
+> Baseline: Claude Code 2.1.178+ implicit teams; CK requires 2.1.219+
 
-## Use Case Examples
+## Parallel Code Review
 
-### Parallel Code Review
+```text
+Review PR #142 with three named teammates:
+- security-reviewer: auth, trust boundaries, and input handling
+- performance-reviewer: latency, allocation, and query behavior
+- test-reviewer: missing regression and failure-path coverage
 
-```
-Create an agent team to review PR #142. Spawn three reviewers:
-- One focused on security implications
-- One checking performance impact
-- One validating test coverage
-Have them each review and report findings.
-```
-
-Each reviewer applies different filter to same PR. Lead synthesizes across all three.
-
-### Competing Hypotheses Investigation
-
-```
-Users report the app exits after one message instead of staying connected.
-Spawn 5 agent teammates to investigate different hypotheses. Have them talk to
-each other to try to disprove each other's theories, like a scientific
-debate. Update the findings doc with whatever consensus emerges.
+Use Sonnet for the focused passes and Opus only for final synthesis if needed.
+Each reviewer reports concrete file/line evidence. Send follow-up questions
+directly to the relevant reviewer.
 ```
 
-Adversarial debate structure fights anchoring bias -- surviving theory is most likely correct.
+This is a good team task because all workstreams are read-only and independent.
 
-### Parallel Feature Implementation (with Worktree Isolation)
+## Competing Debug Hypotheses
 
-```
-Create a team to implement the new dashboard feature.
-Developer A owns src/api/* and src/models/*.
-Developer B owns src/components/* and src/pages/*.
-Tester writes tests after both devs finish.
-Require plan approval for developers.
-Use worktree isolation for each developer.
+```text
+Users report that the app exits after one message. Spawn three named debugger
+teammates, each with one distinct hypothesis and predicted evidence. Keep the
+checkout read-only until evidence identifies a root cause. Ask each debugger to
+send contradictions directly to the teammate whose hypothesis they challenge.
 ```
 
-Each developer works in isolated worktree -- own branch, own working directory. No file conflicts even if ownership boundaries overlap accidentally. Tester blocked until both complete.
+The lead synthesizes supported and rejected hypotheses without asking every teammate to repeat the same investigation.
 
-## Best Practices
+## Parallel Feature Implementation
 
-### Give Enough Context
+```text
+Implement the dashboard with three named teammates in the shared checkout:
+- api-dev owns src/api/** and src/models/dashboard.ts
+- ui-dev owns src/components/dashboard/** and src/pages/dashboard.tsx
+- integrator owns package manifests, generated indexes, and shared schemas
 
-Teammates don't inherit lead's conversation. Include details in spawn prompt:
-
-```
-Spawn a security reviewer with prompt: "Review src/auth/ for vulnerabilities.
-Focus on token handling, session management, input validation.
-App uses JWT in httpOnly cookies. Report with severity ratings."
-```
-
-### Size Tasks Right
-
-- **Too small**: coordination overhead exceeds benefit
-- **Too large**: teammates work too long without check-ins
-- **Right**: self-contained units with clear deliverable (function, test file, review)
-
-### Start with Research/Review
-
-If new to agent teams, start with read-only tasks (reviewing PRs, researching libraries, investigating bugs). Shows parallel value without coordination challenges of parallel implementation.
-
-### Use Worktree Isolation for Code Changes
-
-For any template where teammates edit code (cook, fix), always use `isolation: "worktree"`:
-
-```
-Agent(
-  subagent_type: "general-purpose",
-  model: "opus",
-  isolation: "worktree",
-  run_in_background: true,
-  prompt: "..."
-)
+Do not start tester edits until developer tasks complete. If a task unexpectedly
+needs another owner's file, stop and message the lead before editing it.
 ```
 
-**Benefits:**
-- Each dev gets own git worktree + branch
-- No file conflicts -- devs can edit same files independently
-- `.git` dir shared (common config), everything else isolated
-- Lead merges branches after all devs complete
+The safety mechanism is exclusive file ownership. Do not give two active teammates the same writable file.
 
-**When NOT to use:** Research and review templates (read-only, no file edits).
+## Spawn Prompt Pattern
 
-### Spawn with run_in_background
+Every teammate prompt should answer:
 
-Always use `run_in_background: true` when spawning multiple teammates:
+1. What bounded outcome is required?
+2. What inputs and project context matter?
+3. Which files may this teammate edit?
+4. Which files are read-only or owned elsewhere?
+5. What evidence or artifact should be returned?
+6. What task state must be updated before completion?
 
-```
-# Spawn all 3 researchers concurrently (non-blocking)
-Agent(subagent_type: "researcher", run_in_background: true, ...)
-Agent(subagent_type: "researcher", run_in_background: true, ...)
-Agent(subagent_type: "researcher", run_in_background: true, ...)
-```
+Example:
 
-Lead continues orchestration immediately. TaskCompleted events notify when each finishes.
-
-### Wait for Teammates
-
-If lead starts implementing instead of delegating:
-```
-Wait for your teammates to complete their tasks before proceeding
+```text
+Implement request validation for the dashboard API.
+Writable ownership: src/api/dashboard/**, src/models/dashboard.ts.
+Read-only context: src/components/dashboard/**.
+Do not edit package.json, lockfiles, schemas, or generated indexes; message the
+lead if one must change. Run the focused API tests and report changed files,
+test result, and unresolved risks. Mark your task completed when done.
 ```
 
-### Avoid File Conflicts
+## Model Selection
 
-Two teammates editing same file = overwrites. Mitigate with:
-1. **Worktree isolation** (recommended) -- each dev in own worktree
-2. **File ownership boundaries** -- define glob patterns per task
-3. **Lead handles shared files** -- restructure tasks if overlap unavoidable
+Use per-teammate models intentionally:
 
-### Monitor & Steer
+| Workstream | Starting point |
+|------------|----------------|
+| Narrow lookup or classification | Haiku or Sonnet |
+| Focused research, test, or review | Sonnet |
+| Difficult architecture, integration, or synthesis | Opus |
 
-Check progress regularly. Redirect bad approaches. Synthesize findings as they arrive. Letting a team run unattended too long increases wasted effort risk.
+These are starting points, not mandates. Preserve a custom agent's declared model when it matches the task. Teammates inherit lead effort by default; sweep effort separately from model choice when measuring quality and cost.
 
-### File Ownership Enforcement
+## File Ownership
 
-- Define explicit file boundaries in each task description
-- Include glob patterns: `File ownership: src/api/*, src/models/*`
-- If two tasks need same file: use worktree isolation OR escalate to lead
-- Tester owns test files only; reads implementation files but never edits them
+- Assign exclusive writable paths before spawning implementation teammates.
+- Let research and review teammates read the same files concurrently.
+- Give shared manifests, schemas, lockfiles, and generated outputs to one integrator.
+- Sequence tasks that cannot be partitioned cleanly.
+- Stop at the first unplanned overlap; do not hope the last writer wins safely.
+- Include ownership in the shared task and spawn prompt so both lead and teammate see it.
 
-### Leverage Event-Driven Hooks
+## Messaging
 
-With `TaskCompleted` and `TeammateIdle` hooks enabled:
+- Use stable teammate names.
+- Send one direct message to every intended recipient.
+- Include evidence and the requested action, not only a status phrase.
+- Let automatic delivery and task events drive progress.
+- Reconcile with `TaskList` only when state is unclear.
 
-- Lead is automatically notified when tasks complete -- no manual polling needed
-- Progress is tracked via hook-injected context: "3/5 tasks done, 2 pending"
-- Idle teammates trigger suggestions: "worker-2 idle, 1 unblocked task available"
-- All tasks done triggers: "Consider shutting down teammates and synthesizing"
+Example direct update:
 
-**Cook workflow example:**
+```text
+To ui-dev: API response field `widgets` is now `items` in src/api/dashboard.ts:88.
+Please update only your owned UI files and reply with the affected call sites.
 ```
-1. Lead spawns 3 devs (run_in_background: true, isolation: "worktree")
-2. TaskCompleted(dev-1, task #1) -> "1/4 done"
-3. TaskCompleted(dev-2, task #2) -> "2/4 done"
-4. TaskCompleted(dev-3, task #3) -> "3/4 done"
-5. TaskCompleted(dev-1, task #4) -> "4/4 done. All tasks completed."
-6. Lead merges worktree branches, then spawns tester
-```
 
-### Use Agent Memory for Long-Running Projects
+## Task Sizing
 
-For projects with recurring team sessions:
-- Code reviewer learns project conventions, stops flagging known patterns
-- Debugger remembers past failures, faster root-cause identification
-- Tester tracks flaky tests, avoids re-investigating known issues
-- Researcher accumulates domain knowledge across projects (user scope)
+- **Too small:** coordination overhead exceeds execution time.
+- **Too large:** ownership becomes vague and feedback arrives too late.
+- **Good:** one independent deliverable, clear ownership, bounded verification, and a concise report.
 
-Memory persists after team cleanup -- it's in `.claude/agent-memory/`, not `~/.claude/teams/`.
+Start with two or three teammates. Add another only when a genuinely independent workstream exists.
 
-### Restrict Sub-Agent Spawning
+## Monitoring and Synthesis
 
-Use `Task(agent_type)` in agent definitions to prevent:
-- Recursive agent chains (agent spawns agent spawns agent)
-- Cost escalation (teammate spawning expensive sub-agents)
-- Scope creep (tester spawning developer to "fix" issues)
+1. Spawn all independent tasks in the background.
+2. React to completion, idle, and message events.
+3. Redirect a teammate when its evidence shows the approach is wrong.
+4. Deduplicate results at the lead; do not ask all teammates to produce identical summaries.
+5. Shut down each teammate directly after its follow-up work is complete.
 
-Recommended: Most agents get `Task(Explore)` only. Planner gets `Task(Explore), Task(researcher)`.
+## Cost Control
 
-## Token Budget Guidance
-
-| Template | Estimated Tokens | Notes |
-|----------|-----------------|-------|
-| Research (3 teammates) | ~150K-300K | Read-only, all Opus |
-| Cook (4 teammates) | ~400K-800K | Highest -- code generation |
-| Review (3 teammates) | ~100K-200K | Read-only, all Opus |
-| Debug (3 teammates) | ~200K-400K | Mixed read/execute |
-
-Agent Teams use significantly more tokens than subagents (every teammate runs the session's Opus model — no cheaper tier per teammate). Use only when parallel exploration + discussion adds clear value. For routine tasks, single session with subagents is more cost-effective.
+Agent Teams multiply context and output costs. Keep prompts focused, choose lower-cost models where evals support them, avoid duplicate verification, and shut down finished teammates promptly. Use a single session for routine or sequential work.
 
 ## Troubleshooting
 
-### Teammates Not Appearing
+### Named Teammate Does Not Start
 
-- In-process: press `Shift+Down` to cycle through active teammates
-- Task may not be complex enough -- Claude decides based on task
-- Split panes: verify tmux installed and in PATH
-- iTerm2: verify `it2` CLI installed and Python API enabled
+- Confirm `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is visible to the session.
+- Confirm `claude --version` is 2.1.219 or newer for this Opus 5 kit.
+- Check account/runtime availability.
+- Spawn a named background agent directly; no setup call precedes it.
 
-### Too Many Permission Prompts
+### Parallel Edits Conflict
 
-Pre-approve common operations in permission settings before spawning.
+- Stop one writer immediately.
+- Identify the authoritative owner for the overlapping file.
+- Restore or reconcile the file through normal version-control review.
+- Re-scope remaining tasks to exclusive paths or run them sequentially.
 
-### Teammates Stopping on Errors
+### Task State Lags
 
-Check output via `Shift+Up/Down` or clicking pane. Give additional instructions or spawn replacement.
+- Message the task owner directly for a status update.
+- Inspect `TaskList` once to reconcile state.
+- Reassign the task if the owner stopped before updating it.
 
-### Lead Shuts Down Early
+### Shutdown Is Slow
 
-Tell lead to keep going or wait for teammates.
-
-### Orphaned tmux Sessions
-
-```
-tmux ls
-tmux kill-session -t <session-name>
-```
-
-### TeamCreate Fails
-
-- Verify `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set in settings.json env
-- Agent Teams requires CLI terminal -- NOT supported in VSCode extension
-- Only one team per session -- call TeamDelete before creating another
-
-## Limitations
-
-- **Uniform model**: every teammate runs the session's Opus model (no mixed-model teams)
-- **No session resumption**: `/resume` and `/rewind` don't restore in-process teammates
-- **Task status can lag**: teammates may not mark tasks completed; check manually
-- **Shutdown can be slow**: finishes current request first
-- **One team per session**: clean up before starting new one
-- **No nested teams**: only lead manages team
-- **Lead is fixed**: can't promote teammate or transfer leadership
-- **Permissions at spawn**: all inherit lead's mode; changeable after but not at spawn time
-- **Split panes**: require tmux or iTerm2 only
-- **VSCode unsupported**: Agent Teams requires CLI terminal
+A teammate may finish an in-flight operation before acknowledging shutdown. Wait for the acknowledgement or report the unfinished state; do not edit runtime state directories manually.

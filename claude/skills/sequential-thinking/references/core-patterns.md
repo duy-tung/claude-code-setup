@@ -1,95 +1,56 @@
-# Core Sequential Thinking Patterns
+# Core Structured-Analysis Patterns
 
-Essential revision and branching patterns.
+## Revise an assumption
 
-## Revision Patterns
+Record only the decision-relevant change:
 
-### Assumption Challenge
-Early assumption proves invalid with new data.
-```
-Thought 1/5: Assume X is bottleneck
-Thought 4/5 [REVISION of Thought 1]: X adequate; Y is actual bottleneck
-```
-
-### Scope Expansion
-Problem larger than initially understood.
-```
-Thought 1/4: Fix bug
-Thought 4/5 [REVISION of scope]: Architectural redesign needed, not patch
+```markdown
+Previous inference: Query X is the bottleneck.
+New evidence: Profile shows X at 4 ms and Y at 280 ms.
+Revision: Investigate Y; no optimization of X is justified.
+Impact: The implementation scope moves from the query layer to serialization.
 ```
 
-### Approach Shift
-Initial strategy inadequate for requirements.
-```
-Thought 2/6: Optimize query
-Thought 5/6 [REVISION of Thought 2]: Optimization + cache layer required
-```
+Do not replay the full analysis that preceded the revision.
 
-### Understanding Deepening
-Later insight fundamentally changes interpretation.
-```
-Thought 1/5: Feature broken
-Thought 4/5 [REVISION of Thought 1]: Not bug—UX confusion issue
-```
+## Compare alternatives
 
-## Branching Patterns
+Use a small matrix containing only criteria that could change the choice:
 
-### Trade-off Evaluation
-Compare approaches with different trade-offs.
-```
-Thought 3/7: Choose between X and Y
-Thought 4/7 [BRANCH A]: X—simpler, less scalable
-Thought 4/7 [BRANCH B]: Y—complex, scales better
-Thought 5/7: Choose Y for long-term needs
-```
+| Option | Verified advantages | Material costs | Blocking unknown |
+|---|---|---|---|
+| A | Reuses current deployment | Higher steady-state latency | None |
+| B | Meets latency target | Adds an operated cache | Failure-mode behavior |
 
-### Risk Mitigation
-Prepare backup for high-risk primary approach.
-```
-Thought 2/6: Primary: API integration
-Thought 3/6 [BRANCH A]: API details
-Thought 3/6 [BRANCH B]: Fallback: webhook
-Thought 4/6: Implement A with B contingency
+Choose after resolving a blocking unknown or state the next decisive check.
+
+## Test competing hypotheses
+
+```markdown
+Symptom: Requests stall after authentication.
+Hypothesis A: Database lock.
+Decisive check: Inspect lock wait metrics during one reproduction.
+Result: Refuted — no waits recorded.
+Hypothesis B: Downstream timeout.
+Decisive check: Trace outbound call duration.
+Result: Verified — 30 s timeout matches the stall.
 ```
 
-### Parallel Exploration
-Investigate independent concerns separately.
-```
-Thought 3/8: Two unknowns—DB schema & API design
-Thought 4/8 [BRANCH DB]: DB options
-Thought 4/8 [BRANCH API]: API patterns
-Thought 5/8: Integrate findings
-```
+Test the cheapest discriminating evidence first. Do not create branches that
+cannot change the next action.
 
-### Hypothesis Testing
-Test multiple explanations systematically.
-```
-Thought 2/6: Could be A, B, or C
-Thought 3/6 [BRANCH A]: Test A—not cause
-Thought 3/6 [BRANCH B]: Test B—confirmed
-Thought 4/6: Root cause via Branch B
-```
+## Control scope
 
-## Adjustment Guidelines
+- Expand only when evidence shows a wider blast radius or missing dependency.
+- Contract when one verified cause explains the observed behavior.
+- Keep independent questions separate until their results must be combined.
+- Stop when acceptance criteria are supported; do not target an arbitrary amount
+  of analysis.
 
-**Expand when**: Complexity discovered, multiple aspects identified, verification needed, alternatives require exploration.
+## Anti-patterns
 
-**Contract when**: Key insight solves earlier, problem simpler, steps merge naturally.
-
-**Example**:
-```
-Thought 1/5: Initial
-Thought 3/7: Complexity (5→7)
-Thought 5/8: Another aspect (7→8)
-Thought 8/8 [FINAL]: Complete
-```
-
-## Anti-Patterns
-
-**Premature Completion**: Rushing without verification → Add verification thoughts.
-
-**Revision Cascade**: Repeated revisions without understanding why → Identify root cause.
-
-**Branching Explosion**: Too many branches → Limit to 2-3, converge before more.
-
-**Context Loss**: Ignoring earlier insights → Reference previous thoughts explicitly.
+- subjective confidence scores without evidence;
+- repeated verification of a fresh passing check;
+- alternatives added only to make the analysis look comprehensive;
+- status narration that does not change the decision;
+- exposing a transcript of private reasoning instead of a concise rationale.

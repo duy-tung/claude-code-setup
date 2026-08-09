@@ -1,131 +1,102 @@
-# Agent Teams -- Controls, Display Modes & Task Management
+# Agent Teams -- Controls and Task Management
 
-> **Source:** https://code.claude.com/docs/en/agent-teams
-> **Version captured:** Claude Code v2.1.80 (March 2026)
+> Source: https://code.claude.com/docs/en/agent-teams
+> Baseline: Claude Code 2.1.178+ implicit teams; CK requires 2.1.219+
 
 ## Display Modes
 
-- **In-process** (default fallback): all teammates in one terminal. `Shift+Up/Down` to navigate. Works in any terminal.
-- **Split panes**: each teammate gets own pane. Requires tmux or iTerm2.
+- **In-process:** teammates share one terminal UI. Use `Shift+Down` to cycle through the lead and teammates, `Enter` to inspect a teammate, `Escape` to interrupt the active turn, and `Ctrl+T` to toggle the task list.
+- **Split panes:** each teammate has a pane. This requires a supported tmux or iTerm2 setup.
 
-Default is `"auto"` -- uses split panes if already inside a tmux session, otherwise in-process. The `"tmux"` setting enables split-pane mode and auto-detects tmux vs iTerm2.
+The default `auto` mode uses panes when an eligible pane environment is already active and otherwise uses in-process mode.
 
 ```json
-{ "teammateMode": "in-process" }
+{
+  "teammateMode": "in-process"
+}
 ```
 
-Per-session override: `claude --teammate-mode in-process`
+Per-session override:
 
-Split panes NOT supported in: VS Code terminal, Windows Terminal, Ghostty.
+```text
+claude --teammate-mode in-process
+```
 
-**tmux setup:** install via system package manager.
-**iTerm2 setup:** install `it2` CLI, enable Python API in iTerm2 > Settings > General > Magic.
+## Start and Stop
 
-## Model Requirements
+With `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, the session's team exists implicitly. Start work by spawning named background agents directly.
 
-Teammates run the **session's Opus model** -- they are spawned as separate sessions pinned to the current binary and inherit its model. There is no pin to a specific Opus version; use whatever Opus the session is on (Opus 5 as of this writing).
+At the end:
 
-Mixed-model teams (e.g., Sonnet for devs, Haiku for testers) are NOT supported within Agent Teams -- the model is a session-level setting, not a per-teammate one.
+1. Confirm all tasks are completed, reassigned, or explicitly reported unfinished.
+2. Send a shutdown request to each active teammate by name.
+3. Wait for acknowledgements or report any teammate still finishing an in-flight operation.
+4. End the workflow; Claude Code performs session-team cleanup automatically.
 
-For mixed-model workflows, use **subagents** instead (the `Agent` tool supports `model: "haiku" | "sonnet" | "opus"` per spawn).
+## Model and Effort Controls
+
+- Use the agent definition's model or provide `model` on an individual spawn.
+- Different teammates can use different models in the same team.
+- Omit a model override when the agent definition/runtime default is appropriate.
+- Teammates inherit the lead's effort level by default.
+- Keep model and effort decisions independent: a cheap model can still receive high effort, and an expensive model can use lower effort for a narrow task.
+
+Do not pin every teammate to Opus. For example, a focused research pass may use Sonnet while a difficult integration review uses Opus.
 
 ## Plan Approval
 
-Require teammates to plan before implementing:
+Require teammate plan approval only when the change is complex, risky, or hard to reverse:
 
+```text
+Spawn an architect teammate for the authentication refactor and require plan approval before edits.
 ```
-Spawn an architect teammate to refactor the auth module.
-Require plan approval before they make any changes.
-```
 
-**Flow:**
-1. Teammate works in read-only plan mode
-2. Teammate finishes planning -> sends `plan_approval_request` to lead
-3. Lead reviews -> approves via `SendMessage(type: "plan_approval_response", approve: true)`
-4. If rejected: teammate stays in plan mode, revises based on feedback, resubmits
-5. Once approved: teammate exits plan mode, begins implementation
-
-**Influence criteria:** "only approve plans that include test coverage" or "reject plans that modify the database schema"
+The teammate remains read-only until the lead accepts the plan. If rejected, the teammate revises it using the lead's concrete feedback. Avoid adding this gate to routine, well-scoped work.
 
 ## Delegate Mode
 
-Restricts lead to coordination-only tools: spawning, messaging, shutting down teammates, and managing tasks. No code editing.
+Delegate mode keeps the lead focused on decomposition, task ownership, direct messages, dependency handling, and synthesis. The lead does not implement code. Give shared-file integration to one explicitly named integrator teammate.
 
-Useful when lead should focus entirely on orchestration -- breaking down work, assigning tasks, synthesizing results.
+## Task Assignment
 
-**Enable:** Press `Shift+Tab` after team creation to cycle into delegate mode.
+Task flow: `pending` -> `in_progress` -> `completed`.
+
+- **Lead-assigned:** set the owner explicitly when special expertise or file ownership matters.
+- **Self-claimed:** an idle teammate takes an unassigned, unblocked task.
+- **Dependent:** a task remains blocked until all prerequisites complete.
+
+Include these fields in every implementation task:
+
+- concrete deliverable and acceptance criteria
+- exclusive file or directory ownership
+- inputs and dependencies
+- expected verification and report format
+
+## Shared Checkout Controls
+
+All teammates see the same files immediately.
+
+1. Partition parallel writers by non-overlapping files or directories.
+2. Reserve shared manifests, schemas, generated files, and lockfiles for one owner.
+3. If ownership overlaps, pause one task and reassign or sequence the edits.
+4. Never rely on later reconciliation to make concurrent overwrites safe.
+5. Run combined verification only after all writers have finished their assigned slices.
 
 ## Direct Teammate Interaction
 
-- **In-process**: `Shift+Up/Down` select teammate, type to message. `Enter` view session. `Escape` interrupt current turn. `Ctrl+T` toggle task list.
-- **Split panes**: click into pane to interact directly. Each teammate has full terminal view.
+- Address a teammate by stable name, not runtime ID.
+- Send one direct message per intended recipient.
+- Put the requested action, relevant evidence, and any deadline/blocker in the message.
+- An idle teammate resumes when messaged.
+- Teammate-to-lead and peer messages arrive automatically.
 
-## Task Assignment & Claiming
+## Event-Driven Monitoring
 
-Three states: **pending** -> **in_progress** -> **completed**. Tasks can have dependencies -- blocked until dependencies resolve.
+Prefer event-driven coordination:
 
-- **Lead assigns**: tell lead which task -> which teammate
-- **Self-claim**: after finishing, teammate picks next unassigned, unblocked task automatically
-- **Auto-unblock**: completing a blocking task automatically unblocks dependents
+1. Spawn independent work in the background.
+2. React to task-completion events, idle events, and inbound messages.
+3. Reconcile with `TaskList` when state is unclear or an event may have been missed.
+4. Reassign blocked work or message its owner directly.
 
-File locking prevents race conditions on simultaneous claiming.
-
-## Worktree Isolation for Implementation
-
-When spawning developer teammates, use `isolation: "worktree"` on the Agent tool:
-
-```
-Agent(
-  subagent_type: "general-purpose",
-  model: "opus",
-  isolation: "worktree",
-  run_in_background: true,
-  prompt: "Implement auth module..."
-)
-```
-
-Each dev gets own worktree + branch. No file conflicts during parallel work. Lead merges branches after all devs complete.
-
-**When to use:** Always for cook/implementation templates. Not needed for research/review (read-only).
-
-## Background Spawning
-
-Use `run_in_background: true` on the Agent tool to spawn teammates non-blocking:
-
-- Lead continues orchestration while teammates work
-- Automatic notification when teammate completes
-- No polling needed -- TaskCompleted hook fires on completion
-- Use TaskList as fallback if no events in 60s
-
-## Shutdown
-
-```
-Ask the researcher teammate to shut down
-```
-
-Teammate can approve (exit) or reject with explanation. Teammates finish current request/tool call before shutting down -- can be slow.
-
-## Cleanup
-
-After all teammates shut down, call `TeamDelete` (no parameters). Fails if active teammates still exist.
-
-Removes shared team resources (`~/.claude/teams/` and `~/.claude/tasks/` entries).
-
-## Hook-Based Orchestration
-
-### Event-Driven Monitoring
-
-Instead of polling TaskList, lead receives automatic context injection:
-
-- **TaskCompleted** -- fires when any teammate completes a task. Lead gets progress counts.
-- **TeammateIdle** -- fires when teammate turn ends. Lead gets available task info.
-
-### Recommended Pattern
-
-1. Lead creates tasks and spawns teammates (with `run_in_background: true`)
-2. TaskCompleted hook notifies lead as tasks finish (progress: N/M)
-3. TeammateIdle hook suggests reassignment or shutdown
-4. Lead acts on suggestions (spawn tester, shut down, reassign)
-5. Fallback: Check TaskList manually if no events received in 60s
-
-This replaces the "poll TaskList every 30s" pattern with reactive orchestration.
+Fixed-interval polling wastes turns and tokens; do not use it as the normal monitoring loop.

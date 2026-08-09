@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 import sys
+import tempfile
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
@@ -321,6 +322,23 @@ def write_catalog_markdown(skills: list[dict], repo_root: Path) -> Path:
     return out
 
 
+def comparable_catalog_text(relative_path: Path, content: str) -> str:
+    """Ignore the human-facing generation date when checking semantic drift."""
+    if relative_path == Path("guide/SKILLS.yaml"):
+        return re.sub(
+            r"(?m)^  last_updated: '\d{4}-\d{2}-\d{2}'$",
+            "  last_updated: '<generated-date>'",
+            content,
+        )
+    if relative_path == Path("guide/SKILLS.md"):
+        return re.sub(
+            r"(?m)^\*\*Last Updated\*\*: \d{4}-\d{2}-\d{2}$",
+            "**Last Updated**: <generated-date>",
+            content,
+        )
+    return content
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -330,6 +348,7 @@ def main() -> None:
         raise SystemExit(f"Error: {base_path} not found")
 
     strict = "--strict" in sys.argv
+    check = "--check" in sys.argv
 
     print("Scanning skills...")
     skills = scan_skills(base_path)
@@ -346,12 +365,45 @@ def main() -> None:
             r_icon = "📚" if skill["has_references"] else "  "
             print(f"  {s_icon}{r_icon} {str(skill['display_name']):30} {str(skill['description'])[:80]}")
 
-    registry = write_skills_registry(skills, repo_root)
-    cat_yaml = write_catalog_yaml(skills, repo_root)
-    cat_md = write_catalog_markdown(skills, repo_root)
-    print(f"\n✓ Saved registry to {registry.relative_to(repo_root)}")
-    print(f"✓ Saved catalog to {cat_yaml.relative_to(repo_root)}")
-    print(f"✓ Saved catalog to {cat_md.relative_to(repo_root)}")
+    catalog_drift: list[Path] = []
+    if check:
+        with tempfile.TemporaryDirectory(prefix="ck-skill-catalog-") as tmp:
+            generated_root = Path(tmp)
+            (generated_root / "claude" / "scripts").mkdir(parents=True)
+            (generated_root / "guide").mkdir(parents=True)
+            generated = [
+                write_skills_registry(skills, generated_root),
+                write_catalog_yaml(skills, generated_root),
+                write_catalog_markdown(skills, generated_root),
+            ]
+            for generated_path in generated:
+                relative_path = generated_path.relative_to(generated_root)
+                checked_in = repo_root / relative_path
+                if not checked_in.is_file():
+                    catalog_drift.append(relative_path)
+                    continue
+                expected = comparable_catalog_text(
+                    relative_path, generated_path.read_text(encoding="utf-8")
+                )
+                actual = comparable_catalog_text(
+                    relative_path, checked_in.read_text(encoding="utf-8")
+                )
+                if actual != expected:
+                    catalog_drift.append(relative_path)
+        if catalog_drift:
+            print("\n[X] Generated skill catalogs are stale:")
+            for relative_path in catalog_drift:
+                print(f"  - {relative_path}")
+            print("Run: python3 claude/scripts/scan_skills.py")
+        else:
+            print("\n✓ Checked-in skill catalogs match generated output")
+    else:
+        registry = write_skills_registry(skills, repo_root)
+        cat_yaml = write_catalog_yaml(skills, repo_root)
+        cat_md = write_catalog_markdown(skills, repo_root)
+        print(f"\n✓ Saved registry to {registry.relative_to(repo_root)}")
+        print(f"✓ Saved catalog to {cat_yaml.relative_to(repo_root)}")
+        print(f"✓ Saved catalog to {cat_md.relative_to(repo_root)}")
 
     # Format compliance scoring (Phase 2).
     scores = [
@@ -367,6 +419,8 @@ def main() -> None:
         if failures or cycles:
             print(f"\n[X] --strict: {len(failures)} description failures, {len(cycles)} cycles")
             raise SystemExit(1)
+    if catalog_drift:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -7,9 +7,11 @@
 3. Activate `ck:scout` skill to explore the code base and return detailed summary reports to the main agent
 4. Merge scout reports into context summary
 
-## Phase 2: Documentation Creation (docs-manager Agent)
+## Phase 2: Documentation Creation
 
-**CRITICAL:** You MUST spawn `docs-manager` agent via Task tool with merged reports. Do not wait for user input.
+For a full initial documentation set, delegate one coherent deliverable to
+`docs-manager` with the merged evidence. For a small or single-file request,
+write it inline. Do not spawn a verifier agent merely to re-read the result.
 
 Pass the gathered context to docs-manager agent to create initial documentation:
 - `README.md`: Update README with initial documentation (keep it under 300 lines)

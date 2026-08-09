@@ -1,133 +1,80 @@
 # Diagnosis Protocol
 
-Structured root cause analysis methodology. Replaces ad-hoc guessing with evidence-based investigation.
+Diagnose from executable evidence and fix the cause rather than the visible
+symptom. Scale the record to the failure: a lint error needs a command and line;
+a production incident needs a durable evidence chain.
 
-## Core Principle
+## 1. Capture the Baseline
 
-**Don't guess root causes.** Form hypotheses through structured reasoning and test them against evidence.
+Capture the smallest useful pre-fix state:
 
-## Pre-Diagnosis: Capture State (always, before any investigation)
+- exact error, failed assertion, or observed behavior;
+- command/input/environment needed to reproduce it;
+- expected versus actual behavior;
+- relevant stack or log context;
+- recent changes only when timing or regression history matters.
 
-Before any investigation, capture the current broken state as baseline:
+The baseline becomes the first item in the final evidence bundle.
 
-```
-1. Record exact error messages (copy-paste, not paraphrase)
-2. Record failing test output (full command + output)
-3. Record relevant stack traces
-4. Record relevant log snippets with timestamps
-5. Record git status / recent changes: git log --oneline -10
-```
+## 2. Observe and Hypothesize
 
-This baseline is required for Step 5 (Verify) — the before/after comparison depends on it.
+Read the failing path before editing. Identify where the symptom appears, its
+direct callers and inputs, and the nearest relevant tests or contracts.
 
-## Diagnosis Chain (Follow in Order)
+For each plausible cause, state:
 
-### Phase 1: Observe — What is actually happening?
+1. the hypothesis;
+2. evidence that would confirm or refute it;
+3. the cheapest discriminating check.
 
-Read, don't assume. Use `ck:debug` (systematic-debugging Phase 1).
+Common categories include a recent regression, invalid state or data shape,
+environment mismatch, missing boundary validation, race/timing behavior, and an
+incorrect contract assumption.
 
-- What is the exact error message?
-- Where does it occur? (file, line, function)
-- When did it start? (check `git log`, `git bisect`)
-- Can it be reproduced consistently?
-- What is the expected vs actual behavior?
+## 3. Test and Trace
 
-### Phase 2: Hypothesize — Why might this happen?
+Test hypotheses in the cheapest useful order. Delegate independent hypotheses only
+when they touch separate surfaces and can run without duplicating context.
 
-Activate `ck:sequential-thinking` skill. Form hypotheses through structured reasoning.
+Classify each result as:
 
-**Structured hypothesis formation:**
-```
-For each hypothesis:
-  1. State the hypothesis clearly
-  2. What evidence would CONFIRM it?
-  3. What evidence would REFUTE it?
-  4. How to test it quickly?
-```
+- `verified`: direct code or executable evidence confirms it;
+- `inferred`: evidence supports it but a direct check is unavailable;
+- `unknown`: more evidence is required.
 
-**Common hypothesis categories:**
-- Recent code change introduced regression (`git log`, `git diff`)
-- Data/state mismatch (wrong input, stale cache, race condition)
-- Environment difference (deps version, config, platform)
-- Missing validation (null check, type guard, boundary)
-- Incorrect assumption (API contract, data shape, ordering)
+Trace backward until the change point is the original defect:
 
-### Phase 3: Test — Verify hypotheses against evidence
-
-Spawn parallel `Explore` subagents to test each hypothesis simultaneously:
-
-```
-// Launch in SINGLE message — max 3 parallel agents
-Task("Explore", "Test hypothesis A: [specific search/check]", "Verify H-A")
-Task("Explore", "Test hypothesis B: [specific search/check]", "Verify H-B")
-Task("Explore", "Test hypothesis C: [specific search/check]", "Verify H-C")
+```text
+symptom <- immediate trigger <- invalid state/contract <- root cause
 ```
 
-**For each hypothesis result:**
-- CONFIRMED: Evidence supports this as root cause → proceed to root cause tracing
-- REFUTED: Evidence contradicts → discard, note why
-- INCONCLUSIVE: Need more data → refine hypothesis or gather more evidence
+Do not stop at a downstream guard if the invalid state should instead be prevented
+at its source.
 
-### Phase 4: Trace — Follow the root cause chain
+## 4. Escalate Deliberately
 
-Use `ck:debug` (root-cause-tracing technique). Trace backward:
+When two hypotheses fail, revisit assumptions, broaden the inspected surface, and
+consider environment, scale, timing, or concurrency. Structured reasoning tools
+can help here, but are not mandatory for an obvious local failure.
 
-```
-Symptom (where error appears)
-  ↑ Immediate cause (what triggered the error)
-    ↑ Contributing factor (what set up the bad state)
-      ↑ ROOT CAUSE (the original trigger that must be fixed)
-```
+After three failed fix attempts, stop changing code and discuss whether the
+architecture, reproduction, or intended contract is wrong.
 
-**Rule:** Don't fix where the error appears — trace back to the source.
+Ask the user only when missing information changes a material scope, contract, or
+authority decision and cannot be learned locally.
 
-### Phase 5: Escalate — When hypotheses fail
+## Diagnosis Summary
 
-If 2+ hypotheses are REFUTED:
-1. Escalate with `ck:sequential-thinking` skill
-2. Apply Inversion Exercise: "What would CAUSE this bug intentionally?"
-3. Apply Scale Game: "Does this fail with 1 item? 100? 10000?"
-4. Consider environmental factors (timing, concurrency, platform)
-
-If 3+ fix attempts fail after diagnosis:
-1. STOP immediately
-2. Question the architecture — is the design fundamentally flawed?
-3. Discuss with user before attempting more
-
-## Diagnosis Report Format
+For moderate/deep work, record:
 
 ```markdown
-## Diagnosis Report
-
-**Issue:** [one-line description]
-**Pre-fix state captured:** Yes/No
-
-### Root Cause
-[Clear explanation of the root cause, traced back to origin]
-
-### Evidence Chain
-1. [Observation] → led to hypothesis [X]
-2. [Test result] → confirmed/refuted [X]
-3. [Trace] → root cause at [file:line]
-
-### Affected Scope
-- Files: [list]
-- Functions: [list]
-- Dependencies: [list]
-
-### Recommended Fix
-[What to change and why — addressing root cause, not symptoms]
-
-### Prevention Needed
-[What guards/tests to add to prevent recurrence]
+Root cause: [specific defect and location]
+Evidence: [verified / inferred / unknown observations]
+Reproduction: [command or steps]
+Blast radius: [demonstrated callers, contracts, and tests]
+Fix direction: [smallest change addressing the cause]
+Prevention: [valuable regression check or guard]
 ```
 
-## Quick Mode Diagnosis
-
-For trivial issues (type errors, lint, syntax), abbreviated diagnosis:
-
-1. Read error message
-2. Locate affected file(s) via scout results
-3. Identify root cause (usually obvious for simple issues)
-4. Skip parallel hypothesis testing
-5. Still capture pre-fix state for verification
+For quick work, the same content may be one concise paragraph; no separate report
+artifact is required.

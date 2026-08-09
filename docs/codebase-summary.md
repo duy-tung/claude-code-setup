@@ -222,16 +222,17 @@ Types:
 
 **Versioning**:
 - Semantic versioning (MAJOR.MINOR.PATCH), inferred from conventional commit types
-- No CI/release automation in this kit — the lean refactor removed the GitHub
-  Actions workflows. Version bumps and any release are performed manually.
+- GitHub Actions runs repository verification only. Version bumps, changelog work,
+  publishing, and releases are performed manually.
 
 ## Testing Strategy
 
-- Comprehensive unit tests required
-- High code coverage mandatory
-- Error scenario testing
-- Performance validation
-- Tests must pass before push
+- Run the smallest test that exercises a small change; broaden for shared contracts,
+  high fan-out, or high-risk changes
+- Add regression coverage where it can distinguish behavior that matters
+- Measure coverage and performance when the acceptance criteria call for them; do not
+  use a universal percentage as a substitute for risk-based tests
+- Selected relevant tests must pass before push
 - No ignoring failed tests
 
 ## Documentation Standards

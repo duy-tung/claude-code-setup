@@ -1,81 +1,87 @@
 # Primary Workflow
 
-**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
-**IMPORTANT**: Ensure token efficiency while maintaining high quality.
+Activate only the skills and workflow stages the task needs. Follow
+`opus-5-calibration.md` for scope, delegation, output, and verification behavior.
 
-## Delegation Gate
+## Scale the workflow first
 
-The steps below name an agent for each phase. That naming says *which* agent owns a
-phase, not that every task must route through all of them.
+- **Small and clear:** inspect the minimum context, edit inline, run one targeted check,
+  and report the outcome. Do not create plan/report artifacts or spawn agents.
+- **Multi-step:** keep a short task checklist. Create a persistent plan only when the
+  work has meaningful dependencies, handoffs, or state that must survive the session.
+- **Large, risky, or parallel:** use the appropriate planning and specialist agents,
+  with explicit file ownership and acceptance criteria.
 
-Spawn a subagent only when the work is genuinely independent and parallelizable, or
-needs its own context budget. Work finishable in a handful of tool calls stays inline —
-writing the prompt, paying for the subagent's context, and reading its report back
-costs more than doing it. Full criteria: `./.claude/rules/opus-5-calibration.md` §2.
+A phase name below identifies the kind of work, not a mandatory agent call. Apply the
+delegation gate in `opus-5-calibration.md` §3 before every spawn.
 
-The gate scales with the task, not with the phase. A one-line fix runs inline
-end-to-end. A multi-file feature or anything touching unfamiliar code still routes
-through `planner`, `tester`, and `code-reviewer` — skipping review there is how
-regressions ship. When unsure, delegate: the cost of an unnecessary review is one
-subagent, the cost of a skipped one is a bug in main.
+## 1. Understand and implement
 
-#### 1. Code Implementation
-- Before you start, create an implementation plan with TODO tasks in `./plans` directory (delegate to `planner` when the delegation gate applies; otherwise plan inline).
-- When in planning phase, research the relevant technical topics (use multiple `researcher` agents in parallel when the topics are genuinely independent and the gate applies; otherwise research inline). Research feeds the plan either way.
-- Write clean, readable, and maintainable code
-- Follow established architectural patterns
-- Implement features according to specifications
-- Handle edge cases and error scenarios
-- **DO NOT** create new enhanced files, update to the existing files directly.
-- **[IMPORTANT]** After creating or modifying code file, run compile command/script to check for any compile errors.
+- Read the repository instructions and the files that govern the requested behavior.
+- Research external facts only when the answer is unstable, unknown, or required for a
+  design decision. Prefer authoritative sources.
+- Implement the complete requested outcome; do not leave stubs or placeholders.
+- Follow existing architecture and update existing files when they are the natural
+  home. Create a new file when it represents a real new responsibility.
+- Handle failure modes that are in scope. Do not build speculative abstractions for
+  hypothetical future requirements.
+- After a coherent edit batch, run the cheapest syntax/type/build check that can catch
+  mistakes in the changed surface. Do not compile after every individual file.
 
-#### 2. Testing
-- Run tests on the **simplified code** (delegate to `tester` when the delegation gate applies; otherwise run them inline)
-  - Write comprehensive unit tests
-  - Ensure high code coverage
-  - Test error scenarios
-  - Validate performance requirements
-- Tests verify the FINAL code that will be reviewed and merged
-- **DO NOT** ignore failing tests just to pass the build.
-- **IMPORTANT:** make sure you don't use fake data, mocks, cheats, tricks, temporary solutions, just to pass the build or github actions.
-- **IMPORTANT:** Always fix failing tests follow the recommendations and run the tests again (delegate to `tester` when the delegation gate applies; otherwise re-run them inline), only finish your session when all tests pass.
+Use `planner` only when the task needs an architectural plan or durable handoff. Use
+`researcher` only for a bounded research track that can run independently.
 
-#### 3. Code Quality
-- After testing passes, review the clean, tested code (delegate to `code-reviewer` when the delegation gate applies; otherwise review inline).
-- Follow coding standards and conventions
-- Write self-documenting code
-- Add meaningful comments for complex logic
-- Optimize for performance and maintainability
+## 2. Verify proportionally
 
-#### 4. Integration
-- Always follow the plan from step 1, whether `planner` produced it or you wrote it inline
-- Ensure seamless integration with existing code
-- Follow API contracts precisely
-- Maintain backward compatibility
-- Document breaking changes
-- Update docs in `./docs` directory if any (delegate to `docs-manager` when the delegation gate applies; otherwise update them inline).
+- Run tests that exercise the changed behavior. Start targeted; expand for shared
+  configuration, public contracts, broad fan-out, migrations, or high-risk changes.
+- Add or update tests when the change introduces behavior that existing tests do not
+  cover and a regression would matter.
+- Do not ignore a relevant failing check. Fix it, or report the exact pre-existing or
+  external blocker with evidence.
+- Do not repeat the same check through multiple agents. Use `tester` only when test
+  selection, environment setup, or failure analysis is itself a sizeable independent
+  task.
 
-#### 5. Debugging
-- When a user report bugs or issues on the server or a CI/CD pipeline, run the tests and analyze the failure (delegate to `debugger` when the delegation gate applies; otherwise investigate inline).
-- Implement the fix from that analysis.
-- Run the tests again and analyze the result (delegate to `tester` when the delegation gate applies; otherwise run them inline).
-- If tests still fail, fix them follow the recommendations and repeat from the **Step 3**.
+## 3. Review when risk warrants it
 
-#### 6. Visual Explanations
-When explaining complex code, protocols, or architecture:
-- **When to use:** User asks "explain", "how does X work", "visualize", or topic has 3+ interacting components
-- Use `/ck:preview --explain <topic>` to generate visual explanation with ASCII + Mermaid
-- Use `/ck:preview --diagram <topic>` for architecture and data flow diagrams
-- Use `/ck:preview --slides <topic>` for step-by-step walkthroughs
-- Use `/ck:preview --ascii <topic>` for terminal-friendly output only
-- **HTML mode** (add `--html` for self-contained HTML pages, opens directly in browser):
-  - `/ck:preview --html --explain <topic>` — publication-quality HTML explanation
-  - `/ck:preview --html --diagram <topic>` — interactive HTML diagram with zoom controls
-  - `/ck:preview --html --slides <topic>` — magazine-quality slide deck
-  - `/ck:preview --html --diff [ref]` — visual diff review
-  - `/ck:preview --html --plan-review` — plan vs codebase comparison
-  - `/ck:preview --html --recap [timeframe]` — project context snapshot
-- **Plan context:** Visuals save to plan folder from `## Plan Context` hook injection; if none, uses `plans/visuals/`
-- **Markdown mode:** Renders Markdown with Mermaid diagrams
-- **HTML mode:** Opens directly in browser — self-contained, no server needed
-- See `development-rules.md` → "Visual Aids" section for additional guidance
+- Review the final diff inline for ordinary changes.
+- Use `code-reviewer` for broad, security-sensitive, data-changing, concurrency-heavy,
+  or unfamiliar changes where an independent pass can find a different class of bug.
+- A passing targeted check plus an inspected small diff is enough for a small change;
+  do not add a reviewer solely because implementation occurred.
+- Validate findings against the real code and threat model before applying them.
+
+## 4. Integrate and document
+
+- Preserve API and data compatibility unless the request authorizes a breaking change.
+- Update documentation only where user-visible behavior, setup, contracts, or durable
+  architecture changed.
+- Keep docs proportional to the change. Do not regenerate unrelated summaries or write
+  a journal by default.
+- Follow a persistent plan when one exists, and update only the state affected by the
+  work.
+
+## 5. Diagnose and fix
+
+- A diagnose, explain, or status request is read-only unless the user also asks for a
+  change.
+- A fix request includes diagnosis, implementation, and proportional verification; do
+  not stop after the diagnosis to request redundant approval.
+- Capture the failing behavior, identify the root cause, apply the narrowest complete
+  fix, then rerun the check that reproduced it.
+- If the same approach fails repeatedly, revisit the hypothesis instead of adding more
+  verification passes.
+
+## 6. Visual explanations
+
+Use a visual only when it materially clarifies a multi-component relationship, flow, or
+state change.
+
+- `/ck:preview --explain <topic>` for a visual explanation
+- `/ck:preview --diagram <topic>` for architecture or data flow
+- `/ck:preview --slides <topic>` for a step-by-step walkthrough
+- `/ck:preview --ascii <topic>` for terminal-only output
+- Add `--html` for a self-contained HTML artifact
+
+Save visuals under the active plan when one exists; otherwise use `plans/visuals/`.

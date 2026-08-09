@@ -1,28 +1,27 @@
 # CI/CD Fix Workflow
 
-For GitHub Actions failures and CI/CD pipeline issues.
-
-## Prerequisites
-- `gh` CLI installed and authorized
-- GitHub Actions URL or run ID
+Use for a concrete CI failure. Reading the named run and repository is part of
+diagnosis; push, rerun, cancel, or deployment actions require the appropriate
+authority.
 
 ## Workflow
 
-1. **Fetch logs** with `debugger` agent:
+1. Fetch the failed step and enough preceding context to identify the first
+   meaningful failure, for example:
+
    ```bash
    gh run view <run-id> --log-failed
    gh run view <run-id> --log
    ```
 
-2. **Analyze** root cause from logs
+2. Reproduce the failing command locally when feasible. Distinguish code defects
+   from runner environment, permissions, dependency, secret, and timeout issues.
+3. Trace the evidence to the root cause and implement the smallest compatible fix.
+4. Collect one proportional bundle: original CI-equivalent command, targeted
+   regression check, affected lint/type/build checks, and final-diff inspection.
+5. Broaden or independently review only for shared pipelines, security/permission
+   changes, releases, or other high-risk surfaces.
 
-3. **Implement fix** based on analysis
-
-4. **Test locally** with `tester` agent before pushing
-
-5. **Iterate** if tests fail, repeat from step 3
-
-## Notes
-- If `gh` unavailable, instruct user to install: `gh auth login`
-- Check both failed step and preceding steps for context
-- Common issues: env vars, dependencies, permissions, timeouts
+If `gh` is unavailable or unauthorized, report the missing evidence instead of
+guessing. Ask the user only when logs cannot be accessed, a material contract or
+scope choice remains, or an external mutation needs new authority.

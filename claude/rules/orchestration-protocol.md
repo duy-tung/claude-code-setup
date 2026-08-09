@@ -1,22 +1,25 @@
 # Orchestration Protocol
 
-## Delegation Context (MANDATORY)
+## Delegation Context
 
-When spawning subagents via Task tool, **ALWAYS** include in prompt:
+When spawning a subagent via Agent, include only the context needed for its owned
+deliverable:
 
 1. **Work Context Path**: The git root of the PRIMARY files being worked on
-2. **Reports Path**: `{work_context}/plans/reports/` for that project
-3. **Plans Path**: `{work_context}/plans/` for that project
+2. **Files and boundaries**: Exact files to read or modify, plus acceptance evidence
+3. **Plan reference**: Only when the task is executing an active plan phase
+4. **Reports path**: Only when the worker explicitly owns a persistent report artifact
 
 **Example:**
 ```
-Task prompt: "Fix parser bug.
+Agent prompt: "Fix parser bug.
 Work context: /path/to/project-b
-Reports: /path/to/project-b/plans/reports/
-Plans: /path/to/project-b/plans/"
+Files: src/parser.ts, tests/parser.test.ts
+Acceptance: targeted parser test passes"
 ```
 
-**Rule:** If CWD differs from work context (editing files in different project), use the **work context paths**, not CWD paths.
+**Rule:** If CWD differs from work context, use the work context path. Do not invent a
+`plans/` or `reports/` path for work that does not use those artifacts.
 
 ---
 
@@ -26,14 +29,23 @@ Before applying either pattern below, decide whether to delegate at all. Spawn a
 subagent only when the work is genuinely independent and parallelizable, or needs its
 own context budget. Work finishable in a handful of tool calls stays inline — writing
 the prompt, paying for the subagent's context, and reading its report back costs more
-than doing it. Full criteria: `./.claude/rules/opus-5-calibration.md` §2.
+than doing it. Full criteria: `./.claude/rules/opus-5-calibration.md` §3.
+
+Start with one worker when one can finish the track. Keep ordinary fan-out to three or
+fewer concurrent workers; use a larger Agent Team only for clearly partitioned work or
+when the user requests it.
 
 #### Sequential Chaining
-Chain subagents when tasks have dependencies or require outputs from previous steps:
-- **Planning → Implementation → Simplification → Testing → Review**: Use for feature development (tests verify simplified code)
-- **Research → Design → Code → Documentation**: Use for new system components
-- Each agent completes fully before the next begins
-- Pass context and outputs between agents in the chain
+Sequential dependencies are usually cheapest in the controller. Chain specialists only
+when each stage is substantial enough to benefit from a separate context:
+
+- **Research → design:** when an external decision must be resolved before architecture
+- **Implementation → test analysis:** when the test surface or failures form their own sizeable task
+- **Implementation → independent review:** only for broad or high-risk changes
+
+Do not instantiate planning, simplification, testing, review, and documentation agents
+as a default pipeline. Pass only the prior stage's decision and evidence to the next
+stage, not its full transcript.
 
 #### Parallel Execution
 Spawn multiple subagents simultaneously for independent tasks:
@@ -43,6 +55,9 @@ Spawn multiple subagents simultaneously for independent tasks:
 - **Careful Coordination**: Ensure no file conflicts or shared resource contention
 - **Merge Strategy**: Plan integration points before parallel execution begins
 - **Don't Idle-Wait**: After delegating independent subtasks, keep working on other available work while subagents run — collect results when they return
+
+Do not parallelize multiple workers over the same files. Agent Team teammates share the
+same checkout unless the workflow explicitly creates separate worktrees.
 
 ---
 
@@ -100,7 +115,7 @@ Constraints: [any relevant constraints]
 Plan reference: [phase file path if applicable]
 
 Work context: [project path]
-Reports: [reports path]
+Reports: [only when this worker owns a report artifact]
 ```
 
 ### Anti-Patterns

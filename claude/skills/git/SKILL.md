@@ -26,11 +26,11 @@ If invoked without arguments, use `AskUserQuestion` to present available git ope
 
 Present as options via `AskUserQuestion` with header "Git Operation", question "What would you like to do?".
 
-Execute git workflows via `git-manager` subagent to isolate verbose output.
-Activate `ck:context-engineering` skill.
+Execute the requested git workflow directly. Use a `git-manager` subagent only
+when the operation is broad enough that delegation materially helps.
 
 **IMPORTANT:**
-- Sacrifice grammar for the sake of concision.
+- Write concise, clear, grammatical output.
 - Ensure token efficiency while maintaining high quality.
 - Pass these rules to subagents.
 

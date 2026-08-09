@@ -19,4 +19,5 @@ pip install -r requirements.txt   # pyyaml (used by the skill scanners)
 | `validate-skill-frontmatter.py` | Validate every `SKILL.md` frontmatter against `claude/schemas/skill-schema.json` (requires `user-invocable: true`). |
 | `win_compat.py` | Windows UTF-8 console helper. Import early in scripts that print Unicode. |
 
-See `.claude/rules/quality-gates.md` for when to run each validator.
+Run `npm run verify` (implemented by repository-root `init.sh`) for the combined
+validator, harness-integrity, hook, statusline, and worktree gate.

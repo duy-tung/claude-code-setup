@@ -8,364 +8,168 @@ keywords: [agents, parallel, multi-session, collaboration]
 argument-hint: "<template> <context> [--devs|--researchers|--reviewers N] [--delegate]"
 metadata:
   author: claudekit
-  version: "3.0.1"
+  version: "3.1.0"
 ---
 
-# Agent Teams - CK-Native Orchestration Engine
+# Agent Teams - CK-Native Orchestration
 
-Coordinate multiple independent Claude Code sessions. Each teammate has own context window, loads project context (CLAUDE.md, skills, agents), communicates via shared task list and messaging.
+Coordinate named Claude Code teammates through one implicit, session-scoped team. Each teammate has its own context window, loads project context, shares the current checkout and task list, and can message other teammates directly.
 
-**Requires:** Agent Teams enabled — either `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json env, or launch with the `--agent-teams` flag. Still gated server-side, so both can be set and the feature still be unavailable.
-**Requires:** CLI terminal — `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList` and `TeamCreate`/`TeamDelete` are **disabled in VSCode extension** (`isTTY` check). Agent Teams CANNOT run in VSCode.
-**Model requirement:** Opus. Every teammate runs the session's Opus model — the model is session-level, so mixed-model teams are not supported.
+## Requirements
+
+- Claude Code `2.1.219` or newer for Claude Opus 5 support. Implicit teams require `2.1.178` or newer.
+- Agent Teams are experimental and disabled by default. Opt in for one POSIX-shell invocation with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude`; use `settings.json` only for intentional persistent enablement.
+- Agent Teams availability can still depend on account and runtime support.
+
+Claude Code creates the implicit team automatically. There is no explicit setup or teardown tool. Spawn named background teammates directly. When work ends, shut down each teammate; Claude Code owns team-resource cleanup.
 
 ## Usage
 
-```
+```text
 /ck:team <template> <context> [flags]
 ```
 
-**Templates:** `ck:research`, `ck:cook`, `ck:code-review`, `ck:debug`
+Templates: `research`, `cook`, `review`, `debug`.
 
-**Flags:**
-- `--devs N` | `--researchers N` | `--reviewers N` | `--debuggers N` -- team size
-- `--plan-approval` / `--no-plan-approval` -- plan gate (default: on for cook)
-- `--delegate` -- lead only coordinates, never touches code
-- `--worktree` -- use git worktrees for implementation isolation (default: on for cook)
+Flags:
 
-## Execution Protocol
+- `--devs N`, `--researchers N`, `--reviewers N`, `--debuggers N`: team size
+- `--plan-approval` / `--no-plan-approval`: teammate plan gate; default on for `cook`
+- `--delegate`: lead coordinates and synthesizes without editing code
 
-**Pre-flight (MANDATORY -- merged into step 2 of every template):**
-1. Step 2 of every template calls `TeamCreate(team_name: "...", ...)`. Do NOT check whether the tool exists first -- just call it.
-2. If the call SUCCEEDS: continue with the template.
-3. If the call returns an ERROR or is unrecognized: **STOP. Tell user:** "Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json. Team mode is not available."
-4. Do NOT fall back to subagents. `/ck:team` MUST use Agent Teams or abort.
-5. Ensure `TeamCreate` was called before spawning teammates -- team association happens via session context.
+## Execution Invariants
 
-When activated, IMMEDIATELY execute the matching template sequence below.
-Do NOT ask for confirmation. Do NOT explain what you're about to do.
-Execute the tool calls in order. Report progress after each major step.
+1. Start by spawning a named teammate with `Agent`. If named Agent Teams behavior is unavailable, stop and explain the enablement/version requirement. Do not silently fall back to ordinary subagents.
+2. Spawn independent work concurrently with `run_in_background: true`.
+3. Treat the checkout as shared. Assign non-overlapping file ownership before any parallel edits. Read-only overlap is fine; write overlap is not.
+4. If two tasks need the same file, make them sequential, reassign the shared file to the lead, or collapse them into one teammate task.
+5. Models are per teammate. Honor the selected agent definition's model or set a model per spawn; mixed-model teams are supported. Teammates inherit the lead's effort level by default.
+6. Send one direct message per teammate name.
+7. Use task events and automatic message delivery for progress. Check `TaskList` only when state is unclear; do not poll on a timer.
+8. Request shutdown from every active teammate when complete. There is no explicit team cleanup call.
 
-### --delegate Mode
+## Agent Tool
 
-When `--delegate` flag is passed:
-- Lead enters delegate mode (`Shift+Tab` after TeamCreate)
-- Lead ONLY: spawns teammates, manages tasks, sends messages, synthesizes reports
-- Lead NEVER: edits files, runs tests, executes git commands directly
-- For cook Step 6 MERGE: spawn a dedicated merge teammate instead of lead doing it
-- For all templates: lead coordinates and reports, delegates ALL implementation work
-
----
-
-## Tool Reference (Quick)
-
-### Agent Tool (spawn teammates)
-
-```
+```text
 Agent(
   subagent_type: "researcher" | "general-purpose" | "code-reviewer" | "debugger" | "tester" | ...,
+  name: "stable-teammate-name",
   description: "short task summary",
   prompt: "full instructions + CK Context Block",
-  model: "opus",                    # Required for Agent Teams teammates
-  run_in_background: true,          # Non-blocking spawn
-  isolation: "worktree"             # Git worktree isolation (cook devs)
+  model: "sonnet",             # Optional per-teammate override
+  run_in_background: true
 )
 ```
 
-**Note:** `Task` was renamed to `Agent` in v2.1.63. Both names work; prefer `Agent` for new code.
+Omit `model` to use the agent definition/runtime default. Do not force every teammate onto Opus. `Agent` is the current tool name; keep legacy `Task` compatibility only in hooks or parsers that read older transcripts.
 
-### Team Management Tools
+## Shared Task and Messaging Surface
 
-| Tool | Purpose | Params |
-|------|---------|--------|
-| `TeamCreate` | Create team + task list | `team_name`, `description` |
-| `TeamDelete` | Remove team resources | *none* -- just call it |
-| `TaskCreate` | Create work item | `subject`, `description`, `priority`, `addBlockedBy`, `addBlocks` |
-| `TaskUpdate` | Claim/complete task | `taskId`, `status`, `owner`, `metadata` |
-| `TaskGet` | Full task details | `taskId` |
-| `TaskList` | All tasks (minimal fields) | *none* |
-| `SendMessage` | Inter-agent messaging | `type`, `to`/`recipient`, `message` |
-
-### SendMessage Types
-
-| Type | Purpose |
+| Tool | Purpose |
 |------|---------|
-| `message` | DM to one teammate (requires `recipient`) |
-| `broadcast` | Send to ALL teammates (use sparingly) |
-| `shutdown_request` | Ask teammate to gracefully exit |
-| `shutdown_response` | Teammate approves/rejects shutdown (requires `request_id`) |
-| `plan_approval_response` | Lead approves/rejects teammate plan (requires `request_id`) |
+| `TaskCreate` | Create a work item with acceptance criteria and file ownership |
+| `TaskUpdate` | Assign, claim, block, or complete a task |
+| `TaskGet` | Read full task details and dependencies |
+| `TaskList` | Inspect compact team task state |
+| `SendMessage` | Direct message or shutdown request to one named teammate |
 
----
+Task dependencies unblock automatically. Teammate messages and idle/completion events arrive automatically; the lead does not need to poll for them.
 
 ## CK Context Block
 
-Every teammate spawn prompt MUST include this context at the end:
+Append this block to every teammate prompt:
 
-```
+```text
 CK Context:
 - Work dir: {CK_PROJECT_ROOT or CWD}
-- Reports: {CK_REPORTS_PATH or "plans/reports/"}
-- Plans: {CK_PLANS_PATH or "plans/"}
-- Branch: {CK_GIT_BRANCH or current branch}
 - Naming: {CK_NAME_PATTERN or "YYMMDD-HHMM"}
-- Active plan: {CK_ACTIVE_PLAN or "none"}
+- Shared checkout: yes; edit only files assigned to this teammate
 - Commits: conventional (feat:, fix:, docs:, refactor:, test:, chore:)
-- Refer to teammates by NAME, not agent ID
+- Refer to teammates by name, not agent ID
+
+Include only when applicable:
+- Reports: {explicit report path when this teammate owns a persistent report}
+- Active plan: {CK_ACTIVE_PLAN when this workflow executes a durable plan}
 ```
 
----
+Do not add placeholder `plans/` or `reports/` paths to a task that does not use
+those artifacts.
 
-## ON `/ck:team research <topic>` [--researchers N]:
+## Template: Research
 
-*Wraps /ck:research skill -- scope, gather, analyze, report.*
+For `/ck:team research <topic> [--researchers N]`:
 
-IMMEDIATELY execute in order:
+1. Derive independent research angles; default `N=3`.
+2. Create one task per angle with a focused question and report path.
+3. Spawn named `researcher` teammates concurrently. Choose models per task cost and difficulty.
+4. Let teammates challenge findings through direct messages when useful.
+5. Read the reports and synthesize one concise summary with evidence, recommendations, and unresolved questions.
+6. Send a shutdown request to each teammate individually.
+7. Report the summary path and number of reports generated.
 
-1. **Derive N angles** from `<topic>` (default N=3):
-   - Angle 1: Architecture, patterns, proven approaches
-   - Angle 2: Alternatives, competing solutions, trade-offs
-   - Angle 3: Risks, edge cases, failure modes, security
-   - (If N>3, derive additional angles from topic context)
+## Template: Cook
 
-2. **CALL** `TeamCreate(team_name: "<topic-slug>")`
+For `/ck:team cook <plan-path-or-description> [--devs N]`:
 
-3. **CALL** `TaskCreate` x N -- one per angle:
-   - Subject: `Research: <angle-title>`
-   - Description: `Investigate <angle> for topic: <topic>. Save report to: {CK_REPORTS_PATH}/researcher-{N}-{CK_NAME_PATTERN}-{topic-slug}.md. Format: Executive summary, key findings, evidence, recommendations. Mark task completed when done. Send findings summary to lead.`
+1. Read the plan, or use one planner teammate when a plan is genuinely needed.
+2. Split implementation into independent groups with exclusive file ownership. Record ownership in every task description.
+3. Create developer tasks plus dependent verification work. Avoid parallel writes to shared manifests, schemas, generated indexes, and lockfiles; give those to one integrator.
+4. Spawn named developer teammates concurrently in the shared checkout.
+5. If plan approval is enabled, require it only for risky or complex implementation tasks.
+6. Monitor task events. Start verification after its dependencies complete.
+7. Integrate shared-file changes sequentially, then run the smallest relevant test, type, lint, or build bundle for the combined result.
+8. Evaluate documentation impact and update docs only when behavior or public contracts changed.
+9. Send a shutdown request to each teammate individually and report implementation plus verification results.
 
-4. **SPAWN** teammates x N via `Agent` tool:
-   - `subagent_type: "researcher"`, `model: "opus"`
-   - `run_in_background: true` (non-blocking -- spawn all N concurrently)
-   - `name: "researcher-{N}"`
-   - Prompt: task description + CK Context Block
+## Template: Review
 
-5. **MONITOR** via TaskCompleted hook events + TaskList fallback:
-   - TaskCompleted events auto-notify when researchers finish
-   - Fallback: Check TaskList if no event received in 60s
-   - If stuck >5 min, message teammate directly
+For `/ck:team review <scope> [--reviewers N]`:
 
-6. **READ** all researcher reports from `{CK_REPORTS_PATH}/`
+1. Derive independent focuses such as correctness, security, performance, and test coverage.
+2. Create one read-only task per focus and spawn named reviewers concurrently.
+3. Ask reviewers for concrete file/line evidence and actionable findings; do not force a finding quota.
+4. Synthesize, deduplicate, and prioritize the findings.
+5. Send a shutdown request to each teammate individually and report the result.
 
-7. **SYNTHESIZE** into: `{CK_REPORTS_PATH}/research-summary-{CK_NAME_PATTERN}-{topic-slug}.md`
-   Format: exec summary, key findings, comparative analysis, recommendations, unresolved questions.
+## Template: Debug
 
-8. **SHUTDOWN**: `SendMessage(type: "shutdown_request")` to each teammate
+For `/ck:team debug <issue> [--debuggers N]`:
 
-9. **CLEANUP**: `TeamDelete` (no parameters -- just call it)
+1. Generate independently testable hypotheses with distinct predicted evidence.
+2. Create one task per hypothesis and spawn named debugger teammates concurrently.
+3. Keep code changes read-only until evidence identifies a root cause. Use direct peer messages for challenges or contradictory evidence.
+4. Synthesize the evidence chain, rejected hypotheses, root cause, and recommended fix.
+5. Send a shutdown request to each teammate individually and report the result.
 
-10. **REPORT**: Tell user `Research complete. Summary: {path}. N reports generated.`
-11. **JOURNAL**: Run `/ck:journal` to write a concise technical journal entry upon completion
+## Delegate Mode
 
----
+With `--delegate`, the lead only decomposes work, assigns tasks, messages teammates, resolves ownership, and synthesizes results. The lead does not edit files or run the implementation itself. Assign any shared-file integration to one named integrator teammate.
 
-## ON `/ck:team cook <plan-path-or-description>` [--devs N]:
+## When to Use Agent Teams
 
-*Wraps /ck:cook skill -- plan, code, test, review, finalize.*
+| Scenario | Prefer |
+|----------|--------|
+| Focused or sequential task | Single session or subagent |
+| Same-file implementation | Single owner, sequential work |
+| Independent research/review angles | Agent Team |
+| Competing debug hypotheses | Agent Team |
+| Cross-layer work with disjoint files | Agent Team |
+| Tight token budget | Single session or lower-cost subagents |
 
-IMMEDIATELY execute in order:
+Agent Teams multiply token use by the number and lifetime of active teammates. Keep teams small, keep prompts focused, and choose lower-cost teammate models where evals show sufficient quality.
 
-1. **READ** plan (if path provided) OR create via planner teammate:
-   - If description only: spawn `Agent(subagent_type: "planner")` to create plan first
-   - Parse plan into N independent task groups with file ownership boundaries
+## Recovery and Shutdown
 
-2. **CALL** `TeamCreate(team_name: "<feature-slug>")`
+1. Redirect a teammate with a direct message.
+2. Reassign a stuck task or spawn a named replacement.
+3. Resolve file-ownership conflicts before further edits.
+4. On abort, send a shutdown request to every active teammate and report unfinished tasks.
 
-3. **CALL** `TaskCreate` x (N + 1) -- N dev tasks + 1 tester task:
-   - Dev tasks: include `File ownership: <glob patterns>` -- NO overlap between devs
-   - Tester task: `addBlockedBy` all dev task IDs
-   - Each task description includes: implementation scope, file ownership, acceptance criteria
-
-4. **SPAWN** developer teammates x N via `Agent` tool:
-   - `subagent_type: "general-purpose"`, `model: "opus"`
-   - `isolation: "worktree"` -- each dev gets isolated git worktree (no file conflicts)
-   - `run_in_background: true`
-   - `name: "dev-{N}"`
-   - Prompt: task description + plan context + CK Context Block
-   - If `--plan-approval`: include instruction to plan first, await approval
-   - REVIEW and APPROVE each developer's plan via `plan_approval_response`
-
-5. **MONITOR** dev completion via TaskCompleted events:
-   - TaskCompleted hook notifies when each dev task finishes
-   - When all N dev tasks show completed, spawn tester immediately
-   - TeammateIdle events confirm devs are available for shutdown
-   - Fallback: Check TaskList if no events received in 60s
-   - Spawn tester: `Agent(subagent_type: "tester", model: "opus", name: "tester")`
-   - Tester runs full test suite, reports pass/fail
-
-6. **MERGE** worktree branches (if `isolation: "worktree"` was used):
-   - Discover branches: check Agent result for branch names, or `git worktree list`
-   - For each dev branch: `git merge <dev-branch> --no-ff`
-   - If conflict: resolve manually (lead owns shared files), then `git add . && git merge --continue`
-   - Cleanup: `git worktree remove <path>` for each worktree
-   - Verify: `git log --oneline --graph` to confirm merge topology
-
-7. **DOCS SYNC EVAL** (MANDATORY for cook -- from /ck:cook finalize):
-   ```
-   Docs impact: [none|minor|major]
-   Action: [no update needed -- <reason>] | [updated <page>] | [needs separate PR]
-   ```
-
-8. **SHUTDOWN** all teammates via `SendMessage(type: "shutdown_request")`
-9. **CLEANUP**: `TeamDelete` (no parameters -- just call it)
-
-10. **REPORT**: Tell user what was cooked, test results, docs impact.
-11. **JOURNAL**: Run `/ck:journal` to write a concise technical journal entry upon completion
-
----
-
-## ON `/ck:team review <scope>` [--reviewers N]:
-
-*Wraps /ck:code-review skill -- scout, review, synthesize with evidence gates.*
-
-IMMEDIATELY execute in order:
-
-1. **DERIVE** N review focuses from `<scope>` (default N=3):
-   - Focus 1: Security -- vulnerabilities, auth, input validation, OWASP
-   - Focus 2: Performance -- bottlenecks, memory, complexity, scaling
-   - Focus 3: Test coverage -- gaps, edge cases, error paths
-   - (If N>3, derive from scope: architecture, DX, accessibility, etc.)
-
-2. **CALL** `TeamCreate(team_name: "review-<scope-slug>")`
-
-3. **CALL** `TaskCreate` x N -- one per focus:
-   - Subject: `Review: <focus-title>`
-   - Description: `Review <scope> for <focus>. Output severity-rated findings only. Format: [CRITICAL|IMPORTANT|MODERATE] <finding> -- <evidence> -- <recommendation>. No "seems" or "probably" -- concrete evidence only. Save to: {CK_REPORTS_PATH}/reviewer-{N}-{CK_NAME_PATTERN}-{scope-slug}.md. Mark task completed when done.`
-
-4. **SPAWN** reviewers x N via `Agent` tool:
-   - `subagent_type: "code-reviewer"`, `model: "opus"`
-   - `run_in_background: true`
-   - `name: "reviewer-{N}"`
-   - Prompt: task description + CK Context Block
-
-5. **MONITOR** via TaskCompleted hook events + TaskList fallback:
-   - TaskCompleted events auto-notify when reviewers finish
-   - Fallback: Check TaskList if no event received in 60s
-
-6. **SYNTHESIZE** into: `{CK_REPORTS_PATH}/review-{scope-slug}.md`
-   - Deduplicate findings across reviewers
-   - Prioritize by severity: CRITICAL > IMPORTANT > MODERATE
-   - Create action items list with owners
-
-7. **SHUTDOWN** all teammates via `SendMessage(type: "shutdown_request")`
-8. **CLEANUP**: `TeamDelete` (no parameters -- just call it)
-
-9. **REPORT**: Tell user `Review complete. {X} findings ({Y} critical). Report: {path}.`
-10. **JOURNAL**: Run `/ck:journal` to write a concise technical journal entry upon completion
-
----
-
-## ON `/ck:team debug <issue>` [--debuggers N]:
-
-*Wraps /ck:fix skill -- root-cause-first, adversarial hypotheses, disprove to converge.*
-
-IMMEDIATELY execute in order:
-
-1. **GENERATE** N competing hypotheses from `<issue>` (default N=3):
-   - Each hypothesis must be independently testable
-   - Each must predict different observable symptoms
-   - Frame as: "If <cause>, then we should see <evidence>"
-
-2. **CALL** `TeamCreate(team_name: "debug-<issue-slug>")`
-
-3. **CALL** `TaskCreate` x N -- one per hypothesis:
-   - Subject: `Debug: Test hypothesis -- <theory>`
-   - Description: `Investigate hypothesis: <theory>. For issue: <issue>. ADVERSARIAL: actively try to disprove other theories. Message other debuggers to challenge findings. Report evidence FOR and AGAINST your theory. Save findings to: {CK_REPORTS_PATH}/debugger-{N}-{CK_NAME_PATTERN}-{issue-slug}.md. Mark task completed when done.`
-
-4. **SPAWN** debugger teammates x N via `Agent` tool:
-   - `subagent_type: "debugger"`, `model: "opus"`
-   - `run_in_background: true`
-   - `name: "debugger-{N}"`
-   - Prompt: task description + CK Context Block
-
-5. **MONITOR** via TaskCompleted events. Debuggers should message each other -- let them converge.
-   - TaskCompleted events notify as each hypothesis is tested
-   - TeammateIdle events indicate debugger awaiting peer input
-   - Fallback: Check TaskList if no events in 60s
-
-6. **READ** all debugger reports. Identify surviving theory as root cause.
-
-7. **WRITE** root cause report: `{CK_REPORTS_PATH}/debug-{issue-slug}.md`
-   Format: Root cause, evidence chain, disproven hypotheses, recommended fix.
-
-8. **SHUTDOWN** all teammates via `SendMessage(type: "shutdown_request")`
-9. **CLEANUP**: `TeamDelete` (no parameters -- just call it)
-
-10. **REPORT**: Tell user `Debug complete. Root cause: <summary>. Report: {path}.`
-11. **JOURNAL**: Run `/ck:journal` to write a concise technical journal entry upon completion
-
----
-
-## When to Use Agent Teams vs Subagents
-
-| Scenario | Subagents (Agent tool) | Agent Teams |
-|----------|----------------------|-------------|
-| Focused task (test, lint, single review) | **Yes** | Overkill |
-| Sequential chain (plan -> code -> test) | **Yes** | No |
-| 3+ independent parallel workstreams | Maybe | **Yes** |
-| Competing debug hypotheses | No | **Yes** |
-| Cross-layer work (FE + BE + tests) | Maybe | **Yes** |
-| Workers need to discuss/challenge findings | No | **Yes** |
-| Token budget is tight | **Yes** | No (high cost) |
-
-## Token Budget
-
-| Template | Estimated Tokens | Notes |
-|----------|-----------------|-------|
-| Research (3) | ~150K-300K | Read-only, moderate cost |
-| Cook (4) | ~400K-800K | Highest cost -- code generation |
-| Review (3) | ~100K-200K | Read-only, moderate cost |
-| Debug (3) | ~200K-400K | Mixed read/execute |
-
-## Agent Memory
-
-Teammates with `memory: project` in their agent definition retain learnings across team sessions. Memory persists in `.claude/agent-memory/<name>/` (gitignored). Useful for:
-- Code reviewer remembering project conventions
-- Debugger recalling past failure patterns
-- Tester tracking flaky tests and coverage gaps
-- Researcher accumulating domain knowledge
-
-Memory persists after team cleanup -- it's in `.claude/agent-memory/`, not `~/.claude/teams/`.
-
-## Worktree Isolation (Cook Template)
-
-For implementation teams, `isolation: "worktree"` on the Agent tool gives each dev:
-- **Own git worktree** -- isolated working directory, staging area, HEAD
-- **Own branch** -- auto-created, returned in agent result
-- **No file conflicts** -- devs can edit same files independently
-- **Safe parallel editing** -- `.git` dir shared, everything else isolated
-
-After all devs complete, lead merges branches sequentially. This is the safest pattern for parallel code changes.
-
-## Error Recovery
-
-1. **Check status**: `Shift+Up/Down` (in-process) or click pane (split)
-2. **Redirect**: Send direct message with corrective instructions
-3. **Replace**: Shut down failed teammate, spawn replacement for same task
-4. **Reassign**: `TaskUpdate` stuck task to unblock dependents
-
-## Abort Team
-
-```
-Shut down all teammates. Then call TeamDelete (no parameters).
-```
-
-If unresponsive: close terminal or kill session. Clean orphaned configs at `~/.claude/teams/` manually.
-
-## Display Modes
-
-- **auto** (default): split panes if in tmux, otherwise in-process
-- **in-process**: all in one terminal. `Shift+Up/Down` navigate. `Ctrl+T` task list.
-- **tmux/split**: each teammate own pane. Requires tmux or iTerm2.
-
-## Rules Reference
-
-See `.claude/rules/team-coordination-rules.md` for teammate behavior rules.
+Do not delete team directories manually. Session-scoped team setup and cleanup are managed by Claude Code.
 
 ## References
 
-- [`references/agent-teams-controls-and-modes.md`](references/agent-teams-controls-and-modes.md) — display modes, navigation, spawn controls
-- [`references/agent-teams-examples-and-best-practices.md`](references/agent-teams-examples-and-best-practices.md) — worked examples and coordination best practices
-- [`references/agent-teams-official-docs.md`](references/agent-teams-official-docs.md) — upstream Agent Teams reference
-
-> v3.0.0: Agent tool migration, worktree isolation for cook devs, run_in_background spawning, updated model requirements.
+- [`references/agent-teams-official-docs.md`](references/agent-teams-official-docs.md): canonical runtime semantics
+- [`references/agent-teams-controls-and-modes.md`](references/agent-teams-controls-and-modes.md): controls and task management
+- [`references/agent-teams-examples-and-best-practices.md`](references/agent-teams-examples-and-best-practices.md): examples and operating patterns
+- `.claude/rules/team-coordination-rules.md`: teammate behavior rules

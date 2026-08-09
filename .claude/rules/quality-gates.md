@@ -2,7 +2,12 @@
 
 Rules for contributors and AI agents working on the claudekit-engineer repo. These are NOT shipped to end users.
 
-> **No CI in this kit.** The lean refactor removed the GitHub Actions workflows, the root `scripts/` JS linters (`check-skill-cross-refs.js`, `check-skill-routing.js`, `check-skill-descriptions.js`), and the allowlist machinery. The gates below are now **local, manual checks** — run the surviving validators in `claude/scripts/` before you commit. Nothing enforces them automatically, so treat them as self-imposed blockers.
+> **Local and CI contract.** Run `npm run verify` before committing. The same
+> verification bundle is enforced by `.github/workflows/verify.yml` on every
+> pull request and every push to `main`, using Node.js 18 and 20 with Python
+> 3.11. The workflow covers the static validators, eval-harness integrity, hook
+> and statusline tests, Opus 5 policy checks, and clean-worktree assertions.
+> Passing CI does not waive the metadata-deletion contract below.
 
 ## Metadata Deletions (MANDATORY)
 

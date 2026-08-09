@@ -2,7 +2,7 @@
 
 Exhaustively list the potential edge cases, then dispatch parallel `code-reviewer` agents to verify: <scope>$ARGUMENTS</scope>
 
-**IMPORTANT:** Activate needed skills. Ensure token efficiency. Sacrifice grammar for concision.
+**IMPORTANT:** Activate only needed skills. Be token-efficient while preserving clear grammar.
 
 ## Workflow
 

@@ -24,24 +24,30 @@ Unified skill for fixing issues of any complexity with intelligent routing.
 
 <HARD-GATE>
 Do NOT propose or implement fixes before completing Steps 1-2 (Scout + Diagnose).
-Symptom fixes are failure. Find the cause first through structured analysis, NEVER guessing.
+The depth of both steps is proportional: a one-line lint failure can be located and
+diagnosed in the same short pass; a production or cross-module failure needs a
+durable evidence chain. Fix the cause rather than guessing at the symptom.
 If 3+ fix attempts fail, STOP and question the architecture — discuss with user before attempting more.
-User override: `--quick` mode allows fast scout→diagnose→fix cycle for trivial issues (lint, type errors).
+`--quick` uses a fast scout→diagnose→fix cycle for trivial issues.
 </HARD-GATE>
 
-<HARD-GATE-SCOUT-FIRST>
-Always scan the codebase BEFORE asking clarifying questions or forming hypotheses. Mandatory scout outputs (collect before Step 2):
+<SCOUT-GATE>
+Inspect the codebase before forming a fix hypothesis. For standard/deep work,
+collect:
 1. Project type, language(s), framework(s) — from package.json/pyproject.toml/go.mod/etc.
 2. The exact file(s) where the symptom surfaces + their direct callers/dependents
 3. Related tests covering the affected area
 4. Recent commits (`git log --oneline -20`) touching scouted files — possible introducer
 5. Existing patterns/conventions for this kind of code (so the fix matches them)
 
-State a 3-6 bullet codebase-context summary to the user before asking questions.
-</HARD-GATE-SCOUT-FIRST>
+For quick work, locate the failing line, local convention, and relevant check.
+Share a context summary only when it changes the approach or informs a user choice.
+</SCOUT-GATE>
 
-<HARD-GATE-EXACT-ROOT-CAUSE>
-Do NOT propose a fix until you can answer ALL of these in one concrete sentence each:
+<ROOT-CAUSE-GATE>
+Before implementing, establish enough of the following to distinguish cause from
+symptom. Record a full inventory for moderate/complex failures; do not block a
+trivial, deterministic fix on irrelevant history:
 
 1. **Exact symptom**: precise error message / failing assertion / observed behavior (copy verbatim, not paraphrased).
 2. **Reproduction steps**: minimal sequence that triggers it (commands, inputs, environment).
@@ -50,21 +56,26 @@ Do NOT propose a fix until you can answer ALL of these in one concrete sentence 
 5. **Why now**: what change/condition exposed it (recent commit, data shape, env, dep upgrade).
 6. **Blast radius**: every code path that depends on the broken behavior or shares the same root cause.
 
-If ANY item is vague ("probably", "I think", "something with…"), use `AskUserQuestion` to gather missing facts (logs, repro, env) OR run more scout/debug — never guess.
+If a material item remains unknown, gather more evidence or ask for information
+that cannot be discovered locally. Mark inferences as inferences; never guess.
 
-Use `AskUserQuestion` with options grounded in scout findings (specific files, specific commits, specific functions) — never abstract.
-</HARD-GATE-EXACT-ROOT-CAUSE>
+Ground questions in specific scout findings and ask only when different answers
+would change the fix.
+</ROOT-CAUSE-GATE>
 
-<HARD-GATE-NO-SIDE-EFFECTS>
-The fix is NOT done until verified to be side-effect-free. Step 5 MUST prove:
+<VERIFICATION-GATE>
+The fix is done when a fresh, proportional evidence bundle shows:
 
 1. Original symptom no longer reproduces (re-run exact pre-fix repro from Step 2).
-2. All tests in modified files + transitively-affected modules pass.
-3. No business logic / workflow regression in the **blast radius** identified above (run those tests too, or manually walk the affected flows).
-4. No new lint/type/build errors introduced anywhere.
+2. Targeted regression checks pass, plus broader tests when shared contracts or
+   the identified blast radius warrant them.
+3. Relevant dependent behavior remains compatible.
+4. Applicable lint/type/build checks pass at the narrowest meaningful scope.
 5. Public API contracts (function signatures, exported types, response shapes, DB schemas, env vars) unchanged — OR change is intentional and called out.
 
-If verification reveals a side effect, regression, or broken workflow, STOP. Do NOT silently patch around it. Use `AskUserQuestion` to present:
+If verification reveals a regression, repair it when clearly in scope and
+reversible. Ask the user only when resolution requires a material contract/scope
+choice, new authority, or acceptance of the regression. Present:
 - What broke (file, test, workflow)
 - Why the fix caused it (1-line cause)
 - 2-4 concrete options to choose from, e.g.:
@@ -73,8 +84,8 @@ If verification reveals a side effect, regression, or broken workflow, STOP. Do 
   - "Narrow the fix scope to <subset> so the regression goes away"
   - "Accept the regression — it was buggy behavior the test was locking in"
 
-Let the user decide. Do not assume.
-</HARD-GATE-NO-SIDE-EFFECTS>
+Do not silently accept a regression.
+</VERIFICATION-GATE>
 
 ## Process Flow (Authoritative)
 
@@ -97,7 +108,7 @@ flowchart TD
     K -->|Fail, <3 attempts| D
     K -->|Fail, 3+ attempts| M[Question Architecture]
     M --> N[Discuss with User]
-    L --> O[Report + Docs + Journal]
+    L --> O[Report outcome; sync docs or journal only when triggered]
 ```
 
 **This diagram is the authoritative workflow.** If prose conflicts with this flow, follow the diagram.
@@ -106,13 +117,14 @@ flowchart TD
 
 ### Step 0: Mode Selection
 
-**First action:** If there is no "auto" keyword in the request, use `AskUserQuestion` to determine workflow mode:
+Infer the lightest safe mode from the evidence and request. Ask about mode only
+when the choice introduces materially different human checkpoints or risk:
 
 | Option | Recommend When | Behavior |
 |--------|----------------|----------|
-| **Autonomous** (default) | Simple/moderate issues | Auto-approve only when review artifacts and validator pass |
-| **Human-in-the-loop Review** | Critical/production code | Pause for approval at each step |
-| **Quick** | Type errors, lint, trivial bugs | Fast scout → diagnose → fix → review cycle |
+| **Autonomous** (default) | Simple/moderate issues | Continue through reversible in-scope work; pause only for material decisions |
+| **Human-in-the-loop Review** | Critical/production code | Pause at material risk/contract decisions |
+| **Quick** | Type errors, lint, trivial bugs | Targeted scout → diagnose → fix → proportional check |
 
 See `references/mode-selection.md` for AskUserQuestion format.
 
@@ -121,7 +133,8 @@ See `references/mode-selection.md` for AskUserQuestion format.
 **Purpose:** Understand the affected codebase BEFORE forming any hypotheses.
 
 **Skill chain:**
-1. Activate `ck:scout` skill OR launch 2-3 parallel `Explore` subagents
+1. Inspect directly, activate `ck:scout`, or launch focused `Explore` workers when
+   broad independent discovery justifies delegation
 2. Discover: affected files, dependencies, related tests, recent changes (`git log`)
 3. Read `./docs` for project context if unfamiliar
 
@@ -135,12 +148,14 @@ See `references/mode-selection.md` for AskUserQuestion format.
 **Purpose:** Structured root cause analysis — evidence-based, not guessed.
 
 **Skill chain:**
-1. **Capture pre-fix state:** Record exact error messages, failing test output, stack traces, log snippets. This becomes the baseline for Step 5 verification.
-2. Activate `ck:debug` skill (systematic-debugging + root-cause-tracing techniques).
-3. Activate `ck:sequential-thinking` skill — form hypotheses through structured reasoning, NOT guessing.
-4. Spawn parallel `Explore` subagents to test each hypothesis against codebase evidence.
-5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking` (inversion, scale-game, alternative approaches).
-6. Create diagnosis report: confirmed root cause, evidence chain, affected scope.
+1. **Capture pre-fix state:** record the smallest reproducible failure. This is the
+   baseline for Step 5.
+2. Use direct inspection or `ck:debug` for systematic root-cause tracing.
+3. For competing hypotheses, test the cheapest discriminating evidence first.
+4. Delegate independent hypotheses only when they can run in parallel without
+   duplicating context.
+5. After two failed hypotheses, reconsider assumptions and broaden inspection.
+6. Write a diagnosis report only when complexity or handoff value warrants it.
 
 See `references/diagnosis-protocol.md` for full methodology.
 
@@ -157,7 +172,9 @@ Classify before routing. See `references/complexity-assessment.md`.
 | **Complex** | System-wide, architecture impact | `references/workflow-deep.md` |
 | **Parallel** | 2+ independent issues OR `--parallel` flag | Parallel `general-purpose` agents |
 
-**Task Orchestration (Moderate+ only):** After classifying, create native Claude Tasks for all phases upfront with dependencies. See `references/task-orchestration.md`.
+**Task Orchestration (Moderate+ only):** Use native Claude Tasks when the work has
+independently trackable phases, dependencies, or handoff value. Do not create a task
+graph merely because the fix is multi-file. See `references/task-orchestration.md`.
 - Skip for Quick workflow (< 3 steps, overhead exceeds benefit)
 - Use `TaskCreate` with `addBlockedBy` for dependency chains
 - Update via `TaskUpdate` as each phase completes
@@ -172,33 +189,43 @@ Classify before routing. See `references/complexity-assessment.md`.
 
 ### Step 5: Verify + Prevent
 
-**Purpose:** Prove the fix works, has NO side effects, and prevents the same bug class from recurring. See HARD-GATE-NO-SIDE-EFFECTS.
+**Purpose:** show the fix works and cover the relevant regression surface with one
+coherent evidence bundle. See `VERIFICATION-GATE`.
 
 **Skill chain:**
-1. **Verify (iron-law):** Run the EXACT commands from pre-fix state capture. Compare output. NO claims without fresh evidence.
-2. **Regression test:** Add or update test(s) that specifically cover the fixed issue. The test MUST fail without the fix and pass with it.
-3. **Side-effect sweep (NEW):** Run tests across the full **blast radius** identified in Step 2 (not just the modified file). Walk each dependent code path. Confirm public contracts unchanged (signatures, response shapes, DB schemas, env vars).
-4. **Code review (delegate):** Spawn `code-reviewer` subagent with explicit instructions to check: (a) root cause actually addressed (not symptom-patched), (b) no broken business logic in blast radius, (c) no new failure modes, (d) follows existing patterns from scout. Pass scout summary + diagnosis report as context.
-5. **Artifact gate:** Write review artifacts from `../_shared/references/workflow-artifacts.md`, then run `node claude/hooks/workflow-artifact-gate.cjs --stage finalize --artifact-dir <artifact-dir>`.
-6. **Prevention gate:** Apply defense-in-depth validation where applicable. See `references/prevention-gate.md`.
-7. **Parallel verification:** Launch `Bash` agents for typecheck + lint + build + test.
+1. **Reproduce:** rerun the pre-fix command or equivalent executable check.
+2. **Regression coverage:** add or update a focused test when it provides lasting
+   value and can distinguish the defect.
+3. **Affected checks:** run tests for modified modules and broaden only across
+   shared contracts or a demonstrated blast radius.
+4. **Review:** inspect the final diff inline; use one independent reviewer for
+   broad, difficult, or high-risk changes.
+5. **Artifacts:** write workflow artifacts only when the selected workflow or CI
+   gate consumes them.
+6. **Prevention:** add the narrowest guard that prevents this bug class when useful.
+7. **Parallel checks:** parallelize typecheck/lint/build/test only when the suite is
+   large enough to recover the coordination cost.
 
-**If verification fails OR a side effect is detected:** Use `AskUserQuestion` per HARD-GATE-NO-SIDE-EFFECTS — present what broke, why, and 2-4 concrete options (revert, narrow scope, update dependents, accept). Never silently patch.
+**If verification fails or a side effect is detected:** follow
+`VERIFICATION-GATE`. Repair a clear, reversible, in-scope regression; ask only when
+the resolution changes contract, scope, authority, or accepted behavior.
 
 **If verification fails:** Loop back to Step 2 (re-diagnose). After 3 failures → question architecture, discuss with user.
 
 See `references/prevention-gate.md` for prevention requirements.
 
-**Output:** `✓ Step 5: Verified + Prevented - [before/after comparison], [N] tests added, [M] guards added`
+**Output:** `✓ Step 5: Verified - [before/after comparison], [checks run], [prevention added when useful]`
 
 ### Step 6: Finalize (every fix, including quick mode)
 
-1. Report summary: confidence score, root cause, changes, files, prevention measures, side-effect sweep results
-2. **Activate `/ck:project-management` skill** → sync plan/task status (if fix is part of a plan), update progress, hydrate Claude Tasks, generate status report
-3. `docs-manager` subagent → update `./docs` if changes warrant
+1. Report the outcome, root cause, changes, fresh checks, and unresolved risks using
+   `verified`, `inferred`, or `unknown` evidence states rather than a confidence score
+2. Sync project/plan status only when this fix belongs to an existing tracked plan
+3. Update docs when public behavior or operating instructions changed
 4. `TaskUpdate` → mark ALL Claude Tasks `completed` (skip if Task tools unavailable)
-5. Ask user if they want to commit via `git-manager` subagent
-6. Run `/ck:journal` to write a concise technical journal entry upon completion
+5. Commit or push only when requested; use the git workflow directly or delegate only
+   when that work is independently substantial
+6. Journal only a noteworthy technical decision or lesson
 
 ---
 
@@ -206,13 +233,11 @@ See `references/prevention-gate.md` for prevention requirements.
 
 See `references/skill-activation-matrix.md` for complete matrix.
 
-**Always activate (ALL workflows):**
-- `ck:scout` (Step 1) — understand before diagnosing
-- `ck:debug` (Step 2) — systematic root cause investigation
-- `ck:sequential-thinking` (Step 2) — structured hypothesis formation
-
-**Always activate (Step 6 Finalize):**
-- `ck:project-management` — sync-back and progress tracking, every fix
+**Use when warranted:**
+- `ck:scout` — broad discovery beyond a targeted local inspection
+- `ck:debug` — non-trivial root-cause investigation
+- `ck:sequential-thinking` — multiple stubborn competing hypotheses
+- `ck:project-management` — sync an existing tracked plan
 
 **Conditional:**
 - `ck:brainstorm` — multiple valid approaches, architecture decision (Deep only)

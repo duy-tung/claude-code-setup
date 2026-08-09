@@ -20,7 +20,7 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - "ESLint errors after upgrade"
 - "Syntax error in config file"
 
-### Moderate (→ workflow-standard.md) — Use Tasks (6 phases)
+### Moderate (→ workflow-standard.md) — Tasks When Useful
 
 **Indicators:**
 - 2-5 files affected
@@ -29,14 +29,16 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - Keywords: `bug`, `broken`, `not working`, `fails sometimes`
 - Test failures with root cause traced
 
-**Task usage:** Create 6 phase tasks with dependencies. See `references/task-orchestration.md`.
+**Task usage:** Use a small task list when the work spans meaningful phases,
+owners, or handoffs. Keep a straightforward multi-file fix inline when tracking
+would add no value. See `references/task-orchestration.md`.
 
 **Examples:**
 - "Login sometimes fails"
 - "API returns wrong data"
 - "Component not rendering correctly"
 
-### Complex (→ workflow-deep.md) — Use Tasks with Dependency Chains (9 phases)
+### Complex (→ workflow-deep.md) — Durable Coordination
 
 **Indicators:**
 - System-wide impact (5+ files)
@@ -47,7 +49,9 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - Multiple interacting components
 - Root cause spans multiple layers/modules
 
-**Task usage:** Create 9 phase tasks. Steps 1+2+3 run parallel (scout+diagnose+research). Full dependency chains. See `references/task-orchestration.md`.
+**Task usage:** Create a dependency graph for the phases and owners the incident
+actually needs. Parallelize bounded investigation only when work is independent.
+See `references/task-orchestration.md`.
 
 **Examples:**
 - "Memory leak in production"
@@ -65,7 +69,8 @@ Classify issue complexity before routing to workflow. Assessment happens AFTER S
 - No dependencies between issues
 - Keywords: list of issues, "and", "also", multiple error types
 
-**Task usage:** Create separate task trees per independent issue (each with scout+diagnose+fix+verify). Spawn `general-purpose` agent per tree. See `references/task-orchestration.md`.
+**Task usage:** Create separate issue owners or task trees only for independent
+surfaces, plus one integration check. See `references/task-orchestration.md`.
 
 **Examples:**
 - "Fix type errors AND update UI styling"

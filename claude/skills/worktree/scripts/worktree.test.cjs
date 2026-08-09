@@ -272,19 +272,26 @@ test('create dry-run surfaces checkout-submodules flag', () => {
 });
 
 test('create dry-run shows explicit base branch source', () => {
-  // Use a branch that actually exists in this clone — hardcoding "dev"
-  // makes the test fail in any checkout without that branch.
-  const existingBranch = execSync('git for-each-ref "--format=%(refname:short)" refs/heads --count=1', {
-    encoding: 'utf-8',
+  // Actions checks out pull requests at a detached commit and may create no
+  // local branch. Make this contract deterministic instead of depending on
+  // the caller's checkout shape.
+  const fixtureBranch = `ck-test-explicit-base-${process.pid}-${Date.now()}`;
+  execSync(`git branch --no-track "${fixtureBranch}" HEAD`, {
     cwd: STANDALONE_DIR,
     stdio: ['pipe', 'pipe', 'pipe']
-  }).trim();
-  assert(existingBranch, 'Repo should have at least one local branch');
-  const result = run(`create test-explicit-base --dry-run --json --base "${existingBranch}"`);
-  assert(result.success, 'Should succeed with explicit base');
-  const json = assertJSON(result.output);
-  assert(json.wouldCreate.baseBranch === existingBranch, 'Should use explicit base branch');
-  assert(json.wouldCreate.baseBranchSource === 'explicit', 'Should mark baseBranchSource as explicit');
+  });
+  try {
+    const result = run(`create test-explicit-base --dry-run --json --base "${fixtureBranch}"`);
+    assert(result.success, 'Should succeed with explicit base');
+    const json = assertJSON(result.output);
+    assert(json.wouldCreate.baseBranch === fixtureBranch, 'Should use explicit base branch');
+    assert(json.wouldCreate.baseBranchSource === 'explicit', 'Should mark baseBranchSource as explicit');
+  } finally {
+    execSync(`git branch -D "${fixtureBranch}"`, {
+      cwd: STANDALONE_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+  }
 });
 
 test('create rejects invalid explicit base branch input', () => {

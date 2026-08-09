@@ -100,7 +100,8 @@ git fetch origin <target> && git merge origin/<target> --no-edit
 **Skip if:** `--skip-tests` flag.
 
 1. Auto-detect test command (see `auto-detect.md`)
-2. Delegate to `tester` subagent — don't inline test execution
+2. Run the detected command inline for a focused suite; delegate a broad,
+   independently owned test matrix when parallel execution saves time
 3. Check pass/fail from agent result
 
 - **If any test fails:** Show failures and **STOP**. Do not proceed.
@@ -112,7 +113,8 @@ git fetch origin <target> && git merge origin/<target> --no-edit
 **Skip if:** `--skip-review` flag.
 
 1. Run `git diff origin/<target>` to get the full diff
-2. Delegate to `code-reviewer` subagent with the diff
+2. Review a small diff inline; use one independent `code-reviewer` for a broad,
+   difficult, or high-risk diff
 3. Two-pass model:
    - **Pass 1 (CRITICAL):** Security, injection, race conditions, auth bypass
    - **Pass 2 (INFORMATIONAL):** Dead code, magic numbers, test gaps, style

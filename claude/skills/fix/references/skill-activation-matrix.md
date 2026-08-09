@@ -1,96 +1,43 @@
 # Skill Activation Matrix
 
-When to activate each skill and tool during fixing workflows.
+Activate a skill, agent, or artifact only when it reduces uncertainty or execution
+time enough to justify its coordination cost.
 
-## Always Activate (ALL Workflows)
+## Core Work
 
-| Skill/Tool | Step | Reason |
-|------------|------|--------|
-| `ck:scout` OR parallel `Explore` | Step 1 | Understand codebase context before diagnosing |
-| `ck:debug` | Step 2 | Systematic root cause investigation |
-| `ck:sequential-thinking` | Step 2 | Structured hypothesis formation — NO guessing |
-| `/ck:project-management` | Step 6 | Sync-back and progress tracking, every fix |
+| Need | Default | Escalate when |
+|------|---------|---------------|
+| Locate a deterministic local failure | Direct search/read | Use `ck:scout` or focused Explore workers for a broad or unfamiliar surface |
+| Diagnose an obvious cause | Inspect inline and rerun repro | Use `ck:debug` for non-trivial traces; use structured reasoning for stubborn competing hypotheses |
+| Track work | Inline checklist or no artifact | Use Tasks for multi-phase coordination, handoff, or independent issue trees |
+| Verify | Run one proportional evidence bundle inline | Parallelize long independent checks; use a tester for a distinct testing problem |
+| Review | Inspect final diff inline | Use an independent reviewer for broad, difficult, or high-risk changes |
+| Finalize | Concise evidence-backed report | Sync an existing plan, update public docs, or journal a durable lesson only when relevant |
 
-## Task Orchestration (Moderate+ Only)
+## Conditional Skills and Workers
 
-| Tool | Activate When |
-|------|---------------|
-| `TaskCreate` | After complexity assessment, create all phase tasks upfront |
-| `TaskUpdate` | At start/completion of each phase |
-| `TaskList` | Check available unblocked work, coordinate parallel agents |
-| `TaskGet` | Retrieve full task details before starting work |
+| Skill/worker | Use when |
+|--------------|----------|
+| `ck:brainstorm` | Deep work has multiple materially different valid approaches |
+| `ck:context-engineering` | The defect involves AI/LLM context, prompts, memory, or agent behavior |
+| vision/browser tooling | Visual behavior or browser interaction is part of the acceptance criteria |
+| `researcher` | Versioned external documentation, advisories, or provider behavior affects the fix |
+| `planner` | A complex multi-owner or multi-session change needs a durable execution graph |
+| `general-purpose` | Two or more independent issues can be owned without overlapping edits |
+| `git-manager` | Commit/publish work is authorized and delegation is useful |
+| `docs-manager` | Public behavior or operating instructions changed substantially |
 
-Skip Tasks for Quick workflow (< 3 steps). See `references/task-orchestration.md`.
+## Workflow Map
 
-## Auto-Triggered Activation
+| Workflow | Typical activation |
+|----------|--------------------|
+| Quick | Direct targeted scout, diagnosis, edit, checks, and diff review |
+| Standard | Direct work plus only the focused tools/tasks needed by uncertainty or coordination |
+| Deep | Durable tasks/artifacts, research, and independent review as justified by risk |
+| Parallel | Separate issue owners plus one integration owner/check |
 
-| Skill | Auto-Trigger Condition |
-|-------|------------------------|
-| `ck:sequential-thinking` | Always in Step 2 (mandatory for hypothesis formation) |
+## Questions and Evidence
 
-## Conditional Activation
-
-| Skill | Activate When |
-|-------|---------------|
-| `ck:brainstorm` | Multiple valid fix approaches, architecture decision (Deep only) |
-| `ck:context-engineering` | Fixing AI/LLM/agent code, context window issues |
-| vision/multimodal model | UI issues, screenshots provided, visual bugs |
-
-## Subagent Usage
-
-| Subagent | Activate When |
-|----------|---------------|
-| `debugger` | Root cause unclear, need deep investigation (Step 2) |
-| `Explore` (parallel) | Scout multiple areas simultaneously (Step 1), test hypotheses (Step 2) |
-| `Bash` (parallel) | Verify implementation: typecheck, lint, build, test (Step 5) |
-| `researcher` | External docs needed, latest best practices (Deep only) |
-| `planner` | Complex fix needs breakdown, multiple phases (Deep only) |
-| `tester` | After implementation, verify fix works (Step 5) |
-| `ck:code-review` | After fix, verify quality and security (Step 5) |
-| `git-manager` | After approval, commit changes (Step 6) |
-| `docs-manager` | API/behavior changes need doc updates (Step 6) |
-| `general-purpose` | Parallel independent issues (each gets own agent) |
-
-## Parallel Patterns
-
-See `references/parallel-exploration.md` for detailed patterns.
-
-| When | Parallel Strategy |
-|------|-------------------|
-| Scouting (Step 1) | 2-3 `Explore` agents on different areas |
-| Testing hypotheses (Step 2) | 2-3 `Explore` agents per hypothesis |
-| Multi-module fix | `Explore` each module in parallel |
-| After implementation (Step 5) | `Bash` agents: typecheck + lint + build + test |
-| 2+ independent issues | Task trees + `general-purpose` agents per issue |
-
-## Workflow → Skills Map
-
-| Workflow | Skills Activated |
-|----------|------------------|
-| Quick | `ck:scout` (minimal), `ck:debug`, `ck:sequential-thinking`, `ck:code-review`, `/ck:project-management`, parallel `Bash` verification |
-| Standard | Above + Tasks, `ck:project-management`, `tester`, parallel `Explore` |
-| Deep | All above + `ck:brainstorm`, `ck:context-engineering`, `researcher`, `planner` |
-| Parallel | Per-issue Task trees + `ck:project-management` + `general-purpose` agents + coordination via `TaskList` |
-
-## Step → Skills Chain (Mandatory Order)
-
-| Step | Mandatory Chain |
-|------|----------------|
-| Step 0: Mode | `AskUserQuestion` (unless auto/quick detected) |
-| Step 1: Scout | `ck:scout` OR 2-3 parallel `Explore` → map files, deps, tests |
-| Step 2: Diagnose | Capture pre-fix state → `ck:debug` → `ck:sequential-thinking` → parallel `Explore` hypotheses |
-| Step 3: Assess | Classify complexity → create Tasks (moderate+) |
-| Step 4: Fix | Implement per workflow → follow root cause |
-| Step 5: Verify+Prevent | Iron-law verify → regression test → defense-in-depth → parallel `Bash` verify |
-| Step 6: Finalize | Report → `/ck:project-management` → `docs-manager` → `TaskUpdate` → `git-manager` → `/ck:journal` |
-
-## Detection Triggers
-
-| Keyword/Pattern | Skill to Consider |
-|-----------------|-------------------|
-| "AI", "LLM", "agent", "context" | `ck:context-engineering` |
-| "stuck", "tried everything" | `ck:sequential-thinking` |
-| "complex", "multi-step" | `ck:sequential-thinking` |
-| "which approach", "options" | `ck:brainstorm` |
-| "latest docs", "best practice" | `researcher` subagent |
-| Screenshot attached | vision/multimodal model |
+Infer mode by default. Ask only for a material scope, contract, authority, or
+regression-acceptance decision that cannot be discovered locally. Report evidence
+as `verified`, `inferred`, or `unknown`, never as a numeric confidence threshold.

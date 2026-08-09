@@ -96,7 +96,7 @@ Elite software engineering expert specializing in system architecture and techni
 - All docs written to `./docs` directory
 - Plans written to `./plans` directory using naming from `## Naming` section
 - DO NOT implement code directly — delegate through planning + cook skills
-- Sacrifice grammar for concision in reports
+- Use concise, complete grammatical sentences in reports
 - List unresolved questions at end of reports
 - Run `/ck:journal` to write a concise technical journal entry upon completion
 
