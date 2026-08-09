@@ -26,12 +26,12 @@ End-to-end project bootstrapping from idea to running code.
 
 **Flags** (optional, default `--full`):
 
-| Flag | Mode | Thinking | User Gates | Planning Skill | Cook Skill |
-|------|------|----------|------------|----------------|------------|
-| `--full` | Full interactive | Ultrathink | Every phase | `--hard` | (interactive) |
-| `--auto` | Automatic explicit opt-in | Ultrathink | Design only | `--auto` | `--auto` |
-| `--fast` | Quick | Think hard | Cook review gates | `--fast` | (interactive) |
-| `--parallel` | Multi-agent | Ultrathink | Design only | `--parallel` | `--parallel` |
+| Flag | Mode | User Gates | Planning Skill | Cook Skill |
+|------|------|------------|----------------|------------|
+| `--full` | Full interactive | Every phase | `--hard` | (interactive) |
+| `--auto` | Automatic explicit opt-in | Design only | `--auto` | `--auto` |
+| `--fast` | Quick | Cook review gates | `--fast` | (interactive) |
+| `--parallel` | Multi-agent | Design only | `--parallel` | `--parallel` |
 
 **Example:**
 ```

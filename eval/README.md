@@ -56,11 +56,14 @@ python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5
 - Env: `CK_EVAL_CMD` (default `claude`, e.g. `"ccs glm"`),
   `CK_EVAL_CLAUDE_ARGS` (default `--permission-mode bypassPermissions`),
   `CK_EVAL_TIMEOUT_SEC` (default 180).
-- **Pin the model + effort** (so every A/B run uses the SAME model, e.g. Opus 4.8 / xhigh):
+- **Pin the model + effort** (so every A/B run uses the SAME model, e.g. Opus 5 / xhigh):
   ```bash
-  export CK_EVAL_MODEL=claude-opus-4-8     # -> --model
+  export CK_EVAL_MODEL=claude-opus-5       # -> --model
   export CK_EVAL_EFFORT=xhigh              # -> --effort
   ```
+  Results captured against an earlier model are not comparable to Opus 5 runs — its
+  tokenizer and effort levels both differ — so re-baseline rather than diffing across
+  the switch.
   The summary prints **`model(s) actually run`** (from the result JSON's `modelUsage`) — so it doesn't just set the model, it *records and proves* which model executed each run. If the printed model isn't what you pinned, the flag isn't taking effect (check `claude -p --help` for the exact flag names in your CLI version).
 
 Results stream to `results/eval-<ts>.ndjson` (git-ignored).

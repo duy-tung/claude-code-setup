@@ -1,6 +1,5 @@
 # Fast Workflow (`--fast`)
 
-**Thinking level:** Think hard
 **User gates:** Fast pre-planning path, then normal cook review gates.
 
 ## Step 1: Combined Research & Planning

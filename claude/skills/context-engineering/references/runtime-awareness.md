@@ -94,7 +94,7 @@ total = input_tokens + cache_creation_input_tokens + cache_read_input_tokens
 percent = (total + AUTOCOMPACT_BUFFER) / context_window_size * 100
 ```
 
-Where `AUTOCOMPACT_BUFFER = 45000` (22.5% reserved).
+Where `AUTOCOMPACT_BUFFER = 40000`. This is only the fallback path — it runs when the harness omits a precalculated `used_percentage`. `context_window_size` comes from the harness at runtime, so the reserve is not a fixed share of the window.
 
 ## Hook Output
 

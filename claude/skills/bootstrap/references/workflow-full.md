@@ -1,6 +1,5 @@
 # Full Interactive Workflow (`--full`)
 
-**Thinking level:** Ultrathink
 **User gates:** Every major phase requires user approval before proceeding.
 
 ## Step 1: Clarify Requirements

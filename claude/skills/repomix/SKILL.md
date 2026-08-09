@@ -164,9 +164,9 @@ Repomix automatically counts tokens for individual files, total repository, and 
 Current Repomix releases use a faster pure-JavaScript tokenization path and parallelize more of the pack pipeline. Still treat token count as a review gate: check the generated summary before sharing context, narrow includes for large monorepos, and prefer package-scoped packs when only one workspace matters.
 
 Typical LLM context limits:
-- Claude Sonnet 4.5: ~200K tokens
+- Claude Opus 5 / Sonnet 5: 1M tokens
+- Claude Haiku 4.5: 200K tokens
 - GPT-4: ~128K tokens
-- GPT-3.5: ~16K tokens
 
 ### Token Count Optimization
 Understanding your codebase's token distribution is crucial for optimizing AI interactions. Use the --token-count-tree option to visualize token usage across your project:

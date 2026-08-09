@@ -450,13 +450,6 @@ claude "Plan the next development phase"
 - Extend existing agent capabilities
 - Create domain-specific expertise
 
-### Integration Capabilities
-- **Multi-provider notifications** (Telegram, Discord, Slack) with smart throttling
-- GitHub Actions integration
-- CI/CD pipeline enhancement
-
-See `.claude/hooks/notifications/docs/` for setup guides.
-
 ## Customization Guide
 
 ### 1. Project Setup
