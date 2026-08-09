@@ -6,12 +6,12 @@ Rules for contributors and AI agents working on the claudekit-engineer repo. The
 > verification bundle is enforced by `.github/workflows/verify.yml` on every
 > pull request and every push to `main`, using Node.js 18 and 20 with Python
 > 3.11. The workflow covers the static validators, eval-harness integrity, hook
-> and statusline tests, Opus 5 policy checks, and clean-worktree assertions.
+> and statusline tests, prompt-policy checks, and clean-worktree assertions.
 > Passing CI does not waive the metadata-deletion contract below.
 
-## Opus 5 Prompt Policy (tree-wide, enforced by tests)
+## Prompt Policy (tree-wide, enforced by tests)
 
-`claude/hooks/__tests__/opus-5-alignment-policy.test.cjs` is the prompt-behavior contract. It no longer works from a hardcoded file list — it scans **every** shipped skill, agent, rule, and doc, so a newly added file is covered the moment it lands. It checks for:
+`claude/hooks/__tests__/prompt-policy-contract.test.cjs` is the prompt-behavior contract. It no longer works from a hardcoded file list — it scans **every** shipped skill, agent, rule, and doc, so a newly added file is covered the moment it lands. It checks for:
 
 - pre-Opus-5 scaffolding in **hook sources** as well as Markdown (the injected text is what the model actually reads)
 - unconditional delegation openers, unconditional `/ck:` skill chaining, multi-persona role theater
@@ -21,7 +21,7 @@ Rules for contributors and AI agents working on the claudekit-engineer repo. The
 
 When a check fires, **fix the prose**. Only add to `PROMPT_POLICY_EXEMPTIONS` when the phrase is genuinely domain logic (re-running a test after a fix, re-measuring a noisy metric, re-reading stale third-party output), and state why in a comment. A companion test fails when an exemption stops matching, so stale entries cannot accumulate. A growing exemption list means the pattern is wrong, not that the exceptions are.
 
-**Affected files:** `claude/hooks/__tests__/opus-5-alignment-policy.test.cjs`, `claude/hooks/__tests__/lib/prompt-policy.cjs`
+**Affected files:** `claude/hooks/__tests__/prompt-policy-contract.test.cjs`, `claude/hooks/__tests__/lib/prompt-policy.cjs`
 
 ## Metadata Deletions (MANDATORY)
 
@@ -84,11 +84,11 @@ Delete only when: (a) audit confirms zero unique capability, AND (b) a descripti
 
 Unscoped `.md` files under `.claude/rules/` load into **every session** at the same priority as `.claude/CLAUDE.md`. Anthropic's guidance is under 200 lines per file, and warns that longer files reduce adherence and that contradictory rules get resolved arbitrarily.
 
-`claude/rules/model-calibration.md` is the **single normative source for model behavior**. Other rules reference it by section; they do not restate it. Two tests in `opus-5-alignment-policy.test.cjs` enforce this: a budget test that prints the per-file breakdown and fails over the ceiling, and a canon test that fails when another always-loaded rule states a canonical phrasing.
+`claude/rules/model-calibration.md` is the **single normative source for model behavior**. Other rules reference it by section; they do not restate it. Two tests in `prompt-policy-contract.test.cjs` enforce this: a budget test that prints the per-file breakdown and fails over the ceiling, and a canon test that fails when another always-loaded rule states a canonical phrasing.
 
 When a rule grows, move task-specific content to a `paths:`-scoped rule (loads only for matching files, like `documentation-management.md`) or into a skill's `references/` directory (loads with the skill). **Do not raise the ceiling** — it ratcheted 946 → 426 and is meant to keep going down.
 
-**Affected files:** `claude/rules/*.md`, `claude/hooks/__tests__/opus-5-alignment-policy.test.cjs`
+**Affected files:** `claude/rules/*.md`, `claude/hooks/__tests__/prompt-policy-contract.test.cjs`
 
 ### Hooks carry runtime facts, rules carry behavior
 

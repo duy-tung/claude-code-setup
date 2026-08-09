@@ -17,7 +17,7 @@ from scripts.utils import parse_skill_md
 
 
 def thinking_request_kwargs(model: str) -> dict:
-    """Request thinking summaries only for the official Opus 5 API model ID.
+    """Request thinking summaries only for the pinned API model ID.
 
     This script calls the Claude Messages API directly, where ``claude-opus-5``
     is the documented ID. Claude Code selectors such as ``opus`` and arbitrary
@@ -141,11 +141,9 @@ Please respond with only the new description text in <new_description> tags, not
     response = client.messages.create(
         model=model,
         max_tokens=16000,
-        # Opus 5 has two breaking changes from Opus 4.8: thinking is on by
-        # default, and disabling it is limited to high effort or below. Adaptive
-        # thinking is the default, not a direct replacement for budget_tokens.
-        # display="summarized" keeps the transcript log below populated; the
-        # default ("omitted") would leave block.thinking empty.
+        # Thinking is adaptive and on by default, so no thinking field is
+        # required. display="summarized" keeps the transcript log below
+        # populated; the default ("omitted") would leave block.thinking empty.
         **thinking_request_kwargs(model),
         messages=[{"role": "user", "content": prompt}],
     )

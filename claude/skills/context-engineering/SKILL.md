@@ -55,10 +55,10 @@ Context engineering curates the smallest high-signal token set for LLM tasks. Th
 | **Pipelines** | Project development, batch processing | [project-development.md](./references/project-development.md) |
 | **Runtime Awareness** | Usage limits, context window monitoring | [runtime-awareness.md](./references/runtime-awareness.md) |
 
-## Opus 5 runtime baseline
+## Runtime baseline
 
 - The default and maximum context window is 1M tokens.
-- Anthropic has not published an Opus 5 quality-degradation onset inside that
+- Anthropic has not published a quality-degradation onset inside that
   window. A percentage is capacity telemetry, not a quality guarantee.
 - Treat warning/compaction thresholds as workload-specific operating heuristics.
   Tune them from remaining work, retrieval quality, latency, and measured evals.
@@ -104,7 +104,7 @@ Context Window Usage: 67%
 ```
 
 **Operational indicators:**
-- Warning thresholds are configurable heuristics, not published Opus 5 quality
+- Warning thresholds are configurable heuristics, not published quality
   boundaries.
 - Near-capacity alerts should account for the remaining task and the runtime's own
   compaction reserve before recommending a reset.
