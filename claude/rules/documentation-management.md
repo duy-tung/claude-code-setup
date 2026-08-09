@@ -1,4 +1,16 @@
+---
+paths:
+  - "docs/**"
+  - "**/*.md"
+  - "CHANGELOG*"
+---
+
 # Project Documentation Management
+
+Loads when you touch documentation rather than every session. The rule that governs
+*whether* to write docs at all lives in `./.claude/rules/model-calibration.md` §2 — update
+only what changed, and do not produce artifacts the task did not ask for.
+
 
 ### Roadmap & Changelog Maintenance
 - **Project Roadmap** (`./docs/project-roadmap.md`): Living document tracking project phases, milestones, and progress

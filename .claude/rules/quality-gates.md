@@ -54,34 +54,41 @@ The registry normalizes names by stripping the `ck:` prefix from frontmatter. So
 python3 claude/scripts/validate-skill-crossrefs.py claude/skills/
 ```
 
-**When modifying workflow routing rules** (`claude/rules/skill-workflow-routing.md`, `claude/rules/skill-domain-routing.md`):
-- These rules ARE shipped to end users — they guide Claude's skill suggestions
+**When modifying `claude/rules/skill-routing.md`:**
+- It IS shipped to end users — it guides Claude's skill suggestions
 - Keep every `/ck:` reference resolvable (the validator above flags dangling ones)
-- When adding a new skill to a workflow chain, update BOTH the routing rule AND the skill's `## Workflow Position` section
+- When adding a new skill to a chain, update BOTH the routing rule AND the skill's `## Workflow Position` section
 
-**Affected files:** `claude/rules/skill-*.md`, `claude/skills/*/SKILL.md`, `claude/scripts/validate-skill-crossrefs.py`
+**Affected files:** `claude/rules/skill-routing.md`, `claude/skills/*/SKILL.md`, `claude/scripts/validate-skill-crossrefs.py`
 
-## Skill Routing Coverage (run before committing)
+## Skill Discoverability (run before committing)
 
-`validate-skill-crossrefs.py` also reports **orphaned skills** — skills with no inbound or outbound `/ck:` reference in the skill-to-skill graph. Note the validator does NOT read the routing files: a graph orphan can still be perfectly discoverable via `skill-domain-routing.md` / `skill-workflow-routing.md`. There is no routing-coverage script or allowlist file anymore; for each orphan the validator prints, grep the two routing files yourself and judge reachability from there.
+`validate-skill-crossrefs.py` reports **orphaned skills** — skills with no inbound or outbound `/ck:` reference in the skill-to-skill graph. A graph orphan is not necessarily undiscoverable.
 
-**The principle (audit-route-reframe):** discoverability is part of the contract. Shipping a skill that no routing file mentions means users (and Claude) will not find it. **Telemetry zero ≠ zero value** — most dormant skills audited under epic #711 flipped to KEEP after routing or description fixes. When tempted to delete a "dormant" skill:
+**The primary discovery surface is the skill's own `description`.** Claude Code lists every shipped skill with its description in context, so a well-written description is what makes a skill findable. `claude/rules/skill-routing.md` is the *secondary* surface: it carries only what a description cannot — escalation chains and disambiguation between skills that sound alike. Do not re-describe a skill there; that duplication is what the always-loaded budget below exists to prevent.
+
+**The principle (audit-route-reframe):** discoverability is part of the contract. **Telemetry zero ≠ zero value** — most dormant skills audited under epic #711 flipped to KEEP after routing or description fixes. When tempted to delete a "dormant" skill:
 
 1. **Audit:** Does the skill have unique capability (scripts, references, agents)? If yes, deletion likely loses real value.
-2. **Route:** Is it reachable from a routing file? If no, dormancy is a discoverability problem — fix the routing.
-3. **Reframe:** Does the SKILL.md `description` read like a maintainer-only utility? Rewrite with user-phrasing keywords.
+2. **Reframe the description:** Does it read like a maintainer-only utility, or does it use the words a user would type? This is the highest-leverage fix.
+3. **Route:** Only if the skill is confusable with another, or belongs in a chain, add it to `skill-routing.md`.
 
-Delete only when: (a) audit confirms zero unique capability, AND (b) routing fix wouldn't change adoption, AND (c) use case is genuinely covered by another skill. Catalog size is an output, not a target.
-
-**When adding a new skill:**
-1. Add the skill to the appropriate domain block in `skill-domain-routing.md` (preferred — user-facing)
-2. OR add it to a workflow chain in `skill-workflow-routing.md`
-3. Genuine meta / orchestrator / maintainer skills may stay orphaned by design — document why in the skill's own SKILL.md body (the allowlist files that used to record this were removed with CI).
+Delete only when: (a) audit confirms zero unique capability, AND (b) a description fix wouldn't change adoption, AND (c) the use case is genuinely covered by another skill. Catalog size is an output, not a target.
 
 **When deleting a skill:**
 - Re-run the validator and remove every now-dangling `/ck:` reference in the same change.
 
-**Affected files:** `claude/rules/skill-domain-routing.md`, `claude/rules/skill-workflow-routing.md`, `claude/skills/*/SKILL.md`
+**Affected files:** `claude/rules/skill-routing.md`, `claude/skills/*/SKILL.md`
+
+## Always-Loaded Rules Budget (enforced by tests)
+
+Unscoped `.md` files under `.claude/rules/` load into **every session** at the same priority as `.claude/CLAUDE.md`. Anthropic's guidance is under 200 lines per file, and warns that longer files reduce adherence and that contradictory rules get resolved arbitrarily.
+
+`claude/rules/model-calibration.md` is the **single normative source for model behavior**. Other rules reference it by section; they do not restate it. Two tests in `opus-5-alignment-policy.test.cjs` enforce this: a budget test that prints the per-file breakdown and fails over the ceiling, and a canon test that fails when another always-loaded rule states a canonical phrasing.
+
+When a rule grows, move task-specific content to a `paths:`-scoped rule (loads only for matching files, like `documentation-management.md`) or into a skill's `references/` directory (loads with the skill). **Do not raise the ceiling** — it ratcheted 946 → 426 and is meant to keep going down.
+
+**Affected files:** `claude/rules/*.md`, `claude/hooks/__tests__/opus-5-alignment-policy.test.cjs`
 
 ## Skill Description and Listing Policy
 

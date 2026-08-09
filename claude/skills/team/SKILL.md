@@ -172,4 +172,4 @@ Do not delete team directories manually. Session-scoped team setup and cleanup a
 - [`references/agent-teams-official-docs.md`](references/agent-teams-official-docs.md): canonical runtime semantics
 - [`references/agent-teams-controls-and-modes.md`](references/agent-teams-controls-and-modes.md): controls and task management
 - [`references/agent-teams-examples-and-best-practices.md`](references/agent-teams-examples-and-best-practices.md): examples and operating patterns
-- `.claude/rules/team-coordination-rules.md`: teammate behavior rules
+- `references/team-coordination-rules.md`: teammate behavior rules
