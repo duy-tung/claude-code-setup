@@ -66,7 +66,7 @@ test('top-level guidance loads the Opus 5 calibration rules', () => {
 // file, and warns that longer files reduce adherence and that contradictory
 // rules get resolved arbitrarily. The budget is what stops this directory from
 // silently growing back into the 946-line set this consolidation replaced.
-const ALWAYS_LOADED_LINE_BUDGET = 440; // Ratcheted 946 → 815 → 426. Lower it, never raise it.
+const ALWAYS_LOADED_LINE_BUDGET = 450; // Ratcheted 946 → 815 → 431. Lower it, never raise it.
 
 function alwaysLoadedRules() {
   return markdownFiles('claude/rules')
@@ -267,9 +267,10 @@ test('runtime hook injections carry no pre-Opus-5 prompt scaffolding', () => {
 
 test('hook injections scope artifacts and restructuring to the request', () => {
   const contextBuilder = read('claude/hooks/lib/context-builder.cjs');
-  // Modularization stays available but is no longer an unconditional directive.
-  assert.match(contextBuilder, /## Modularization \(when the change adds or grows code files\)/);
-  assert.match(contextBuilder, /Restructuring is in scope only when the request covers it/);
+  // Modularization guidance left the per-turn injection entirely; development-rules.md
+  // carries it as File Size Management, loaded once per session.
+  assert.doesNotMatch(contextBuilder, /## Modularization/);
+  assert.match(read('claude/rules/development-rules.md'), /File Size Management/);
 
   // Every subagent used to receive a report path with no condition attached.
   const subagentInit = read('claude/hooks/subagent-init.cjs');

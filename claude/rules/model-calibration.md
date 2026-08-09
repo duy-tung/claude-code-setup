@@ -24,6 +24,7 @@ Set length through instructions instead.
   boilerplate. Drop an empty heading rather than emitting it with nothing under it.
 - Preserve clarity and grammar; concision is not a reason to make the result cryptic.
 - Do not add a closing recap when the response is already short.
+- In a written report, list any unresolved questions at the end.
 
 ## 2. Task scope
 
@@ -65,6 +66,10 @@ that benefits from its own context window.
   three clearly independent owners.
 - Prefer a single controller for sequential or same-file work.
 - Give every worker an explicit deliverable, file boundary, and evidence requirement.
+- Brief a worker precisely the first time rather than launching, waiting, and re-briefing.
+  Keep each delegation scoped to the current request, and keep working while it runs.
+- Advisory subagents report findings; they do not mutate plan or code unless the task
+  explicitly says to.
 
 A phase name in any workflow identifies a kind of work, not a mandatory agent call:
 

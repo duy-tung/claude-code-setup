@@ -279,12 +279,6 @@ describe('context-builder.cjs', () => {
       assert.ok(joined.includes('"docs"'), 'Should fall back to relative docs');
     });
 
-    it('buildModularizationSection returns array with Modularization', () => {
-      const lines = contextBuilder.buildModularizationSection();
-      assert.ok(Array.isArray(lines), 'Should return array');
-      assert.ok(lines.some(l => l.includes('Modularization')), 'Should include Modularization');
-    });
-
     it('buildPathsSection includes paths', () => {
       const lines = contextBuilder.buildPathsSection({
         reportsPath: '/test/reports/',
@@ -388,7 +382,7 @@ describe('context-builder.cjs', () => {
       try {
         const lines = Array(200).fill('x');
         lines[170] = `- CWD: ${scopeKey}`;
-        lines[180] = contextBuilder.MODULARIZATION_HEADING;
+        lines[180] = contextBuilder.INJECTION_MARKER;
         fs.writeFileSync(transcriptPath, lines.join('\n'));
         fs.writeFileSync(sessionStatePath, JSON.stringify({
           devRulesReminder: {
@@ -498,7 +492,6 @@ describe('context-builder.cjs', () => {
         'buildLanguageSection',
         'buildSessionSection',
         'buildRulesSection',
-        'buildModularizationSection',
         'buildPathsSection',
         'buildPlanContextSection',
         'buildNamingSection',

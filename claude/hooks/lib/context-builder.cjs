@@ -19,10 +19,11 @@ const RECENT_INJECTION_TTL_MS = 5 * 60 * 1000;
 const PENDING_INJECTION_TTL_MS = 30 * 1000;
 const WARN_THRESHOLD = 70;
 const CRITICAL_THRESHOLD = 90;
-// Transcript-fallback dedup keys off this heading, so the two must stay in sync.
-// A session upgrading mid-flight may re-inject the reminder once; that is cheaper
-// than keeping the retired pre-Opus-5 heading alive as a compatibility string.
-const MODULARIZATION_HEADING = '## Modularization (when the change adds or grows code files)';
+// Transcript-fallback dedup keys off this heading, so it must be a section the
+// reminder always emits. It moved off the Modularization heading when that section
+// was removed; a session upgrading mid-flight may re-inject once, which is cheaper
+// than keeping a retired heading alive purely as a dedup token.
+const INJECTION_MARKER = '## Plan Context';
 const {
   loadConfig,
   resolvePlanPath,
@@ -185,7 +186,7 @@ function wasTranscriptRecentlyInjected(transcriptPath, scopeKey = null) {
   try {
     if (!transcriptPath || !fs.existsSync(transcriptPath)) return false;
     const tail = fs.readFileSync(transcriptPath, 'utf-8').split('\n').slice(-150);
-    const hasReminderMarker = tail.some(line => line.includes(MODULARIZATION_HEADING));
+    const hasReminderMarker = tail.some(line => line.includes(INJECTION_MARKER));
     if (!hasReminderMarker) return false;
     if (!scopeKey) return true;
 
@@ -431,8 +432,9 @@ function buildSessionSection(staticEnv = {}) {
     `- Locale: ${staticEnv.locale || process.env.LANG || ''}`,
     `- Memory usage: ${memUsed}MB/${memTotal}MB (${memPercent}%)`,
     `- CPU usage: ${cpuUsage}% user / ${cpuSystem}% system`,
-    `- Delegate a subtask to a subagent when it is genuinely independent and parallelizable, or needs its own context budget; do work you can finish in a handful of tool calls yourself. When you do delegate, keep working while they run, and keep each delegation scoped to the current request.`,
-    `- Brief each subagent precisely the first time rather than launching, waiting, and re-briefing. Advisory subagents report findings and do not mutate plan/code unless explicitly tasked.`,
+    // Delegation and advisory-boundary rules used to be restated here. They live in
+    // model-calibration.md §3, which loads every session — re-injecting them each turn
+    // spent tokens on a second copy that could drift from the first.
     `- IMPORTANT: Include these environment information when prompting subagents to perform tasks.`,
     ``
   ];
@@ -595,31 +597,12 @@ function buildRulesSection({ devRulesPath, skillsVenv, plansPath, docsPath }) {
     lines.push(`- Python scripts in .claude/skills/: Use \`${skillsVenv}\``);
   }
 
-  lines.push(`- When skills' scripts fail, report the failure unless the current task explicitly authorizes fixing skill code; only then fix and rerun.`);
-  lines.push(`- Follow **YAGNI (You Aren't Gonna Need It) - KISS (Keep It Simple, Stupid) - DRY (Don't Repeat Yourself)** principles`);
-  lines.push(`- Match report length to what the task needs. Cut filler sections, repeated summaries, and boilerplate — not grammar or clarity.`);
-  lines.push(`- In reports, list any unresolved questions at the end, if any.`);
-  lines.push(`- IMPORTANT: Ensure token consumption efficiency while maintaining high quality.`);
+  // Behavior rules (YAGNI/KISS/DRY, report length, unresolved questions, skill-script
+  // repair scope) are stated once in .claude/rules/, which loads every session. This
+  // section carries only what is resolved at runtime: machine-specific absolute paths.
   lines.push(``);
 
   return lines;
-}
-
-/**
- * Build modularization section
- * @returns {string[]} Lines for modularization section
- */
-function buildModularizationSection() {
-  return [
-    MODULARIZATION_HEADING,
-    `- Check existing modules before creating new`,
-    `- Analyze logical separation boundaries (functions, classes, concerns)`,
-    `- Prefer kebab-case for JS/TS/shell; respect language conventions (Python/Go/Rust use snake_case, C#/Java use PascalCase)`,
-    `- Write descriptive code comments`,
-    `- Restructuring is in scope only when the request covers it; advisory/report-only tasks should report the recommendation instead of applying it.`,
-    `- Skip entirely for: small or localized edits, Markdown, plain text, shell scripts, configuration, and environment files.`,
-    ``
-  ];
 }
 
 /**
@@ -728,7 +711,6 @@ function buildReminder(params) {
     ...(contextEnabled ? buildContextSection(sessionId) : []),
     ...(usageEnabled ? buildUsageSection() : []),
     ...buildRulesSection({ devRulesPath, skillsVenv, plansPath, docsPath }),
-    ...buildModularizationSection(),
     ...buildPathsSection({ reportsPath, plansPath, docsPath, docsMaxLoc }),
     ...buildPlanContextSection({ planLine, reportsPath, gitBranch, validationMode, validationMin, validationMax }),
     ...buildNamingSection({ reportsPath, plansPath, namePattern })
@@ -804,7 +786,6 @@ function buildReminderContext({ sessionId, config, staticEnv, configDirName = '.
       context: contextEnabled ? buildContextSection(sessionId) : [],
       usage: usageEnabled ? buildUsageSection() : [],
       rules: buildRulesSection({ devRulesPath, skillsVenv, plansPath: params.plansPath, docsPath: params.docsPath }),
-      modularization: buildModularizationSection(),
       paths: buildPathsSection({ reportsPath: params.reportsPath, plansPath: params.plansPath, docsPath: params.docsPath, docsMaxLoc: params.docsMaxLoc }),
       planContext: buildPlanContextSection(planCtx),
       naming: buildNamingSection({ reportsPath: params.reportsPath, plansPath: params.plansPath, namePattern: params.namePattern })
@@ -818,7 +799,7 @@ function buildReminderContext({ sessionId, config, staticEnv, configDirName = '.
 
 module.exports = {
   // Injected-heading constants (exported so tests and dedup logic cannot drift)
-  MODULARIZATION_HEADING,
+  INJECTION_MARKER,
 
   // Main entry points
   buildReminderContext,
@@ -830,7 +811,6 @@ module.exports = {
   buildContextSection,
   buildUsageSection,
   buildRulesSection,
-  buildModularizationSection,
   buildPathsSection,
   buildPlanContextSection,
   buildNamingSection,

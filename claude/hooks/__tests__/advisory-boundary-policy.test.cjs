@@ -220,27 +220,31 @@ describe('advisory boundary policy', () => {
     assert.match(codeReviewerPrompt, /Do not edit plan files/i);
   });
 
-  it('global rule injection scopes failed skill script repair to authorized implementation', () => {
-    const { buildRulesSection } = require('../lib/context-builder.cjs');
-    const rules = buildRulesSection({}).join('\n');
+  // These invariants moved out of the per-turn hook injection and into the
+  // always-loaded rules, so they are asserted at their new home. The hook stopped
+  // restating them; it must not be where they are enforced either.
+  it('rules scope failed skill script repair to authorized implementation', () => {
+    const rules = readRepoFile('claude/rules/CLAUDE.md');
 
     assert.doesNotMatch(rules, /always fix them and run again/i);
-    assert.match(rules, /explicitly authorizes fixing/i);
-    assert.match(rules, /report the failure/i);
+    assert.match(rules, /only when that repair is inside the requested scope/i);
+    assert.match(rules, /report the actionable blocker/i);
   });
 
-  it('global context keeps advisory subagents and report-only tasks bounded', () => {
-    const {
-      buildModularizationSection,
-      buildSessionSection
-    } = require('../lib/context-builder.cjs');
-    const context = [
-      ...buildSessionSection({}),
-      ...buildModularizationSection()
-    ].join('\n');
+  it('canon keeps advisory subagents and report-only tasks bounded', () => {
+    const canon = readRepoFile('claude/rules/model-calibration.md');
 
-    assert.match(context, /keep each delegation scoped to the current request/i);
-    assert.match(context, /Advisory subagents report findings/i);
-    assert.match(context, /advisory\/report-only tasks should report/i);
+    assert.match(canon, /keep each delegation scoped to the current request/i);
+    assert.match(canon, /Advisory subagents report findings/i);
+    assert.match(canon, /Diagnose, explain, and status requests are read-only/i);
+  });
+
+  it('the per-turn hook injection no longer restates those rules', () => {
+    const { buildRulesSection, buildSessionSection } = require('../lib/context-builder.cjs');
+    const injected = [...buildSessionSection({}), ...buildRulesSection({})].join('\n');
+
+    assert.doesNotMatch(injected, /YAGNI/i);
+    assert.doesNotMatch(injected, /keep each delegation scoped/i);
+    assert.doesNotMatch(injected, /Advisory subagents report findings/i);
   });
 });
