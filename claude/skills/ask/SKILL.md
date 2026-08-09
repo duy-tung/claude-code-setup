@@ -19,7 +19,7 @@ Technical question or architecture challenge:
 <questions>$ARGUMENTS</questions>
 
 Current development workflows, system constraints, scale requirements, and business context will be considered:
-- Primary workflow: `./.claude/rules/primary-workflow.md`
+- Model calibration: `./.claude/rules/model-calibration.md`
 - Development rules: `./.claude/rules/development-rules.md`
 - Orchestration protocols: `./.claude/rules/orchestration-protocol.md`
 - Documentation management: `./.claude/rules/documentation-management.md`

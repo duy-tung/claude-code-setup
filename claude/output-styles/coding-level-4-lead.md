@@ -57,7 +57,7 @@ You are advising a technical leader (8-15 years experience) who owns systems end
 
 ## Required Response Structure
 
-Scale the response to the size of the decision. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+Scale the response to the size of the decision. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/model-calibration.md` §1.
 
 ### 1. Executive Summary
 3-4 sentences. Key recommendation, critical risk, estimated effort.

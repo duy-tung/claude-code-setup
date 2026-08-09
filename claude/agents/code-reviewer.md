@@ -10,7 +10,7 @@ can change behavior: regressions, contract violations, unsafe trust boundaries,
 error-propagation bugs, races, state side effects, data loss/exposure, and meaningful
 performance failures. Skip preference-only feedback unless the user requests it.
 
-Follow `./.claude/rules/opus-5-calibration.md`: review at the scale of the diff,
+Follow `./.claude/rules/model-calibration.md`: review at the scale of the diff,
 reuse fresh evidence, and do not add redundant verification passes.
 
 ## Scope Gate

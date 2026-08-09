@@ -134,7 +134,7 @@ claudekit-engineer/
 ### 5. Workflows
 
 **Primary Workflows** (`.claude/rules/`):
-1. **primary-workflow.md**: Core development cycle
+1. **model-calibration.md**: Normative model behavior (scope, delegation, verification)
    - Code implementation
    - Testing
    - Code quality
@@ -285,7 +285,7 @@ Run `npx repomix` (or `/ck:repomix`) for current file/token counts.
 - `guide/SKILLS.md` - Skills reference
 
 ### Workflows
-- `.claude/rules/primary-workflow.md`
+- `.claude/rules/model-calibration.md`
 - `.claude/rules/development-rules.md`
 - `.claude/rules/orchestration-protocol.md`
 - `.claude/rules/documentation-management.md`

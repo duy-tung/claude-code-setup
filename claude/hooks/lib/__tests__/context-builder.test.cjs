@@ -540,7 +540,7 @@ describe('context-builder.cjs', () => {
       // This test verifies that the rules path resolution works
       // which is used by CLAUDE.md @references
       tempDir = createTempDir(['.claude/rules']);
-      createTestFile(path.join(tempDir, '.claude/rules'), 'primary-workflow.md');
+      createTestFile(path.join(tempDir, '.claude/rules'), 'model-calibration.md');
       createTestFile(path.join(tempDir, '.claude/rules'), 'development-rules.md');
       createTestFile(path.join(tempDir, '.claude/rules'), 'orchestration-protocol.md');
       createTestFile(path.join(tempDir, '.claude/rules'), 'documentation-management.md');
@@ -548,7 +548,7 @@ describe('context-builder.cjs', () => {
 
       // All files referenced in CLAUDE.md should resolve
       const files = [
-        'primary-workflow.md',
+        'model-calibration.md',
         'development-rules.md',
         'orchestration-protocol.md',
         'documentation-management.md'
