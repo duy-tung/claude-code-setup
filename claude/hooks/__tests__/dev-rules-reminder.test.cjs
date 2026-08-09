@@ -20,7 +20,7 @@ const os = require('os');
 const HOOK_PATH = path.join(__dirname, '..', 'dev-rules-reminder.cjs');
 // Imported rather than hardcoded: the transcript-dedup marker IS this heading,
 // so a reworded heading must fail loudly here instead of silently un-deduping.
-const { MODULARIZATION_HEADING } = require('../lib/context-builder.cjs');
+const { INJECTION_MARKER } = require('../lib/context-builder.cjs');
 
 /**
  * Execute dev-rules-reminder.cjs with given stdin data and return stdout
@@ -198,13 +198,13 @@ describe('dev-rules-reminder.cjs', () => {
       }
     });
 
-    it('includes Modularization reminder', async () => {
+    it('includes the dynamic plan-context section', async () => {
       const result = await runHook({ user_prompt: 'test' });
 
       if (result.stdout) {
         assert.ok(
-          result.stdout.includes('Modularization') || result.stdout.includes('[IMPORTANT]'),
-          'Should include Modularization reminder'
+          result.stdout.includes(INJECTION_MARKER),
+          'Should include the Plan Context section'
         );
       }
     });
@@ -233,7 +233,7 @@ describe('dev-rules-reminder.cjs', () => {
       try {
         // Write transcript with modularization marker (last 150 lines)
         const lines = Array(200).fill('some content');
-        lines[180] = MODULARIZATION_HEADING;
+        lines[180] = INJECTION_MARKER;
         fs.writeFileSync(transcriptPath, lines.join('\n'));
 
         const result = await runHook({
@@ -244,7 +244,7 @@ describe('dev-rules-reminder.cjs', () => {
         // Should exit cleanly with minimal/no output
         assert.strictEqual(result.exitCode, 0);
         // When recently injected, should have minimal output
-        if (result.stdout.includes(MODULARIZATION_HEADING)) {
+        if (result.stdout.includes(INJECTION_MARKER)) {
           // If it does output, that's also acceptable (hook may have different logic)
           assert.ok(true);
         }
@@ -298,7 +298,7 @@ describe('dev-rules-reminder.cjs', () => {
 
         assert.strictEqual(firstRun.exitCode, 0);
         assert.strictEqual(secondRun.exitCode, 0);
-        assert.ok(firstRun.stdout.includes(MODULARIZATION_HEADING),
+        assert.ok(firstRun.stdout.includes(INJECTION_MARKER),
           'First run should inject the reminder content');
         assert.strictEqual(secondRun.stdout, '',
           'Second run should skip duplicate injection when the same session repeats without a transcript path');
@@ -339,7 +339,7 @@ describe('dev-rules-reminder.cjs', () => {
 
         assert.strictEqual(firstRun.exitCode, 0);
         assert.strictEqual(secondRun.exitCode, 0);
-        assert.ok(firstRun.stdout.includes(MODULARIZATION_HEADING),
+        assert.ok(firstRun.stdout.includes(INJECTION_MARKER),
           'First env-scoped run should inject reminder content');
         assert.strictEqual(secondRun.stdout, '',
           'Second env-scoped run should dedupe via CK_SESSION_ID');
@@ -371,9 +371,9 @@ describe('dev-rules-reminder.cjs', () => {
 
         assert.strictEqual(firstRun.exitCode, 0);
         assert.strictEqual(secondRun.exitCode, 0);
-        assert.ok(firstRun.stdout.includes(MODULARIZATION_HEADING),
+        assert.ok(firstRun.stdout.includes(INJECTION_MARKER),
           'First cwd should inject reminder content');
-        assert.ok(secondRun.stdout.includes(MODULARIZATION_HEADING),
+        assert.ok(secondRun.stdout.includes(INJECTION_MARKER),
           'Different cwd should inject refreshed reminder content');
         assert.ok(secondRun.stdout.includes(tempDirB),
           'Second injection should include the new cwd-specific context');
@@ -409,7 +409,7 @@ describe('dev-rules-reminder.cjs', () => {
 
         assert.strictEqual(firstRun.exitCode, 0);
         assert.strictEqual(secondRun.exitCode, 0);
-        assert.ok(firstRun.stdout.includes(MODULARIZATION_HEADING),
+        assert.ok(firstRun.stdout.includes(INJECTION_MARKER),
           'First run should inject the reminder content');
         assert.strictEqual(secondRun.stdout, '',
           'Changing only transcript_path should not re-inject for the same cwd');
@@ -440,7 +440,7 @@ describe('dev-rules-reminder.cjs', () => {
         ]);
 
         const outputs = [firstRun, secondRun].filter((result) =>
-          result.stdout.includes(MODULARIZATION_HEADING)
+          result.stdout.includes(INJECTION_MARKER)
         );
 
         assert.strictEqual(firstRun.exitCode, 0);

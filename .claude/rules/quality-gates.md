@@ -90,6 +90,15 @@ When a rule grows, move task-specific content to a `paths:`-scoped rule (loads o
 
 **Affected files:** `claude/rules/*.md`, `claude/hooks/__tests__/opus-5-alignment-policy.test.cjs`
 
+### Hooks carry runtime facts, rules carry behavior
+
+The per-turn injection built by `claude/hooks/lib/context-builder.cjs` must contain only what is resolved at runtime: absolute plans/docs/reports paths, the active plan and branch, the naming pattern, the skills venv path, machine stats. Behavior rules belong in `.claude/rules/`, which already loads every session — restating them per turn spends tokens on a second copy that can drift from the first, and the drifting copy is the one the model reads most often.
+
+`advisory-boundary-policy.test.cjs` asserts both directions: the invariants exist in the rules, and the hook does **not** restate them.
+
+**Affected files:** `claude/hooks/lib/context-builder.cjs`, `claude/hooks/__tests__/advisory-boundary-policy.test.cjs`
+
+
 ## Skill Description and Listing Policy
 
 `python3 claude/scripts/validate-skill-frontmatter.py` is the frontmatter contract. It validates every `SKILL.md` against `claude/schemas/skill-schema.json`, requires `user-invocable: true`, and rejects `disable-model-invocation: true` for shipped skills. Run it standalone:
