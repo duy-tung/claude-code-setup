@@ -1,6 +1,5 @@
 # Auto Workflow (`--auto`) — Explicit Opt-In
 
-**Thinking level:** Ultrathink
 **User gates:** Design approval only. All other phases proceed automatically because the user explicitly selected `--auto`.
 
 ## Step 1: Research

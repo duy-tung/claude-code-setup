@@ -1,6 +1,5 @@
 # Parallel Workflow (`--parallel`)
 
-**Thinking level:** Ultrathink parallel
 **User gates:** Design approval, then normal parallel cook review gates. Implementation uses multi-agent parallel execution after user-approved cook continuation.
 
 ## Step 1: Research

@@ -186,7 +186,7 @@ TaskCreate: "Verify fixes pass"        → pending, blockedBy: [fix]
 | Subcommand | Reference | Purpose |
 |------------|-----------|---------|
 | `/ck:code-review codebase` | `references/codebase-scan-workflow.md` | Scan & analyze the codebase |
-| `/ck:code-review codebase parallel` | `references/parallel-review-workflow.md` | Ultrathink edge cases, then parallel verify |
+| `/ck:code-review codebase parallel` | `references/parallel-review-workflow.md` | Enumerate edge cases, then parallel verify |
 
 ## Bottom Line
 
