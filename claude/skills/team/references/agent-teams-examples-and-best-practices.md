@@ -170,7 +170,7 @@ Recommended: Most agents get `Task(Explore)` only. Planner gets `Task(Explore), 
 | Review (3 teammates) | ~100K-200K | Read-only, all Opus |
 | Debug (3 teammates) | ~200K-400K | Mixed read/execute |
 
-Agent Teams use significantly more tokens than subagents (all teammates run Opus 4.6). Use only when parallel exploration + discussion adds clear value. For routine tasks, single session with subagents is more cost-effective.
+Agent Teams use significantly more tokens than subagents (every teammate runs the session's Opus model — no cheaper tier per teammate). Use only when parallel exploration + discussion adds clear value. For routine tasks, single session with subagents is more cost-effective.
 
 ## Troubleshooting
 
@@ -208,7 +208,7 @@ tmux kill-session -t <session-name>
 
 ## Limitations
 
-- **Model lock**: All teammates must run Opus 4.6 (no mixed-model teams)
+- **Uniform model**: every teammate runs the session's Opus model (no mixed-model teams)
 - **No session resumption**: `/resume` and `/rewind` don't restore in-process teammates
 - **Task status can lag**: teammates may not mark tasks completed; check manually
 - **Shutdown can be slow**: finishes current request first

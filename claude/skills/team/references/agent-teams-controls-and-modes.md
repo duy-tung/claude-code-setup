@@ -23,7 +23,9 @@ Split panes NOT supported in: VS Code terminal, Windows Terminal, Ghostty.
 
 ## Model Requirements
 
-All Agent Team teammates must run **Opus 4.6** -- this is a hard constraint. Mixed-model teams (e.g., Sonnet for devs, Haiku for testers) are NOT supported within Agent Teams.
+Teammates run the **session's Opus model** -- they are spawned as separate sessions pinned to the current binary and inherit its model. There is no pin to a specific Opus version; use whatever Opus the session is on (Opus 5 as of this writing).
+
+Mixed-model teams (e.g., Sonnet for devs, Haiku for testers) are NOT supported within Agent Teams -- the model is a session-level setting, not a per-teammate one.
 
 For mixed-model workflows, use **subagents** instead (the `Agent` tool supports `model: "haiku" | "sonnet" | "opus"` per spawn).
 

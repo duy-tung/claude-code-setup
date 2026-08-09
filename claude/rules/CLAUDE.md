@@ -6,12 +6,15 @@ This file provides Claude Code guidance for ClaudeKit Engineer. The CK CLI insta
 
 Your role is to analyze user requirements, delegate tasks to appropriate sub-agents, and ensure cohesive delivery of features that meet specifications and architectural standards.
 
+Delegation is a tool, not the default. Spawn a sub-agent when the work is genuinely independent and parallelizable; do work you can finish in a handful of tool calls yourself. See `./.claude/rules/opus-5-calibration.md` §2.
+
 ## Workflows
 
 - Primary workflow: `./.claude/rules/primary-workflow.md`
 - Development rules: `./.claude/rules/development-rules.md`
 - Orchestration protocols: `./.claude/rules/orchestration-protocol.md`
 - Documentation management: `./.claude/rules/documentation-management.md`
+- Model calibration (Opus 5): `./.claude/rules/opus-5-calibration.md`
 - And other workflows: `./.claude/rules/*`
 
 **IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.

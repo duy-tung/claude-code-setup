@@ -6,7 +6,7 @@ Monitor usage limits and context window utilization in real-time to optimize Cla
 
 Runtime awareness provides visibility into two critical metrics:
 1. **Usage Limits** - API quota consumption (5-hour and 7-day rolling windows)
-2. **Context Window** - Current token utilization within the 200K context limit
+2. **Context Window** - Current token utilization as a share of the session's context window (supplied by the harness at runtime, not a fixed constant)
 
 ## Architecture
 

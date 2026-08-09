@@ -29,7 +29,7 @@
 - Prioritize functionality and readability over strict style enforcement and code formatting
 - Use reasonable code quality standards that enhance developer productivity
 - Use try catch error handling & cover security standards
-- Use `code-reviewer` agent to review code after every implementation
+- Review code after every implementation (delegate to `code-reviewer` when the delegation gate applies — see `./.claude/rules/primary-workflow.md`; otherwise review inline)
 
 ## Pre-commit/Push Rules
 - Run linting before commit

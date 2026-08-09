@@ -15,9 +15,9 @@ metadata:
 
 Coordinate multiple independent Claude Code sessions. Each teammate has own context window, loads project context (CLAUDE.md, skills, agents), communicates via shared task list and messaging.
 
-**Requires:** Agent Teams enabled. Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json env.
+**Requires:** Agent Teams enabled — either `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json env, or launch with the `--agent-teams` flag. Still gated server-side, so both can be set and the feature still be unavailable.
 **Requires:** CLI terminal — `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList` and `TeamCreate`/`TeamDelete` are **disabled in VSCode extension** (`isTTY` check). Agent Teams CANNOT run in VSCode.
-**Model requirement:** All teammates must run Opus 4.6 (Agent Teams constraint).
+**Model requirement:** Opus. Every teammate runs the session's Opus model — the model is session-level, so mixed-model teams are not supported.
 
 ## Usage
 

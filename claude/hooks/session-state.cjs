@@ -23,7 +23,10 @@ try {
     refreshStatuslineSnapshot
   } = require('./lib/session-state-manager.cjs');
 
-  const TRACKED_POST_TOOL_EVENTS = new Set(['Task', 'TaskCreate', 'TaskUpdate', 'TodoWrite']);
+  // 'Task' is the pre-2.1.63 name for the Agent tool. Both are accepted because
+  // settings.json ships separately from this hook: during an upgrade a machine can
+  // run an old matcher against a new hook, or the reverse.
+  const TRACKED_POST_TOOL_EVENTS = new Set(['Agent', 'Task', 'TaskCreate', 'TaskUpdate', 'TodoWrite']);
 
   async function main() {
     const stdin = fs.readFileSync(0, 'utf-8').trim();

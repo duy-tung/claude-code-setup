@@ -28,11 +28,11 @@ Best for tasks where parallel exploration adds real value:
 | | Subagents | Agent Teams |
 |---|---|---|
 | **Tool** | `Agent` (formerly `Task`) | `Agent` + `TeamCreate`/`TaskCreate`/`SendMessage` |
-| **Context** | Own 200K-token window; results return to caller | Own full Claude Code instance + context |
+| **Context** | Own context window sized by the session model; results return to caller | Own full Claude Code instance + context |
 | **Communication** | Report back to parent only | Message each other directly via SendMessage |
 | **Coordination** | Parent manages all work | Shared task list, self-coordination |
 | **Isolation** | Optional `isolation: "worktree"` | Each teammate = separate session |
-| **Model** | Any (haiku/sonnet/opus per agent) | All teammates must run Opus 4.6 |
+| **Model** | Any (haiku/sonnet/opus per agent) | Session's Opus model, same for all teammates |
 | **Max parallel** | ~10 simultaneous | Depends on system resources |
 | **Best for** | Focused tasks, result-only | Complex work requiring discussion |
 | **Token cost** | Lower | Higher (each teammate = separate instance) |
@@ -82,7 +82,7 @@ Agent(
   subagent_type: string,       # Agent specialization
   description: string,         # Short task summary (3-5 words)
   prompt: string,              # Full instructions for teammate
-  model: "opus",               # Required for Agent Teams (Opus 4.6)
+  model: "opus",               # Alias — resolves to the current Opus release
   run_in_background: true,     # Non-blocking spawn
   isolation: "worktree"        # Optional: git worktree isolation
 )
@@ -205,11 +205,11 @@ Teammates inherit lead's permission settings at spawn. If lead uses `--dangerous
 
 ## Token Usage
 
-Scales with active teammates. Worth it for research/review/features. Single session more cost-effective for routine tasks. All teammates run Opus 4.6 -- no mixed-model teams currently supported.
+Scales with active teammates. Worth it for research/review/features. Single session more cost-effective for routine tasks. Every teammate runs the session's Opus model -- no mixed-model teams currently supported, so cost scales at Opus rates per teammate.
 
 ## Limitations
 
-- **Model lock**: All teammates must run Opus 4.6 (no mixed-model teams)
+- **Uniform model**: every teammate runs the session's Opus model (no mixed-model teams)
 - **No session resumption**: `/resume` and `/rewind` don't restore in-process teammates
 - **Task status can lag**: teammates may not mark tasks completed; check manually
 - **Shutdown can be slow**: finishes current request first

@@ -20,6 +20,14 @@ Plans: /path/to/project-b/plans/"
 
 ---
 
+#### Delegation Threshold
+
+Before applying either pattern below, decide whether to delegate at all. Spawn a
+subagent only when the work is genuinely independent and parallelizable, or needs its
+own context budget. Work finishable in a handful of tool calls stays inline — writing
+the prompt, paying for the subagent's context, and reading its report back costs more
+than doing it. Full criteria: `./.claude/rules/opus-5-calibration.md` §2.
+
 #### Sequential Chaining
 Chain subagents when tasks have dependencies or require outputs from previous steps:
 - **Planning → Implementation → Simplification → Testing → Review**: Use for feature development (tests verify simplified code)

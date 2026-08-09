@@ -95,6 +95,6 @@ Task("Bash", "Run build", "Verify build")
 ## Resource Limits
 
 - Max 3 parallel agents recommended (system resources)
-- Each subagent has 200K token context limit
-- Keep prompts concise to avoid context bloat
+- Each subagent gets its own context window, sized by the session's model — do not assume a fixed ceiling
+- Keep prompts concise: a focused prompt gets a focused answer
 - Use `TaskList()` to check for available unblocked work
