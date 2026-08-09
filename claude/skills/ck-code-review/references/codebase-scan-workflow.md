@@ -11,18 +11,18 @@ Think harder to scan the codebase and analyze it follow the Orchestration Protoc
 ## Workflow
 
 ### Research
-* Use 2 `researcher` subagents in parallel to search up to 5 sources
+* Research the topic — one `researcher` subagent per genuinely independent area, often one; search up to 5 sources
 * Keep every research report concise (≤150 lines)
 * Use `/ck:scout` skill invocation to search the codebase
 
 ### Code Review
-* Use multiple `code-reviewer` subagents in parallel to review code
+* Review the code — use multiple `code-reviewer` subagents in parallel when the areas are independent enough to split, otherwise review directly
 * If issues found, ask main agent to improve and repeat until tests pass
 * When complete, run verification for accepted findings before reporting completion
 * Report combined quality findings and verification evidence to user
 
 ### Plan
-* Use `planner` subagent to analyze reports and create improvement plan
+* Analyze reports and create an improvement plan (delegate to `planner` when the delegation gate applies; otherwise plan directly)
 * Save overview at `plan.md`, phase files as `phase-XX-phase-name.md`
 
 ### Final Report

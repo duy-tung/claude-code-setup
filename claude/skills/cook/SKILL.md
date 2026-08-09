@@ -200,11 +200,11 @@ Human review required at these checkpoints (skipped with `--auto`):
 | Scout | `ck:scout` | Optional in code |
 | Plan | `planner` | Optional in code |
 | UI Work | `general-purpose` | If frontend work |
-| Testing | `tester`, `debugger` | Always spawn |
-| Review | `code-reviewer` | Always spawn |
-| Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | Always invoke all |
+| Testing | `tester`, `debugger` | Per delegation gate |
+| Review | `code-reviewer` | Per delegation gate |
+| Finalize | `/ck:project-management` skill + `docs-manager`, `git-manager` subagents | Per delegation gate |
 
-**Delegation contract:** Testing, review, and finalization run through subagents — `Task(subagent_type="[type]", prompt="[task]", description="[brief]")` — not inline. A workflow that ends with zero Task tool calls skipped this contract.
+**Delegation contract:** the contract is that testing, review, and finalization all *happen* — not that each spawns a subagent. Delegate them via `Agent(subagent_type="[type]", prompt="[task]", description="[brief]")` when the delegation gate applies; below the gate, doing them inline is not a violation. Skipping them is. See `./.claude/rules/opus-5-calibration.md` §2.
 
 ## References
 

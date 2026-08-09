@@ -273,4 +273,4 @@ code:        0 → skip → skip → 3 → [R] → 4 → [R] → 5(user) → 6
 - Use `TaskCreate` to create Claude Tasks for each unchecked item with priority order and dependencies (or `TodoWrite` if Task tools unavailable).
 - Use `TaskUpdate` to mark Claude Tasks `in_progress` when picking up a task, and `complete` immediately after finishing it (skip if Task tools unavailable).
 - All step outputs follow format: `✓ Step [N]: [status] - [metrics]`
-- A workflow that ends with zero Task tool calls skipped the delegation contract.
+- A workflow that skips testing, review, or finalization broke the delegation contract. Completing those inline, below the delegation gate, did not.
