@@ -1,15 +1,10 @@
 # Development Rules
 
-**IMPORTANT:** Activate a skill only when its workflow materially helps the task;
-small scoped work can proceed directly.
+Engineering standards for this codebase. Model behavior — scope, delegation, verification,
+output length, evidence — lives in `./.claude/rules/model-calibration.md` and is not
+repeated here.
+
 **IMPORTANT:** You ALWAYS follow these principles: **YAGNI (You Aren't Gonna Need It) - KISS (Keep It Simple, Stupid) - DRY (Don't Repeat Yourself)**
-
-## Working With the Model
-
-- **Act when ready.** Once you have enough information to act, act — don't keep re-planning or produce a plan-only response when implementation was requested.
-- **Match the requested action.** Diagnose/explain/status requests are read-only. Fix/change/build requests include implementation after the minimum diagnosis needed to act; do not stop for redundant approval.
-- **Grounded progress.** Before claiming something works or is complete, verify against actual tool output (tests run, files changed). Report partial completion as partial.
-- **Small decisions don't need permission.** For minor ambiguous choices, pick the reasonable option and note it; ask only when the decision changes scope or is hard to reverse.
 
 ## General
 - **File Naming**: Use kebab-case for file names with a meaningful name that describes the purpose of the file, doesn't matter if the file name is long, just make sure when LLMs read the file names while using Grep or other tools, they can understand the purpose of the file right away without reading the file content.
@@ -21,7 +16,6 @@ small scoped work can proceed directly.
   - Do not split a cohesive file solely to satisfy a line count
 - When looking for docs, use the `research` skill or web search for exploring latest docs.
 - Use `gh` bash command to interact with Github features if needed
-- Use `sequential-thinking` and `debug` skills for sequential thinking, analyzing code, debugging, etc. if needed
 - **[IMPORTANT]** Follow the codebase structure and code standards in `./docs` during implementation.
 - **[IMPORTANT]** Do not just simulate the implementation or mocking them, always implement the real code.
 
@@ -31,14 +25,6 @@ small scoped work can proceed directly.
 - Prioritize functionality and readability over strict style enforcement and code formatting
 - Use reasonable code quality standards that enhance developer productivity
 - Use try catch error handling & cover security standards
-- Inspect the final diff inline. Delegate an independent review only when size, risk, or unfamiliarity meets the gate in `./.claude/rules/primary-workflow.md`.
-
-## Pre-commit/Push Rules
-- Run linting before commit
-- Run tests before push (DO NOT ignore failed tests just to pass the build or github actions)
-- Keep commits focused on the actual code changes
-- **DO NOT** commit and push any confidential information (such as dotenv files, API keys, database credentials, etc.) to git repository!
-- Create clean, professional commit messages without AI references. Use conventional commit format.
 
 ## Code Implementation
 - Write clean, readable, and maintainable code
@@ -46,6 +32,30 @@ small scoped work can proceed directly.
 - Implement features according to specifications
 - Handle edge cases and error scenarios
 - **DO NOT** create new enhanced files, update to the existing files directly.
+
+## Code Comments and Artifact Naming — No Plan References
+
+Code comments and file names (including SQL migrations) **must not reference plan
+artifacts**: phase numbers, finding codes (F1, F13, Y1, CU2…), audit labels, red-team
+labels, brainstorm sections (§5.4), or plan taxonomy.
+
+**Why:** plan headers get renumbered or disappear, so the reference becomes unresolvable
+noise. The *reason* for code (invariant, race, trade-off) must be stable and
+self-contained.
+
+- **Explain the why, not the origin.** Write "org-scoped advisory lock serializes concurrent reassigns" — NOT "per F13 advisory-lock fix".
+- **Migration filenames:** domain slug only — `000003_polymorphic_permission_groups.up.sql` (NOT `000003_phase_0a_...`).
+- **Test names:** describe the scenario — `TestReassignPrimaryDept_Concurrent` (NOT `_F13`).
+- **Commit messages:** describe the change, not the finding code.
+- Plan refs belong in `plans/…/phase-XX-*.md` and PR descriptions, not in code.
+- Allowed in code: symbol names from the same codebase, and stable external IDs (RFC numbers, PostgreSQL SQLSTATE, CVE IDs, durable issue numbers).
+
+## Pre-commit/Push Rules
+- Run linting before commit
+- Run tests before push (DO NOT ignore failed tests just to pass the build or github actions)
+- Keep commits focused on the actual code changes
+- **DO NOT** commit and push any confidential information (such as dotenv files, API keys, database credentials, etc.) to git repository!
+- Create clean, professional commit messages without AI references. Use conventional commit format.
 
 ## Cross-Service Conventions (Polyrepo Fleet)
 
@@ -59,11 +69,12 @@ Apply these when this project is one service among several repos sharing a busin
 - **Mirror the golden service**: When in doubt about structure, middleware, or conventions, copy the fleet's reference ("golden") service instead of introducing a new pattern.
 
 ## Visual Aids
-- Use `/ck:preview --explain` when explaining unfamiliar code patterns or complex logic
-- Use `/ck:preview --diagram` for architecture diagrams and data flow visualization
-- Use `/ck:preview --slides` for step-by-step walkthroughs and presentations
-- Use `/ck:preview --ascii` for terminal-friendly diagrams (no browser needed to understand)
-- Add `--html` to any generation flag for self-contained HTML output (opens in browser, no server needed)
-- **Plan context:** Active plan determined from `## Plan Context` in hook injection; visuals save to `{plan_dir}/visuals/`
-- If no active plan, fallback to `plans/visuals/` directory
-- See `primary-workflow.md` → Step 6 for workflow integration
+
+Use a visual only when it materially clarifies a multi-component relationship, flow, or state change.
+
+- `/ck:preview --explain <topic>` for a visual explanation
+- `/ck:preview --diagram <topic>` for architecture or data flow
+- `/ck:preview --slides <topic>` for a step-by-step walkthrough
+- `/ck:preview --ascii <topic>` for terminal-only output
+- Add `--html` for a self-contained HTML artifact
+- Visuals save to `{plan_dir}/visuals/` when a plan is active (see `## Plan Context` in the hook injection), otherwise `plans/visuals/`

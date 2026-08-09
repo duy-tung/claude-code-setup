@@ -56,8 +56,96 @@ test('shipped profile pins Opus 5 while leaving experimental teams opt-in', () =
 
 test('top-level guidance loads the Opus 5 calibration rules', () => {
   const rules = read('claude/rules/CLAUDE.md');
-  assert.match(rules, /opus-5-calibration\.md/);
-  assert.match(read('claude/rules/opus-5-calibration.md'), /claude-opus-5/);
+  assert.match(rules, /model-calibration\.md/);
+  assert.match(read('claude/rules/model-calibration.md'), /claude-opus-5/);
+});
+
+// ── Always-loaded context budget ────────────────────────────────────────────
+// Unscoped .md files under .claude/rules/ load into EVERY session at the same
+// priority as .claude/CLAUDE.md. Anthropic's guidance is under 200 lines per
+// file, and warns that longer files reduce adherence and that contradictory
+// rules get resolved arbitrarily. The budget is what stops this directory from
+// silently growing back into the 946-line set this consolidation replaced.
+const ALWAYS_LOADED_LINE_BUDGET = 820; // Phase 1 ceiling; tightens each phase.
+
+function alwaysLoadedRules() {
+  return markdownFiles('claude/rules')
+    .map((file) => ({ file, source: read(file) }))
+    // A `paths:` frontmatter key makes a rule load only for matching files.
+    .filter(({ source }) => !/^paths:/m.test(source.split('---')[1] || ''));
+}
+
+test('always-loaded rules stay within the session context budget', () => {
+  const rules = alwaysLoadedRules();
+  const measured = rules.map(({ file, source }) => ({
+    file,
+    lines: source.split('\n').length
+  }));
+  const total = measured.reduce((sum, entry) => sum + entry.lines, 0);
+
+  // Printed, not just asserted: the number belongs in the review, and a silent
+  // pass hides the direction the budget is drifting.
+  const breakdown = measured
+    .sort((a, b) => b.lines - a.lines)
+    .map((entry) => `${path.basename(entry.file)}=${entry.lines}`)
+    .join(' ');
+  console.log(`    always-loaded rules: ${total} lines (${breakdown})`);
+
+  assert.ok(
+    total <= ALWAYS_LOADED_LINE_BUDGET,
+    `always-loaded rules total ${total} lines, over the ${ALWAYS_LOADED_LINE_BUDGET} budget.\n` +
+    'Move task-specific content to a path-scoped rule or a skill rather than raising this.'
+  );
+});
+
+// ── Single normative source ─────────────────────────────────────────────────
+// Behavior guidance used to be copy-pasted across dozens of files, so a model
+// upgrade meant editing every copy and missing some. These phrasings may be
+// STATED only in model-calibration.md; every other rule points at it.
+const CANONICAL_BEHAVIOR_PHRASES = {
+  'delegation threshold': /delegate work (?:that is )?finishable in a handful of tool calls|Do not delegate work finishable/i,
+  'evidence states': /\*\*Verified\*\*|verified.{0,12}inferred.{0,12}unknown/i,
+  'effort ladder': /\bxhigh\b/i
+};
+
+test('canonical behavior rules are stated only in model-calibration.md', () => {
+  const canon = read('claude/rules/model-calibration.md');
+  for (const [name, pattern] of Object.entries(CANONICAL_BEHAVIOR_PHRASES)) {
+    assert.match(canon, pattern, `canon is missing its own ${name} rule`);
+  }
+
+  const others = alwaysLoadedRules()
+    .filter(({ file }) => path.basename(file) !== 'model-calibration.md');
+  for (const { file, source } of others) {
+    for (const [name, pattern] of Object.entries(CANONICAL_BEHAVIOR_PHRASES)) {
+      assert.doesNotMatch(
+        source, pattern,
+        `${file} restates the canonical ${name} rule — reference model-calibration.md instead`
+      );
+    }
+  }
+});
+
+test('model-calibration.md declares itself the single normative source', () => {
+  const canon = read('claude/rules/model-calibration.md');
+  assert.match(canon, /single normative source/i);
+  assert.match(canon, /do not restate it/i);
+  // The deleted rules must not come back as separate always-loaded files.
+  for (const gone of ['primary-workflow.md', 'review-audit-self-decision.md']) {
+    assert.ok(
+      !fs.existsSync(path.join(ROOT, 'claude', 'rules', gone)),
+      `${gone} was absorbed into model-calibration.md; it should not exist`
+    );
+  }
+  // Renames and deletions under claude/ must reach installed user machines.
+  const deletions = JSON.parse(read('claude/metadata.json')).deletions;
+  for (const gone of [
+    'rules/opus-5-calibration.md',
+    'rules/primary-workflow.md',
+    'rules/review-audit-self-decision.md'
+  ]) {
+    assert.ok(deletions.includes(gone), `claude/metadata.json deletions[] is missing ${gone}`);
+  }
 });
 
 test('active runtime and command examples contain no pre-Opus-5 exact pin', () => {
@@ -102,7 +190,7 @@ test('default workflows do not reintroduce unconditional delegation or review lo
     'claude/rules/CLAUDE.md',
     'claude/rules/development-rules.md',
     'claude/rules/orchestration-protocol.md',
-    'claude/rules/primary-workflow.md',
+    'claude/rules/model-calibration.md',
     'claude/skills/cook/SKILL.md',
     'claude/skills/fix/SKILL.md',
     'claude/skills/docs/references/init-workflow.md',

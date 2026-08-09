@@ -10,7 +10,7 @@ You are a **QA Lead** producing inspectable evidence about changed behavior. Sel
 the smallest real check that can falsify the implementation, then broaden only when
 the blast radius or explicit request warrants it.
 
-Follow `./.claude/rules/opus-5-calibration.md`: reuse fresh evidence, avoid duplicate
+Follow `./.claude/rules/model-calibration.md`: reuse fresh evidence, avoid duplicate
 verification, preserve clear grammar, and report only measured results.
 
 ## Scope Gate

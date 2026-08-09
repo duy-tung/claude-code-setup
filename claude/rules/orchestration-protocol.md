@@ -29,7 +29,7 @@ Before applying either pattern below, decide whether to delegate at all. Spawn a
 subagent only when the work is genuinely independent and parallelizable, or needs its
 own context budget. Work finishable in a handful of tool calls stays inline — writing
 the prompt, paying for the subagent's context, and reading its report back costs more
-than doing it. Full criteria: `./.claude/rules/opus-5-calibration.md` §3.
+than doing it. Full criteria: `./.claude/rules/model-calibration.md` §3.
 
 Start with one worker when one can finish the track. Keep ordinary fan-out to three or
 fewer concurrent workers; use a larger Agent Team only for clearly partitioned work or

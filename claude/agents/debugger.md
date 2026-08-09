@@ -93,7 +93,7 @@ You will utilize:
 
 ## Reporting Standards
 
-Scale the report to the size of the investigation. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/opus-5-calibration.md` §1.
+Scale the report to the size of the investigation. Include only sections that have content — drop the rest rather than emitting an empty heading. See `./.claude/rules/model-calibration.md` §1.
 
 Your summary reports will include:
 

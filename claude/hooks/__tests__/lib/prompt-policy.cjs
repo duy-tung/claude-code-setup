@@ -4,7 +4,7 @@
  * The Opus 5 rules are written as prohibitions ("Do not invent numeric
  * confidence scores"), so a plain substring scan for a risky phrase flags the
  * very rule that bans it. Every naive guard we could write here would fire on
- * `opus-5-calibration.md` first and get deleted.
+ * `model-calibration.md` first and get deleted.
  *
  * This scanner only reports a phrase when it reads as an *instruction* — that
  * is, when the surrounding clause does not negate it. That keeps the guard

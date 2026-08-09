@@ -221,7 +221,7 @@ inside the authorized scope. Phase completion alone is not a reason to pause.
 **Delegation contract:** testing, review, and finalization are activities, not a
 mandatory agent chain. Delegate only when the worker has an independent deliverable
 and coordination will save time or add domain evidence. Otherwise do the work
-inline. See `./.claude/rules/opus-5-calibration.md` §3.
+inline. See `./.claude/rules/model-calibration.md` §3.
 
 ## References
 
