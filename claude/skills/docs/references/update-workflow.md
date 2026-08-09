@@ -1,5 +1,15 @@
 # Update Workflow
 
+## Phase 0: Scale Gate
+
+For an explicit one-file or narrowly scoped documentation change, read that target
+and the source files that substantiate it, edit inline, run one targeted link/reference
+check, and finish. Do not count or read the entire docs tree, spawn readers, regenerate
+summaries, or invoke a docs-manager solely because the change is documentation.
+
+Use the broader phases below only for repo-wide documentation sync, an unfamiliar
+multi-document contract change, or an explicitly requested full update.
+
 ## Phase 1: Parallel Codebase Scouting
 
 1. Scan the codebase and calculate the number of files with LOC in each directory (skip `.claude`, `.opencode`, `.git`, `tests`, `node_modules`, `__pycache__`, `secrets`, etc.)
@@ -9,21 +19,21 @@
 
 ## Phase 1.5: Parallel Documentation Reading
 
-**You (main agent) must spawn readers** - subagents cannot spawn subagents.
-
 1. Count docs: `ls docs/*.md 2>/dev/null | wc -l`
 2. Get LOC: `wc -l docs/*.md 2>/dev/null | sort -rn`
 3. Strategy:
-   - 1-3 files: Skip parallel reading, docs-manager reads directly
-   - 4-6 files: Spawn 2-3 `Explore` agents
-   - 7+ files: Spawn 4-5 `Explore` agents (max 5)
+   - 1-3 files: Read directly
+   - 4-6 files: Read directly unless independent partitions justify 2 workers
+   - 7+ files: Use at most 3 focused readers when parallelism saves time
 4. Distribute files by LOC (larger files get dedicated agent)
 5. Each agent prompt: "Read these docs, extract: purpose, key sections, areas needing update. Files: {list}"
 6. Merge results into context for docs-manager
 
-## Phase 2: Documentation Update (docs-manager Agent)
+## Phase 2: Documentation Update
 
-**CRITICAL:** You MUST spawn `docs-manager` agent via Task tool with merged reports and doc readings.
+Use `docs-manager` for a broad, independently owned documentation pass. Update a
+small, tightly scoped set inline. In either case, pass source paths and fresh
+code/tool evidence; do not add a second agent solely to verify the first.
 
 Pass the gathered context to docs-manager agent to update documentation:
 - `README.md`: Update README (keep it under 300 lines)

@@ -87,7 +87,7 @@ Example: `plans/reports/pm-260205-2221-auth-progress.md`
 
 ## Concision Rules
 
-- Sacrifice grammar for brevity
+- Omit filler while preserving clear grammar
 - Use tables over paragraphs where possible
 - List unresolved questions at end
 - Metrics > prose (use numbers, percentages)

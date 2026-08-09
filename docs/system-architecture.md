@@ -1,12 +1,15 @@
 # System Architecture
 
-**Last Updated**: 2026-06-16
+**Last Updated**: 2026-08-09
 **Version**: 2.19.1
 **Project**: ClaudeKit Engineer
 
 ## Overview
 
-ClaudeKit Engineer implements a multi-agent AI orchestration architecture where specialized agents collaborate through a file-based communication protocol. The system enables developers to leverage AI assistance throughout the entire software development lifecycle - from planning and implementation to testing, review, and deployment.
+ClaudeKit Engineer implements a scale-aware AI orchestration architecture. The main
+session handles small, clear work directly; specialized agents collaborate through
+direct messages or scoped report artifacts only when a task has a sizeable independent
+deliverable.
 
 ## Architectural Pattern
 
@@ -20,8 +23,10 @@ ClaudeKit Engineer implements a multi-agent AI orchestration architecture where 
 
 ### Design Philosophy
 - **Decoupled Agents**: Each agent is independent and specialized
-- **File-Based Communication**: Agents communicate via markdown reports
-- **Workflow Orchestration**: Coordinated agent execution (sequential/parallel)
+- **Scoped Communication**: Direct one-recipient messages by default; markdown reports
+  only for durable, shared artifacts
+- **Scale-First Orchestration**: Direct execution for small work; coordinated
+  sequential/parallel execution for substantial independent work
 - **Configuration-Driven**: Agents and commands defined in markdown
 - **AI-First Development**: Leverage AI at every stage of SDLC
 
@@ -104,7 +109,7 @@ Context hooks `session-init`, `session-state`, `subagent-init`, `dev-rules-remin
 ---
 name: agent-name
 description: Agent purpose and use cases
-model: haiku | sonnet | opus   # omit to inherit the session model
+model: haiku | sonnet | opus   # omit to inherit the exact session model
 ---
 
 # Agent instructions in markdown
@@ -114,16 +119,21 @@ model: haiku | sonnet | opus   # omit to inherit the session model
 ## Quality Standards
 ```
 
-**Model Selection** (from agent frontmatter):
-- `opus` - Advanced reasoning: `planner`, `code-simplifier`
+**Model Selection** (from agent frontmatter and settings):
+- `claude/settings.json` pins the main session to exact `claude-opus-5` with `high`
+  effort for reproducibility.
+- Omitting `model` inherits that exact session model: `brainstormer`, `code-reviewer`.
+- `opus` is a moving tier alias and overrides the exact session pin: `planner`,
+  `code-simplifier`. Use an alias only when moving-tier behavior is intentional.
 - `sonnet` - Balanced: `debugger`
 - `haiku` - Fast, cost-effective: `docs-manager`, `git-manager`, `journal-writer`, `project-manager`, `researcher`, `tester`
-- No `model` field (inherits the session model): `brainstormer`, `code-reviewer`
 
 #### 2.3 Agent Communication Protocol
 
-**Communication Medium**: File system (markdown files)
-**Report Location**: `./plans/<plan-name>/reports/`
+**Communication Medium**: Direct Claude Code message to one recipient, or a markdown
+artifact when multiple consumers need durable shared context
+**Report Location**: `./plans/<plan-name>/reports/` only for an active plan/report
+workflow
 **Naming Convention**: `{date}-from-[source]-to-[dest]-[task]-report.md`
 
 **Report Structure**:
@@ -150,10 +160,11 @@ Issues, blockers, or questions
 
 **Communication Patterns**:
 1. **Request-Response**: Agent A requests, Agent B responds
-2. **Broadcast**: Agent publishes report for multiple consumers
-3. **Chain**: Sequential handoffs (A → B → C)
-4. **Fan-Out**: Parallel execution (A spawns B, C, D)
-5. **Fan-In**: Collect results from parallel agents
+2. **Direct Message**: Agent sends to one named recipient; there is no broadcast message type
+3. **Shared Artifact**: Agent writes one scoped report for multiple consumers when persistence is useful
+4. **Chain**: Sequential handoffs (A → B → C) only when each stage is substantial
+5. **Fan-Out**: Bounded parallel execution over independent scopes
+6. **Fan-In**: Collect results from parallel agents
 
 ### 3. Command Layer
 
@@ -201,9 +212,13 @@ Present to User
 
 **Sequential Chaining**:
 ```
-Planner → Researcher → Planner → Main Agent → Tester → Code Reviewer → Docs Manager → Git Manager
+Small: Main Agent → targeted check → inspect diff → result
+
+Large/risky: [Planner/Researcher] → Main Agent → [Tester/Reviewer] → [Docs/Git]
 ```
-Use when tasks have dependencies
+Bracketed stages are optional. Use a specialist only when it owns a meaningful
+independent deliverable; documentation and git stages require their own trigger or user
+request.
 
 **Parallel Execution**:
 ```
@@ -222,36 +237,32 @@ Explore different approaches simultaneously
 #### 4.2 Standard Workflows
 
 **Feature Development Workflow**:
-1. User: `/ck:cook "add user authentication"`
-2. Planner: Create implementation plan
-3. Researchers: Explore auth solutions (parallel)
-4. Planner: Synthesize research, create detailed plan
-5. Main Agent: Implement code
-6. Main Agent: Run type checking/compilation
-7. Tester: Write and run tests
-8. (If tests fail): Debugger analyzes, loop to step 5
-9. Code Reviewer: Review implementation
-10. Docs Manager: Update documentation
-11. Git Manager: Commit with conventional message
+1. Assess scale, uncertainty, and blast radius.
+2. For a small clear change: inspect relevant files, implement inline, run one targeted
+   check, and inspect the diff.
+3. For large or risky work: add a durable plan or bounded research track only when it
+   resolves a real dependency.
+4. Expand tests for shared contracts or broad fan-out; add an independent reviewer for
+   security, data, concurrency, unfamiliar, or high-blast-radius changes.
+5. Update only documentation affected by user-visible setup/behavior, a public
+   contract, durable architecture, or release state.
+6. Commit, push, or create a PR only when requested by the user or active workflow.
 
 **Bug Fix Workflow**:
-1. User: `/ck:debug "API timeout errors"`
-2. Debugger: Analyze logs and system
-3. Debugger: Identify root cause
-4. Planner: Create fix plan
-5. Main Agent: Implement solution
-6. Tester: Validate fix
-7. Code Reviewer: Review changes
-8. Git Manager: Commit fix
+1. Reproduce the failure and identify the narrowest supported root cause.
+2. Implement the fix inline when local and clear; use debugger/scout specialists only
+   when the investigation is broad enough to partition.
+3. Rerun the reproduction or targeted regression check.
+4. Add broader review, documentation, or git stages only when risk, public impact, or
+   the user's requested workflow requires them.
 
 **Documentation Update Workflow**:
 1. User: `/ck:docs update`
-2. Docs Manager: Check doc freshness
-3. (If >1 day old): Run `repomix` for codebase summary
-4. Docs Manager: Analyze codebase changes
-5. Docs Manager: Update affected documentation
-6. Docs Manager: Validate naming conventions
-7. Docs Manager: Create update report
+2. Resolve the exact target and source evidence.
+3. Update a small target inline; use docs-manager/repomix only for a broad independent
+   documentation pass.
+4. Validate the affected links, names, and examples once.
+5. Create a report only when the workflow requires a durable handoff.
 
 ### 5. Skills Layer
 
@@ -470,7 +481,11 @@ Remote Repository (GitHub)
 
 ## Component Interactions
 
-### Typical Interaction Flow: Feature Implementation
+### Example Interaction Flow: Large, High-Risk Feature
+
+The full chain below is an escalation example, not the default for small work. Each
+specialist stage remains conditional on an independent deliverable and the documentation
+and git stages require their normal triggers.
 
 ```
 ┌─────────────┐
@@ -535,6 +550,9 @@ Remote Repository (GitHub)
 
 ### Agent Communication Example
 
+This file-based handoff applies only when an active plan needs durable reports. Ordinary
+subagents communicate their scoped result directly to one recipient.
+
 ```
 plans/<plan-name>/reports/251026-from-planner-to-main-auth-plan-report.md
     ↓
@@ -560,7 +578,8 @@ plans/<plan-name>/reports/251026-from-tester-to-main-test-results-report.md
 - Bash scripting (hooks)
 
 **AI Platforms**:
-- Anthropic Claude (Opus / Sonnet / Haiku) — all subagents
+- Anthropic Claude; the session default is exact `claude-opus-5`, while deliberate
+  agent frontmatter may select moving Opus/Sonnet/Haiku tier aliases
 - Google Gemini via Gemini-CLI — optional external path in research/scout skills
 - Grok Code via opencode — optional external scouting model
 
@@ -622,30 +641,19 @@ Main Agent (next steps)
 ```
 Code Changes
     ↓
-Docs Manager Triggered
+Does the change affect user-visible setup/behavior,
+a public contract, durable architecture, or release state?
     ↓
-Check Freshness (< 1 day?)
+No → No documentation task
+
+Yes → Resolve the owning document and source evidence
     ↓
-┌─────────┴─────────┐
-↓ No (outdated)     ↓ Yes (fresh)
-Run Repomix         Read Existing
-    ↓                   ↓
-Generate Summary        │
-    └────────┬──────────┘
-             ↓
-    Analyze Changes
-             ↓
-    Update Documentation
-    - API docs
-    - Code standards
-    - Architecture
-    - Codebase summary
-             ↓
-    Validate Naming
-             ↓
-    Create Report
-             ↓
-    Save to ./docs/
+Small target? → Read/edit inline
+Broad independent pass? → Delegate docs-manager; use repomix only if needed
+    ↓
+Update only affected documentation
+    ↓
+Validate affected links, names, and examples once
 ```
 
 ## Security Architecture
@@ -702,7 +710,7 @@ Generate Summary        │
 - Independent researchers run simultaneously
 - No shared state between agents
 - File-based coordination
-- Scalable to N agents
+- Ordinary fan-out is bounded; larger teams require clearly partitioned work
 
 **Workflow Parallelization**:
 - Multiple feature branches

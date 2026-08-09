@@ -1,276 +1,248 @@
-# Unified Workflow Steps
+# Proportional Workflow Steps
 
-All modes share core steps with mode-specific variations.
+All modes start with the scale gate in `../SKILL.md`. Later step descriptions do
+not turn optional artifacts, subagents, or checkpoints into requirements for a
+small, clear task.
 
-**Task Tool Fallback:** `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList` are CLI-only — unavailable in VSCode extension. If they error, use `TodoWrite` for progress tracking. All workflow steps remain functional without Task tools.
+**Native task-list fallback:** `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList` are
+CLI-only and unavailable in some clients. If they fail, use a lightweight inline
+checklist only when progress tracking is useful. The workflow must not depend on
+task-tool availability.
 
-## Step 0: Intent Detection & Setup
+## Small, Clear Fast Lane
 
-1. Parse input with `intent-detection.md` rules
-2. Log detected mode: `✓ Step 0: Mode [X] - [reason]`
-3. If mode=code: detect plan path, set active plan
-4. Use `TaskCreate` to create workflow step tasks (with dependencies if complex)
+For a localized request with a known contract:
 
-**Output:** `✓ Step 0: Mode [interactive|auto|fast|parallel|no-test|code] - [detection reason]`
+1. Inspect the relevant files, adjacent convention, and affected test.
+2. State a one-line inline intent when useful.
+3. Implement routine reversible details without a questionnaire or durable plan.
+4. Run one coherent, proportional evidence bundle after the logical batch.
+5. Review the diff inline and report the outcome and any evidence gap.
 
-## Step 1: Research (skip if fast/code mode)
+Stop here. Do not instantiate research, plan files, subagents, phase approvals,
+workflow artifacts, project sync, docs, or journals unless they are directly
+useful or explicitly requested.
 
-**Interactive/Auto:**
-- Spawn multiple `researcher` agents in parallel
-- Use `/ck:scout ext` (or parallel `Explore` subagents) for codebase search
-- Keep reports ≤150 lines
+## Step 0: Intent, Scale, and Setup
 
-**Parallel:**
-- Optional: max 2 researchers if complex
+1. Parse flags and intent using `intent-detection.md`.
+2. Scout just enough context to classify the task as small-clear, standard, or
+   large/high-risk.
+3. Route small-clear work to the fast lane above.
+4. For standard/large work, select the lightest useful structured steps.
+5. If a current plan path is supplied, validate its scope and reuse it.
+6. Create Claude Tasks only when multiple dependent units benefit from durable
+   tracking.
 
-**Output:** `✓ Step 1: Research complete - [N] reports gathered`
+**Output:** `Step 0: [scale] / [mode] - [routing reason]`
 
-### [Review Gate 1] Post-Research (skip if auto mode)
-- Present research summary to user
-- Use `AskUserQuestion` to ask: "Proceed to planning?" / "Request more research" / "Abort"
-- **Auto mode:** Skip this gate
+## Step 1: Targeted Scout and Conditional Research
 
-## Step 2: Planning
+Inspect enough code to identify:
 
-**Interactive/Auto/No-test:**
-- Use `planner` agent with research context
-- Create `plan.md` + `phase-XX-*.md` files
+- affected files and nearby conventions;
+- relevant tests and callers;
+- public contracts at risk;
+- unknowns that could materially change the implementation.
 
-**Fast:**
-- Use `/ck:plan --fast` with scout results only
-- Minimal planning, focus on action
+Use primary-source research or a researcher subagent only for novel,
+version-sensitive, or independently answerable questions. Ordinary repository
+discovery stays inline. Share findings when they change the approach or expose a
+material user decision; phase completion does not require approval.
 
-**Parallel:**
-- Use `/ck:plan --parallel` for dependency graph + file ownership matrix
+Mode guidance:
 
-**Code:**
-- Skip - plan already exists
-- Parse existing plan for phases
+- `fast` and `code`: skip broad research; use the current code/plan evidence.
+- `parallel`: at most two research workers, and no more than three concurrent
+  ordinary workers total.
+- `auto`, `interactive`, `proportional`, `no-test`: research only as uncertainty
+  warrants.
 
-**Output:** `✓ Step 2: Plan created - [N] phases`
+**Output when useful:** `Step 1: Scout complete - [decision-relevant findings]`
 
-### [Review Gate 2] Post-Plan (skip if auto mode)
-- Present plan overview with phases
-- Use `AskUserQuestion` to ask: "Validate the plan or approve plan to start implementation?" - "Validate" / "Approve" / "Abort" / "Other" ("Request revisions")
-  - "Validate": run `/ck:plan validate` skill invocation
-  - "Approve": continue to implementation
-  - "Abort": stop the workflow
-  - "Other": revise the plan based on user's feedback
-- **Auto mode:** Skip this gate
+## Step 2: Requirements and Planning
+
+Infer routine reversible details from the request, code, and conventions. Ask a
+question only when alternatives materially change observable behavior, contracts,
+risk, cost, or external side effects.
+
+For standard work, use a short inline plan unless a file improves coordination or
+resumability. For large/high-risk work, capture:
+
+- expected artifacts and acceptance criteria;
+- scope boundary and non-negotiable constraints;
+- touched contracts and rollback/safety concerns;
+- phase dependencies and file ownership for parallel streams.
+
+Create `plan.md` and phase files only when they will be used. In `code` mode,
+reuse the supplied plan rather than recreating it. Request approval only for a
+material plan choice, not because planning ended.
+
+**Output when a durable plan is created:** `Step 2: Plan ready - [N] phases`
 
 ## Step 3: Implementation
 
-**Task hydration:**
-1. `TaskList` first — check for existing tasks (hydrated by planning skill in same session)
-2. If tasks exist → pick them up, skip re-creation
-3. If no tasks → read plan phases, `TaskCreate` for each unchecked `[ ]` item with priority order and metadata (`phase`, `planDir`, `phaseFile`)
-4. Tasks can be blocked by other tasks via `addBlockedBy`
+### Before Editing
 
-### Conformance Checklist (before writing code)
+At the scope appropriate to the change:
 
-Before implementing each phase, the developer agent:
+1. Read the governing code standard or local instruction that actually applies.
+2. Inspect adjacent patterns for imports, naming, error handling, and tests.
+3. Reuse an existing helper when it preserves cohesion.
+4. Confirm public interfaces that must remain stable.
+5. For a durable plan, map each owned file to its acceptance criterion.
 
-1. **Read `./docs/code-standards.md`** and confirm naming, file structure, and
-   error-handling patterns still match the repo.
-2. **Scout adjacent code patterns** in the files being modified and follow the
-   same import, logging, and error-wrapping style.
-3. **Check for existing helpers** before creating new utilities so the change
-   stays DRY.
-4. **Verify interface contracts** so new code extends the current surface
-   instead of creating a parallel one.
-5. **Cross-check the plan checklist** so every file in the phase inventory is
-   actually addressed.
+Do not read every repository guide or produce a conformance report for a local
+change.
 
-After each file is modified:
-- **Compile check:** run the relevant project compile/type-check command
-- **Pattern verify:** confirm the new code matches adjacent conventions
-- **Import check:** confirm no circular dependency or dead import was added
+### While Editing
 
-### Implementation Notes & Deviations
+- Implement the smallest cohesive change that satisfies the request.
+- Keep overlapping files sequential. Parallelize only independent workstreams
+  with explicit ownership and a concurrent fanout of three or less.
+- Check local syntax/import issues while editing, but run compile/typecheck at a
+  coherent logical-batch boundary rather than after every file.
+- If a durable plan is active, record only material deviations that affect scope,
+  contracts, or later phases. Routine implementation details do not need an
+  `implementation-notes.md` entry.
+- Ask before a deviation only if it needs new authority or materially changes the
+  accepted outcome; otherwise choose the conservative reversible option and
+  report it if relevant.
 
-Maintain `{plan_dir}/implementation-notes.md` while implementing. When reality
-diverges from the plan (missing helper, wrong assumption, API mismatch, renamed
-file), append one line under a `## Deviations` heading — what changed, why, and
-the conservative choice made — then keep going instead of stopping to ask.
-Surface the Deviations list to the `code-reviewer` subagent in Step 5 and fold
-material deviations back into the plan files during the Step 6 sync-back.
+### `--tdd` Behavior
 
-### `--tdd` Flag Behavior
+When `--tdd` is active, use this cycle per cohesive behavior slice:
 
-When `--tdd` is active, Step 3 splits into sub-steps per phase:
-
-```
-Step 3.T: Write tests for CURRENT behavior (regression safety net)
-Step 3.I: Implement changes (refactor, new code)
-Step 3.V: Verify all tests from 3.T still pass + compile gates
+```text
+Step 3.T: Add a failing or characterization test for the behavior
+Step 3.I: Implement the smallest passing change
+Step 3.V: Run the targeted tests plus the batch-level compile/typecheck
 ```
 
-Tests from Step 3.T document the current behavior. If any fail after Step 3.I,
-the refactor broke something and must be fixed before the workflow proceeds.
+Do not write tests that merely lock in accidental implementation details.
 
-**All modes:**
-- Use `TaskUpdate` to mark tasks as `in_progress` immediately.
-- Execute phase tasks sequentially (Step 3.1, 3.2, etc.)
-- Use `general-purpose` for frontend
-- Use an image-generation tool for image assets
-- Run type checking after each file
+### Conditional Simplify
 
-**Parallel mode:**
-- Utilize all tools of Claude Tasks: `TaskCreate`, `TaskUpdate`, `TaskGet` and `TaskList`
-- Launch multiple `general-purpose` agents
-- When agents pick up a task, use `TaskUpdate` to assign task to agent and mark tasks as `in_progress` immediately.
-- Respect file ownership boundaries
-- Wait for parallel group before next
+For a live git diff, read thresholds from `.ck.json`
+`simplify.threshold.{locDelta,fileCount,singleFileLoc}` (defaults: 400 / 8 / 200).
+When a threshold is breached and the simplify gate is enabled, simplify inline or
+delegate a worker scoped to the modified files. Compare the scoped diff before and
+after. Skip when under threshold, `CK_SIMPLIFY_DISABLED=1`, or
+`.ck.json` has `simplify.gate.enabled=false`.
 
-**Output:** `✓ Step 3: Implemented [N] files - [X/Y] tasks complete`
+**Output:** `Step 3: Implemented [cohesive scope] - [relevant files/checkpoint]`
 
-### Step 3.S: Conditional Simplify (live-diff gated)
+Implementation completion is not a mandatory human gate. Pause only for a
+material decision or high-risk external effect.
 
-Recompute signals from the live worktree (no hook state):
+## Step 4: Proportional Verification
 
-```bash
-totals=$(git diff --numstat HEAD --ignore-all-space)
-loc=$(echo "$totals" | awk '{s+=$1+$2} END {print s+0}')
-files=$(echo "$totals" | awk 'NF{c++} END {print c+0}')
-maxFile=$(echo "$totals" | awk 'BEGIN{m=0} {if ($1>m) m=$1} END {print m+0}')
-modified=$(git diff --name-only HEAD)
-```
+Build one coherent evidence bundle for the requested behavior and relevant
+regression surface:
 
-Read thresholds from `.ck.json` (`simplify.threshold.{locDelta,fileCount,singleFileLoc}`),
-defaulting to 400 / 8 / 200. If any threshold is breached, spawn the simplifier
-scoped to the modified files:
+1. Targeted behavior tests (happy path, important edge/error cases).
+2. Relevant caller/contract checks.
+3. The narrowest meaningful lint/type/build command for the logical batch.
+4. Broader suites only when shared contracts, breadth, or risk warrants them.
 
-```
-Task(subagent_type="code-simplifier", prompt="Simplify these files while preserving behavior exactly: [file-list]", description="Simplify recent edits")
-```
+Run ordinary checks inline. Use a `tester` only when verification is long-running,
+independent, difficult, or benefits from a separate environment/domain lens. Use
+a `debugger` only for a specific failure whose diagnosis can be isolated. Never
+weaken assertions, fake evidence, or hide a failing relevant check.
 
-After the subagent returns, log only — never re-run or block:
-- `git diff --shortstat HEAD -- [file-list]` changed → "simplifier made scoped edits"
-- unchanged → "simplifier ran clean"
+If a clearly in-scope reversible correction fixes a failure, make it and re-run
+the affected evidence. Ask the user only when resolution changes scope/contracts,
+needs new authority, or requires accepting a regression.
 
-Skip the step entirely when `CK_SIMPLIFY_DISABLED=1` or
-`.ck.json` `simplify.gate.enabled` is `false`.
+For `--no-test`, skip requested test execution and report the evidence gap; still
+run non-test checks needed to show that changed code parses/builds when applicable.
 
-**Output:** `✓ Step 3.S: Simplify [ran|skipped] - [scoped changes|clean|under threshold]`
+**Output:** `Step 4: Verification [passed|blocked|partial] - [commands/evidence]`
 
-### [Review Gate 3] Post-Implementation (skip if auto mode)
-- Present implementation summary (files changed, key changes)
-- Use `AskUserQuestion` to ask: "Proceed to testing?" / "Request implementation changes" / "Abort"
-- **Auto mode:** Skip this gate
+Testing completion is not a mandatory approval gate.
 
-## Step 4: Testing (skip if no-test mode)
+## Step 5: Conditional Review and Artifact Gate
 
-**All modes (except no-test):**
-- Write tests: happy path, edge cases, errors
-- Spawn `tester` subagent: `Task(subagent_type="tester", prompt="Run test suite", description="Run tests")`
-- If failures: spawn `debugger` subagent → fix → repeat
-- Never: fake mocks, commented-out tests, weakened assertions, or running the suite inline instead of via the subagent
+Review the final diff inline by default. Add one independent reviewer for broad,
+difficult, high-risk, or ship-like work when a distinct lens provides useful
+evidence. Check:
 
-**Output:** `✓ Step 4: Tests [X/X passed] - tester subagent invoked`
+- acceptance criteria and requested scope;
+- reachable regressions in touched callers;
+- intentional versus accidental contract changes;
+- consistency with the inspected local conventions;
+- relevant verification gaps.
 
-### [Review Gate 4] Post-Testing (skip if auto mode)
-- Present test results summary
-- Use `AskUserQuestion` to ask: "Proceed to code review?" / "Request test fixes" / "Abort"
-- **Auto mode:** Skip this gate
+Report evidenced blockers and warnings directly. Do not use a numeric confidence
+or review score, and do not add a verifier merely to verify another reviewer.
 
-## Step 5: Code Review
-
-**All modes:**
-- Spawn `code-reviewer` subagent with explicit (a-e) checks and scout/acceptance context:
-  ```
-  Task(subagent_type="code-reviewer",
-       prompt="Review changes against these required checks: (a) every acceptance criterion met; (b) no regression to business logic in touchpoints/blast-radius from scout; (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars) unless explicitly called out; (d) follows existing patterns from scout; (e) no new lint/type/build errors anywhere. CONTEXT — scout summary: <scout-summary>; acceptance criteria: <acceptance-criteria>. Return score (X/10), critical, warnings, suggestions, and explicitly flag any side effects to trigger HARD-GATE-NO-SIDE-EFFECTS.",
-       description="Code review")
-  ```
-- Delegate the review — don't review your own changes inline
-
-**Interactive/Parallel/Code/No-test:**
-- Interactive cycle (max 3): see `review-cycle.md`
-- Requires user approval
-
-**Auto:**
-- Auto-approve only if `review-decision.json` is `PASS`, artifact validator passes, and `risk-gate.autoStopRequired` is false
-- Auto-fix critical (max 3 cycles)
-- Escalate to user after 3 failed cycles
-
-**Fast:**
-- Simplified review, no fix loop
-- User approves or aborts
-
-**Output:** `✓ Step 5: Review [score]/10 - [Approved|Auto-approved] - code-reviewer subagent invoked`
-
-**Artifact gate:** Step 5 must write review artifacts from
-`claude/skills/_shared/references/workflow-artifacts.md` and run:
+Follow `review-cycle.md` when a structured `--auto` workflow, large/high-risk
+change, or finalize/commit/ship/push/PR/deploy action uses durable review artifacts.
+Only then write the applicable artifact bundle and run:
 
 ```bash
 node claude/hooks/workflow-artifact-gate.cjs --stage finalize --artifact-dir <artifact-dir>
 ```
 
-For high-risk `--auto`, stop with AskUserQuestion before finalize/commit/ship unless `risk-gate.json` has `humanApproved: true`.
+For high-risk `--auto`, stop before the external finalize/commit/ship effect when
+`risk-gate.autoStopRequired` is true and `humanApproved` is not true. This safety
+gate does not imply approval stops after ordinary phases.
 
-## Step 6: Finalize
+**Output:** `Step 5: Review [inline|independent|artifact-gated] - [decision]`
 
-**All modes:**
-1. Activate `/ck:project-management` skill — run full sync-back for [plan-path]: reconcile all completed Claude Tasks with all phase files, backfill stale completed checkboxes across every phase, then update plan.md frontmatter/table progress. Not only the current phase.
-2. Spawn in parallel:
-   - `Task(subagent_type="docs-manager", prompt="Update docs for changes.", description="Update docs")`
-3. Project-management sync-back includes:
+## Step 6: Conditional Finalize
 
-### Status Sync (Finalize)
+Perform only the finalization artifacts the task actually needs:
 
-Use CLI commands for deterministic status updates:
+1. If a durable plan/task set was used, reconcile completed work with its phase
+   files and update plan status from actual evidence.
+2. Update documentation only when public behavior, setup, or operating
+   instructions changed.
+3. Record a journal entry only for a noteworthy decision likely to help future
+   work.
+4. Check onboarding/env instructions only when the change introduces them.
+5. Commit, push, PR, deploy, or ship only when authorized by the requested
+   workflow, respecting any high-risk/artifact gate.
+
+These actions may be inline. Delegate project management, docs, or git work only
+when it has an independent bounded deliverable and adds value. Do not spawn a
+three-agent finalization fanout by default.
+
+When plan sync applies, use deterministic commands where available:
 
 ```bash
-# Mark completed phases
 ck plan check <phase-id>
-
-# Mark in-progress phases
 ck plan check <phase-id> --start
-
-# Revert if needed
 ck plan uncheck <phase-id>
 ```
 
-**Fallback:** If `ck` is not available, edit plan.md directly —
-only change the Status column cell, preserve table structure.
-   - Sweep all `phase-XX-*.md` files in the plan directory.
-   - Mark every completed item `[ ] → [x]` based on completed tasks (including earlier phases finished before current phase).
-   - Update `plan.md` status/progress (`pending`/`in-progress`/`completed`) from actual checkbox state.
-   - Return unresolved mappings if any completed task cannot be matched to a phase file.
-4. Use `TaskUpdate` to mark Claude Tasks complete after sync-back confirmation.
-5. Onboarding check (API keys, env vars)
-6. Spawn git subagent: `Task(subagent_type="git-manager", prompt="Stage and commit changes", description="Commit")`
+If `ck` is unavailable, edit only the relevant status/checkbox fields while
+preserving the plan structure. Report unresolved task-to-phase mappings.
 
-Step 6 is complete only after `/ck:project-management` has run and `docs-manager` + `git-manager` have been spawned.
+**Output:** `Step 6: Finalized - [artifacts/actions actually completed]`
 
-**Auto mode:** Continue to next phase automatically, start from **Step 3**.
-**Others:** Ask user before next phase
+## Mode Summary
 
-**Output:** `✓ Step 6: Finalized - 3 subagents invoked - Full-plan sync-back completed - Committed`
-
-## Mode-Specific Flow Summary
-
-Legend: `[R]` = Review Gate (human approval required)
-
+```text
+small-clear:  intent/scale -> targeted inspect -> implement -> one evidence bundle -> report
+proportional: scout -> short plan if useful -> implement -> verify -> conditional finalize
+interactive:  proportional + user-requested checkpoints at material decisions
+auto:         structured flow -> artifact gate when applicable -> stop on high risk
+fast:         targeted scout -> inline plan -> implement -> targeted verify
+parallel:     structured flow with <=3 independent workers -> integrate -> verify
+no-test:      proportional flow -> record test gap -> relevant non-test checks
+code:         validate current plan -> implement -> verify -> sync plan if used
 ```
-interactive: 0 → 1 → [R] → 2 → [R] → 3 → [R] → 4 → [R] → 5(user) → 6
-auto:        0 → 1 → 2 → 3 → 4 → 5(artifact-gated auto) → 6 → next phase (stops on high risk)
-fast:        0 → skip → 2(fast) → [R] → 3 → [R] → 4 → [R] → 5(simple) → 6
-parallel:    0 → 1? → [R] → 2(parallel) → [R] → 3(multi-agent) → [R] → 4 → [R] → 5(user) → 6
-no-test:     0 → 1 → [R] → 2 → [R] → 3 → [R] → skip → 5(user) → 6
-code:        0 → skip → skip → 3 → [R] → 4 → [R] → 5(user) → 6
-```
-
-**Key difference:** `auto` mode skips human review gates only for low-risk, artifact-validated work.
 
 ## Workflow Rules
 
-- Never skip steps without mode justification
-- Steps 4, 5, 6 delegate via Task tool / skill activation rather than implementing directly:
-  - Step 4: `tester` (and `debugger` if failures)
-  - Step 5: `code-reviewer`
-  - Step 6: `/ck:project-management` skill, `docs-manager`, `git-manager`
-- Use `TaskCreate` to create Claude Tasks for each unchecked item with priority order and dependencies (or `TodoWrite` if Task tools unavailable).
-- Use `TaskUpdate` to mark Claude Tasks `in_progress` when picking up a task, and `complete` immediately after finishing it (skip if Task tools unavailable).
-- All step outputs follow format: `✓ Step [N]: [status] - [metrics]`
-- A workflow that skips testing, review, or finalization broke the delegation contract. Completing those inline, below the delegation gate, did not.
+- Scale the process to the task; the small-clear fast lane takes precedence.
+- Do not ask for human approval merely because a phase completed.
+- Compile/typecheck cohesive batches, not every touched file independently.
+- Testing, review, docs, project sync, journaling, and delegation are conditional
+  activities chosen for evidence or artifact value.
+- Keep concurrent ordinary subagent fanout at three or less and assign disjoint
+  ownership in a shared checkout.
+- Preserve artifact and human gates for structured auto/high-risk external
+  actions that actually use them.
+- Describe verified facts, inferences, and unknowns without numeric confidence.

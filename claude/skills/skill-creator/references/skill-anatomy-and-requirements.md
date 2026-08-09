@@ -73,5 +73,5 @@ Three-level loading for context efficiency:
 
 - **Imperative form:** "To accomplish X, do Y"
 - **Third-person metadata:** "This skill should be used when..."
-- **Concise:** Sacrifice grammar for brevity in references
+- **Concise:** Omit filler while preserving clear grammar in references
 - **Practical:** Teach *how* to do tasks, not *what* tools are

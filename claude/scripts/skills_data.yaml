@@ -16,7 +16,7 @@
   keywords: ["scaffold", "project", "setup", "boilerplate"]
 - name: "brainstorm"
   path: "brainstorm/SKILL.md"
-  description: "Brainstorm solutions with trade-off analysis and brutal honesty. Use for ideation, architecture decisions, technical debates, feature exploration, feasibility assessment, design discussions, blind-spot mapping (--blindspots)."
+  description: "Explore software options and trade-offs. Use when architectural ambiguity, feasibility decisions, or blind-spot mapping (--blindspots) needs structured comparison."
   category: "utilities"
   has_scripts: false
   has_references: false
@@ -32,7 +32,7 @@
   related: ["ck-loop", "ck-predict", "ck-scenario", "ck-security"]
 - name: "ck-code-review"
   path: "ck-code-review/SKILL.md"
-  description: "Review code quality with evidence-based rigor. Supports input modes: pending changes, PR number, commit hash, and codebase scan. Focuses on bugs, regressions, maintainability, reliability, and verification gaps."
+  description: "Review code with proportional evidence and reachable-risk analysis. Use for pending diffs, PRs, commits, or explicit codebase and security audits."
   category: "utilities"
   has_scripts: false
   has_references: true
@@ -228,7 +228,7 @@
   keywords: ["codebase", "pack", "snapshot", "llm-context"]
 - name: "research"
   path: "research/SKILL.md"
-  description: "Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis."
+  description: "Research bounded technical questions with citations. Use for technology evaluation, external behavior, architecture decisions, and implementation constraints."
   category: "utilities"
   has_scripts: false
   has_references: false
@@ -244,7 +244,7 @@
   keywords: ["retrospective", "sprint", "metrics", "review"]
 - name: "scout"
   path: "scout/SKILL.md"
-  description: "Fast codebase scouting using parallel agents. Use for file discovery, task context gathering, quick searches across directories. Supports internal (Explore) and external (Gemini/OpenCode) agents."
+  description: "Discover files, symbols, callers, tests, and codebase relationships. Use for focused orientation, dependency mapping, or bounded parallel scouting."
   category: "dev-tools"
   has_scripts: false
   has_references: true
@@ -252,12 +252,12 @@
   keywords: ["codebase", "scouting", "file-discovery", "search"]
 - name: "sequential-thinking"
   path: "sequential-thinking/SKILL.md"
-  description: "Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction."
+  description: "Analyze difficult multi-step decisions without exposing private chain-of-thought. Use when competing hypotheses, dependent decisions, or evidence-driven revision need structure."
   category: "utilities"
   has_scripts: true
   has_references: true
-  argument_hint: "[problem to analyze step-by-step]"
-  keywords: ["reasoning", "step-by-step", "analysis"]
+  argument_hint: "[problem to analyze]"
+  keywords: ["reasoning", "analysis", "hypotheses", "decisions"]
 - name: "ship"
   path: "ship/SKILL.md"
   description: "Ship pipeline: merge main, test, review, commit, push, PR. Single command from feature branch to PR URL. Use for shipping official releases to main/master or beta releases to dev/beta branches."

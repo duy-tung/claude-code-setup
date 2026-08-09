@@ -1,53 +1,73 @@
 # Skill Workflow Routing
 
-When orchestrating multi-step tasks, consider these workflow sequences. Skills are listed in typical execution order.
+Choose the smallest workflow that can deliver and verify the requested outcome. Skill
+sequences below are escalation paths, not mandatory pipelines.
+
+## Scale First
+
+- **Small and clear:** inspect the relevant files, edit inline, run one targeted check,
+  inspect the diff, and report the outcome. Do not create a plan, journal, report, or
+  subagent chain.
+- **Multi-step:** keep a short inline checklist and activate only the stages that own a
+  meaningful deliverable.
+- **Large, risky, or explicitly parallel:** use planning and specialist skills with
+  bounded scopes, then broaden verification or review in proportion to risk.
 
 ## Core Development Workflow
 
+For large or durable work, a typical escalation path is:
+
 ```
-/ck:plan → /ck:cook → /ck:test → /ck:code-review → /ck:ship → /ck:journal
+/ck:plan → /ck:cook → [test if needed] → [review if risk warrants] → [ship when requested]
 ```
 
 | User Intent | Suggested Start |
 |-------------|----------------|
-| "implement feature X", "build X", "add X" | `/ck:plan` then `/ck:cook` |
+| Small, well-specified feature or edit | Work inline: inspect → edit → targeted check |
+| Multi-component feature needing a durable handoff | `/ck:plan` then `/ck:cook` |
 | "execute this plan" | `/ck:cook <plan-path>` |
 | "quick implementation" | `/ck:cook --fast` |
 
 ## Bugfix Workflow
 
+For a broad or unclear failure, a typical escalation path is:
+
 ```
-/ck:scout → /ck:debug → /ck:fix → /ck:test → /ck:code-review
+[scout if broad] → /ck:debug → /ck:fix → [expanded test/review if risk warrants]
 ```
 
 | User Intent | Suggested Start |
 |-------------|----------------|
-| "X is broken", "error in X", "bug in X" | `/ck:fix` (auto-scouts internally) |
+| Small bug with a local reproduction | Diagnose and fix inline, then rerun that reproduction |
+| Broad or unclear bug | `/ck:fix` (scout/debug only as needed) |
 | "CI is failing", "tests broken" | `/ck:fix --auto` |
-| "investigate why X happens" | `/ck:scout` then `/ck:debug` |
+| "investigate why X happens" | `/ck:debug`; add `/ck:scout` only for a broad search |
 
 ## Investigation Workflow
 
-```
-/ck:scout → /ck:debug → /ck:brainstorm → /ck:plan
-```
+Activate only the investigation stage that matches the request; do not append a plan
+unless the user asks for one or the result needs a durable implementation handoff.
 
 | User Intent | Suggested Start |
 |-------------|----------------|
-| "understand how X works" | `/ck:scout` |
+| "understand how X works" | Inspect directly; use `/ck:scout` only when the surface is broad |
 | "why is X happening" | `/ck:debug` |
-| "explore options for X" | `/ck:brainstorm` then `/ck:plan` |
+| "explore options for X" | `/ck:brainstorm`; offer `/ck:plan` only after a decision |
 | "what am I missing", "map my blind spots / unknowns" | `/ck:brainstorm --blindspots` |
 
 ## Post-Implementation Checklist
 
-After completing implementation work, consider:
-- `/ck:code-review` — review changes before merging
-- `/ck:ship` — run full shipping pipeline (tests, review, version, PR)
-- `/ck:journal` — document decisions and lessons learned
+After implementation, inspect the final diff and reuse fresh verification evidence.
+Then consider:
+
+- `/ck:code-review` — broad, unfamiliar, security-sensitive, data-changing, or
+  concurrency-heavy changes
+- `/ck:ship` — only when the user wants the release/PR pipeline
+- `/ck:journal` — only for a durable decision, incident, or lesson worth preserving
 
 ## Setup Skills
 
-Before starting implementation in a shared codebase:
-- `/ck:worktree` — create isolated worktree for the feature/fix
-- `/ck:scout` — discover relevant files and code patterns
+For sizeable shared-codebase work, consider:
+
+- `/ck:worktree` — when branch isolation is useful
+- `/ck:scout` — when relevant files cannot be found with a focused direct search

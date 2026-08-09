@@ -6,23 +6,32 @@
 - **System Architecture** (`./docs/system-architecture.md`): Living document describing system design, components, and data flow
 - **Code Standards** (`./docs/code-standards.md`): Living document defining coding conventions, patterns, and best practices
 
-### Automatic Updates Required
-- **After Feature Implementation**: Update roadmap progress status and changelog entries
-- **After Major Milestones**: Review and adjust roadmap phases, update success metrics
-- **After Bug Fixes**: Document fixes in changelog with severity and impact
-- **After Security Updates**: Record security improvements and version updates
-- **Weekly Reviews**: Update progress percentages and milestone statuses
+### Scale Documentation to the Change
+
+- **Small internal change:** Do not update roadmap, changelog, architecture, or status
+  documents merely because code changed.
+- **User-visible setup or behavior:** Update the specific guide or changelog entry that
+  users rely on.
+- **Public contract or durable architecture:** Update the owning API/schema or
+  architecture documentation in the same change.
+- **Release, milestone, scope, or timeline change:** Update roadmap/changelog state when
+  the repository actually maintains those artifacts.
+- **Security update:** Document public remediation or durable operational guidance
+  without exposing sensitive details.
 
 ### Documentation Triggers
-The `project-manager` agent MUST update these documents when:
-- A development phase status changes (e.g., from "In Progress" to "Complete")
-- Major features are implemented or released
-- Significant bugs are resolved or security patches applied
-- Project timeline or scope adjustments are made
-- External dependencies or breaking changes occur
+Update only the affected document when:
+
+- user-visible setup, behavior, or migration guidance changes
+- a public API, schema, CLI, configuration contract, or dependency requirement changes
+- a durable architecture or security decision changes
+- a release, milestone, committed scope, or timeline changes
+
+A `project-manager` or `docs-manager` subagent is optional. Use one only for a broad,
+independently owned documentation pass; make small, targeted updates inline.
 
 ### Update Protocol
-1. **Before Updates**: Always read current roadmap and changelog status
+1. **Before Updates**: Read only the target document and the source evidence it describes
 2. **During Updates**: Maintain version consistency and proper formatting
 3. **After Updates**: Verify links, dates, and cross-references are accurate
 4. **Quality Check**: Ensure updates align with actual implementation progress

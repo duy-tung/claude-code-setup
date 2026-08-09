@@ -304,12 +304,12 @@ Khi bạn sửa chính bộ kit (thêm/sửa skill, hook), chạy các gate th�
 python3 claude/scripts/validate-skill-crossrefs.py claude/skills/   # kiểm tra tham chiếu /ck: và skill mồ côi
 python3 claude/scripts/validate-skill-frontmatter.py                # kiểm tra frontmatter theo schema
 python3 claude/scripts/scan_skills.py                               # tái tạo catalog guide/SKILLS.md + .yaml
-npm test                                                            # 939 test cho hooks/scripts
+npm test                                                            # test hooks/scripts + policy Opus 5
 npm run test:statusline && npm run test:worktree                    # suite bổ sung
 python3 eval/tier0_static.py                                        # gate tĩnh tổng hợp
 ```
 
-Luật quan trọng nhất: **xoá/đổi tên bất kỳ file nào dưới `claude/` thì phải thêm đường dẫn cũ vào `claude/metadata.json` mục `deletions[]`** — để CLI dọn file cũ trên máy người dùng khi upgrade. Đổi description skill thì phải chạy lại `scan_skills.py`. Chi tiết đầy đủ: `.claude/rules/quality-gates.md` (file này chỉ dành cho contributor, không ship).
+Luật quan trọng nhất: **xoá/đổi tên bất kỳ file nào dưới `claude/` thì phải thêm đường dẫn cũ vào `claude/metadata.json` mục `deletions[]`** — để CLI dọn file cũ trên máy người dùng khi upgrade. Đổi description skill thì phải chạy lại `scan_skills.py`. Chạy `npm run verify` (repository-root `init.sh`) cho gate tổng hợp trước PR.
 
 ---
 

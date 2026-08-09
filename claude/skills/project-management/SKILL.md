@@ -82,7 +82,7 @@ Load: `references/reporting-patterns.md`
 
 Generate reports: session summaries, plan completion, multi-plan overviews.
 - Use naming: `{reports-path}/pm-{date}-{time}-{slug}.md`
-- Sacrifice grammar for brevity; use tables over prose
+- Preserve clear grammar; use compact tables when they clarify repeated fields
 - List unresolved questions at end
 
 ## Workflow

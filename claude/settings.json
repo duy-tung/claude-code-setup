@@ -1,5 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "claude-opus-5",
+  "effortLevel": "high",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "skillListingBudgetFraction": 0.04,
   "skillListingMaxDescChars": 512,
   "attribution": {

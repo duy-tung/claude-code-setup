@@ -37,7 +37,7 @@ function assertMatch(content, pattern, message) {
 
 console.log('\n📚 scan_skills.py Regression Tests');
 
-execSync(`python3 "${SCRIPT_PATH}"`, {
+execSync(`python3 "${SCRIPT_PATH}" --check`, {
   cwd: REPO_ROOT,
   stdio: 'pipe',
   encoding: 'utf-8',

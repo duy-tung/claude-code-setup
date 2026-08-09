@@ -1,22 +1,24 @@
 # Development Rules
 
-**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
+**IMPORTANT:** Activate a skill only when its workflow materially helps the task;
+small scoped work can proceed directly.
 **IMPORTANT:** You ALWAYS follow these principles: **YAGNI (You Aren't Gonna Need It) - KISS (Keep It Simple, Stupid) - DRY (Don't Repeat Yourself)**
 
 ## Working With the Model
 
 - **Act when ready.** Once you have enough information to act, act — don't keep re-planning or produce a plan-only response when implementation was requested.
-- **Assessment before fixes.** When the user describes a problem or asks a question, the deliverable is your diagnosis; report findings and wait for the go-ahead before changing code.
+- **Match the requested action.** Diagnose/explain/status requests are read-only. Fix/change/build requests include implementation after the minimum diagnosis needed to act; do not stop for redundant approval.
 - **Grounded progress.** Before claiming something works or is complete, verify against actual tool output (tests run, files changed). Report partial completion as partial.
 - **Small decisions don't need permission.** For minor ambiguous choices, pick the reasonable option and note it; ask only when the decision changes scope or is hard to reverse.
 
 ## General
 - **File Naming**: Use kebab-case for file names with a meaningful name that describes the purpose of the file, doesn't matter if the file name is long, just make sure when LLMs read the file names while using Grep or other tools, they can understand the purpose of the file right away without reading the file content.
-- **File Size Management**: Keep individual code files under 200 lines for optimal context management
-  - Split large files into smaller, focused components/modules
+- **File Size Management**: Treat 200 lines as a prompt to inspect cohesion, not a hard target
+  - Split large files only at real responsibility or reuse boundaries
   - Use composition over inheritance for complex widgets
   - Extract utility functions into separate modules
   - Create dedicated service classes for business logic
+  - Do not split a cohesive file solely to satisfy a line count
 - When looking for docs, use the `research` skill or web search for exploring latest docs.
 - Use `gh` bash command to interact with Github features if needed
 - Use `sequential-thinking` and `debug` skills for sequential thinking, analyzing code, debugging, etc. if needed
@@ -29,7 +31,7 @@
 - Prioritize functionality and readability over strict style enforcement and code formatting
 - Use reasonable code quality standards that enhance developer productivity
 - Use try catch error handling & cover security standards
-- Review code after every implementation (delegate to `code-reviewer` when the delegation gate applies — see `./.claude/rules/primary-workflow.md`; otherwise review inline)
+- Inspect the final diff inline. Delegate an independent review only when size, risk, or unfamiliarity meets the gate in `./.claude/rules/primary-workflow.md`.
 
 ## Pre-commit/Push Rules
 - Run linting before commit

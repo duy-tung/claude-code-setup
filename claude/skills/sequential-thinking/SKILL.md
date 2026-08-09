@@ -1,101 +1,76 @@
 ---
 name: ck:sequential-thinking
-description: Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction.
+description: Analyze difficult multi-step decisions without exposing private chain-of-thought. Use when competing hypotheses, dependent decisions, or evidence-driven revision need structure.
 user-invocable: true
-when_to_use: "Invoke for multi-step reasoning with revisions."
+when_to_use: "Invoke for genuinely complex analysis with competing hypotheses or dependent decisions."
 category: utilities
-keywords: [reasoning, step-by-step, analysis]
+keywords: [reasoning, analysis, hypotheses, decisions]
 license: MIT
-argument-hint: "[problem to analyze step-by-step]"
+argument-hint: "[problem to analyze]"
 metadata:
   author: claudekit
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
-# Sequential Thinking
+# Structured Analysis
 
-Structured problem-solving via manageable, reflective thought sequences with dynamic adjustment.
+Use a compact evidence-driven process for difficult problems. Do not manufacture
+numbered "thoughts," pseudo thinking levels, confidence loops, or a transcript of
+private chain-of-thought.
 
 ## When to Apply
 
-- Complex problem decomposition
-- Adaptive planning with revision capability
-- Analysis needing course correction
-- Problems with unclear/emerging scope
-- Multi-step solutions requiring context maintenance
-- Hypothesis-driven investigation/debugging
+- several dependent decisions must be made in order;
+- competing hypotheses require discriminating evidence;
+- new evidence may invalidate an earlier assumption;
+- architecture or incident analysis has material trade-offs;
+- a concise reasoning summary will help the user evaluate the result.
 
-## Core Process
+Do not invoke this skill for a deterministic local task that direct inspection can
+resolve.
 
-### 1. Start with Loose Estimate
+## Process
+
+1. **Define the outcome**: state the decision, success condition, and scope.
+2. **Separate evidence**: identify verified facts, inferences, and unknowns.
+3. **Decompose minimally**: split only the dependencies needed to reach the
+   outcome; avoid expanding into adjacent questions.
+4. **Test hypotheses**: for each material hypothesis, identify the cheapest
+   evidence that would confirm or refute it.
+5. **Revise explicitly**: when evidence changes the conclusion, state what changed
+   and its impact without replaying the full internal analysis.
+6. **Compare alternatives**: evaluate only viable options across the dimensions
+   that could change the decision.
+7. **Conclude**: choose the best-supported action and name residual unknowns or the
+   next decisive check.
+
+Stop when the requested decision is supported by sufficient evidence. Do not keep
+reasoning merely to reach an arbitrary thought count or subjective confidence
+threshold.
+
+## Output
+
+Provide a concise, grammatical summary with only applicable sections:
+
+```markdown
+Conclusion: [answer or decision]
+Evidence: [decisive verified facts]
+Reasoning summary: [brief link from evidence to conclusion]
+Trade-offs: [material alternatives only]
+Unknowns / next check: [remaining uncertainty]
 ```
-Thought 1/5: [Initial analysis]
-```
-Adjust dynamically as understanding evolves.
 
-### 2. Structure Each Thought
-- Build on previous context explicitly
-- Address one aspect per thought
-- State assumptions, uncertainties, realizations
-- Signal what next thought should address
-
-### 3. Apply Dynamic Adjustment
-- **Expand**: More complexity discovered → increase total
-- **Contract**: Simpler than expected → decrease total
-- **Revise**: New insight invalidates previous → mark revision
-- **Branch**: Multiple approaches → explore alternatives
-
-### 4. Use Revision When Needed
-```
-Thought 5/8 [REVISION of Thought 2]: [Corrected understanding]
-- Original: [What was stated]
-- Why revised: [New insight]
-- Impact: [What changes]
-```
-
-### 5. Branch for Alternatives
-```
-Thought 4/7 [BRANCH A from Thought 2]: [Approach A]
-Thought 4/7 [BRANCH B from Thought 2]: [Approach B]
-```
-Compare explicitly, converge with decision rationale.
-
-### 6. Generate & Verify Hypotheses
-```
-Thought 6/9 [HYPOTHESIS]: [Proposed solution]
-Thought 7/9 [VERIFICATION]: [Test results]
-```
-Iterate until hypothesis verified.
-
-### 7. Complete Only When Ready
-Mark final: `Thought N/N [FINAL]`
-
-Complete when:
-- Solution verified
-- All critical aspects addressed
-- Confidence achieved
-- No outstanding uncertainties
-
-## Application Modes
-
-**Explicit**: Use visible thought markers when complexity warrants visible reasoning or user requests breakdown.
-
-**Implicit**: Apply methodology internally for routine problem-solving where thinking aids accuracy without cluttering response.
-
-## Scripts (Optional)
-
-Optional scripts for deterministic validation/tracking:
-- `scripts/process-thought.js` - Validate & track thoughts with history
-- `scripts/format-thought.js` - Format for display (box/markdown/simple)
-
-See README.md for usage examples. Use when validation/persistence needed; otherwise apply methodology directly.
+Use `verified`, `inferred`, and `unknown` instead of numeric confidence. Never
+expose private chain-of-thought, even when the user asks for it; provide the
+evidence and reasoning summary needed to assess the answer.
 
 ## References
 
-Load when deeper understanding needed:
-- `references/core-patterns.md` - Revision & branching patterns
+Load only when a complex case benefits from a specific technique:
+
+- `references/core-patterns.md` - revision and branching patterns
 - `references/examples-api.md` - API design example
-- `references/examples-debug.md` - Debugging example
-- `references/examples-architecture.md` - Architecture decision example
-- `references/advanced-techniques.md` - Spiral refinement, hypothesis testing, convergence
-- `references/advanced-strategies.md` - Uncertainty, revision cascades, meta-thinking
+- `references/examples-debug.md` - debugging example
+- `references/examples-architecture.md` - architecture decision example
+- `references/advanced-techniques.md` - hypothesis testing and convergence
+- `references/advanced-strategies.md` - uncertainty and revision handling

@@ -1,7 +1,8 @@
 {
   "id": "string-utils-multi",
   "kind": "multi-step",
-  "prompt": "strutils.py has three functions. reverse_words is already implemented and must keep working. count_vowels and is_palindrome raise NotImplementedError — implement both so that ALL tests in test_strutils.py pass. Do not edit the test file, and do not break reverse_words. Verify by running the tests before you finish.",
+  "workflow_artifact_budget": 0,
+  "prompt": "strutils.py has three functions. reverse_words is already implemented and must keep working. count_vowels and is_palindrome raise NotImplementedError — implement both so that ALL tests in test_strutils.py pass. Do not edit the test file, and do not break reverse_words.",
   "grade": {
     "test_cmd": ["python3", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
     "fail_to_pass": [

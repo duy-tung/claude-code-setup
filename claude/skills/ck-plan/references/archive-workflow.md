@@ -20,7 +20,9 @@ Use `AskUserQuestion` tool to ask if user wants to document journal entries or n
 Skip this step if user selects "No".
 If user selects "Yes":
 - Analyze the information in previous steps.
-- Use Task tool with `subagent_type="journal-writer"` in parallel to document all plans.
+- Use the Agent tool with `subagent_type="journal-writer"` only when the selected
+  plans form a broad, independently documentable set; otherwise write the chosen
+  journal entry inline.
 - Journal entries should be concise and focused on the most important events, key changes, impacts, and decisions.
 - Keep journal entries in the `./docs/journals/` directory.
 
@@ -48,6 +50,6 @@ After archiving the plans, provide summary:
 
 ## Important Notes
 - Only ask questions about genuine decision points
-- Sacrifice grammar for concision
+- Use concise, complete grammatical sentences
 - List any unresolved questions at the end
 - Ensure token efficiency while maintaining high quality

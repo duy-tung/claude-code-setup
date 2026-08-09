@@ -1,13 +1,13 @@
 # Claude Code Boilerplate
 
-A comprehensive boilerplate template for building professional software projects with **Claude Code**. This template provides a complete development environment with AI-powered agent orchestration, automated workflows, and intelligent project management.
+A comprehensive boilerplate template for building professional software projects with **Claude Code**, calibrated for **Claude Opus 5**. The shipped profile pins `claude-opus-5` at `high` effort and scales planning, delegation, and verification to the task.
 
 ## What is Claude Code?
 
 **Claude Code** is Anthropic's official CLI tool that brings AI-powered development assistance directly to your terminal. It enables natural language interaction with your codebase and provides intelligent automation for common development tasks.
 
 - [Claude Code](https://claude.com/product/claude-code)
-- [Docs](https://docs.claude.com/en/docs/claude-code/overview)
+- [Docs](https://code.claude.com/docs/en/overview)
 
 Additional provider support, including OpenCode, is handled by ClaudeKit CLI migration rather than bundled engineer-kit artifacts.
 
@@ -29,19 +29,19 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 ## Key Benefits
 
 ### 🚀 Accelerated Development
-- **AI-Powered Planning**: Automated technical planning and architecture design
+- **Proportional Planning**: Inline plans for small changes; durable plans for complex work
 - **Intelligent Code Generation**: Context-aware code creation and modification
 - **Automated Testing**: Comprehensive test generation and execution
 - **Smart Documentation**: Synchronized docs that evolve with your code
 
 ### 🎯 Enhanced Quality
-- **Multi-Agent Code Review**: Specialized agents for security, performance, and standards
-- **Automated Quality Assurance**: Continuous testing and validation
+- **Risk-Based Review**: Specialized reviewers for broad, difficult, or high-risk changes
+- **Evidence-Based Quality**: One coherent verification bundle scaled to the change
 - **Best Practices Enforcement**: Built-in adherence to coding standards
 - **Security-First Development**: Proactive security analysis and recommendations
 
 ### 🏗️ Structured Workflow
-- **Agent Orchestration**: Coordinated AI agents working in parallel and sequential workflows
+- **Bounded Orchestration**: Independent specialists only when parallel work pays for the coordination cost
 - **Task Management**: Automated project tracking and progress monitoring
 - **Documentation Sync**: Always up-to-date technical documentation
 - **Clean Git Workflow**: Professional commit messages and branch management
@@ -53,19 +53,26 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 - **[Codebase Summary](./docs/codebase-summary.md)** - High-level overview of project structure, technologies, and components
 - **[Code Standards](./docs/code-standards.md)** - Coding standards, naming conventions, and best practices
 - **[System Architecture](./docs/system-architecture.md)** - Detailed architecture documentation, component interactions, and data flow
+- **[Opus 5 Migration Checklist](./docs/opus-5-migration-checklist.md)** - Runtime, API, prompting, eval, and rollback checks
 - **[Skills Reference](./guide/SKILLS.md)** - Auto-generated catalog of all available skills
 
 ### 📖 Additional Resources
 - **[AI-facing Rules](./claude/rules/CLAUDE.md)** - Development instructions and workflows installed by the CK CLI
+- **[Verification Workflow](./.github/workflows/verify.yml)** - PR gate for prompt policy, harness integrity, hooks, statusline, and worktree tests
 
 ## Quick Start
 
 ### Prerequisites
-- [Claude Code](https://code.claude.com/docs/en/setup) installed and configured
+- [Claude Code](https://code.claude.com/docs/en/setup) **2.1.219+** installed and configured (required for Opus 5)
 - Git for version control
 - Node.js 18+ (or your preferred runtime)
 - Operating Systems: macOS 10.15+, Ubuntu 20.04+/Debian 10+, or Windows 10+ (with WSL 1, WSL 2, or Git for Windows)
 - Hardware: 4GB+ RAM
+
+```bash
+claude --version
+claude update  # run when the version is older than 2.1.219
+```
 
 ### Setup your new project with ClaudeKit
 
@@ -93,8 +100,10 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 
 3. **Start development**:
    ```bash
-   # Begin with Claude Code
+   # claude/settings.json starts new sessions on claude-opus-5 / high effort
    claude
+   # One-session equivalent:
+   claude --model claude-opus-5 --effort high
    # [YOLO mode - not recommended]
    # claude --dangerously-skip-permissions
 
@@ -106,6 +115,15 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
    /ck:cook "refactor auth middleware" --tdd
    ```
 
+   Confirm the active model and effort in `/status`. `high` is the reproducible
+   baseline; test `low`/`medium` for cost-sensitive work and reserve `xhigh`/`max` for
+   workloads where this repo's evals show a real gain. Opus 5 has a 1M-token context
+   window by default; Claude Code plan access can still depend on account/provider.
+
+   On Microsoft Foundry or a custom gateway, replace the model setting with the
+   deployment-specific Opus 5 name described in the
+   [Claude Code model configuration](https://code.claude.com/docs/en/model-config).
+
 📖 **Learn more from our docs:** [https://docs.claudekit.cc](https://docs.claudekit.cc)
 
 ## Project Structure
@@ -114,8 +132,7 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 ├── .claude/                 # Claude Code configuration
 │   ├── agents/             # Claude Code agents
 │   ├── hooks/              # Claude Code hooks
-│   │   ├── .logs/          # Structured hook diagnostics (hook-log.jsonl)
-│   │   └── notifications/  # Multi-provider notification system
+│   │   └── .logs/          # Structured hook diagnostics (hook-log.jsonl)
 │   ├── skills/             # Claude Code skills
 │   └── rules/              # AI-facing rules installed by the CK CLI
 │       └── CLAUDE.md       # Top-level ClaudeKit Engineer guidance
@@ -132,7 +149,7 @@ Additional provider support, including OpenCode, is handled by ClaudeKit CLI mig
 
 ## The AI Agent Team
 
-This boilerplate includes 11 specialized AI agents that work together to deliver high-quality software. Agents coordinate through file-based communication, enabling sequential chaining and parallel execution patterns.
+This boilerplate includes 11 optional specialists. Opus 5 handles small, clear tasks inline; use agents when a sizeable task has independent workstreams or needs domain-specific review. Agent Teams share one checkout, so assign non-overlapping files and nominate one integrator for shared files.
 
 ### 🎯 Core Development Agents
 
@@ -211,7 +228,7 @@ This boilerplate includes 11 specialized AI agents that work together to deliver
 ## Agent Orchestration Patterns
 
 ### Sequential Chaining
-Use when tasks have dependencies:
+Use when a substantial task has real phase dependencies:
 ```bash
 # Planning → Implementation → Testing → Review
 /ck:plan "implement user dashboard"
@@ -222,7 +239,7 @@ Use when tasks have dependencies:
 /ck:cook /absolute/path/to/plans/YYMMDD-HHMM-dashboard/plan.md
 # If planning used --tdd, preserve it on handoff:
 /ck:cook /absolute/path/to/plans/YYMMDD-HHMM-dashboard/plan.md --tdd
-# Cook already runs testing and code review as part of the workflow.
+# Cook selects proportional testing and review for the task risk.
 
 # Alternative: Use /ck:cook for standalone implementation (plans internally)
 /ck:cook "implement user dashboard"
@@ -230,14 +247,14 @@ Use when tasks have dependencies:
 ```
 
 ### Parallel Execution
-Use for independent tasks:
+Use for independent, non-overlapping tasks that justify coordination overhead:
 ```bash
 # Multiple researchers exploring different approaches
 planner agent spawns:
 - researcher (database options)
 - researcher (authentication methods)
 - researcher (UI frameworks)
-# All report back to planner simultaneously
+# Each returns source paths or command evidence for synthesis
 ```
 
 ### Context Management
@@ -254,14 +271,13 @@ planner agent spawns:
 /ck:plan "add real-time notifications"
 /ck:plan --deep "refactor the notifications delivery pipeline"
 
-# Research phase (automatic)
-# Multiple researcher agents investigate approaches
+# Research is conditional on novelty, ambiguity, or version-sensitive facts
 
 # Implementation
 /ck:cook "implement notification system"
 /ck:cook "refactor notification retries" --tdd
 
-# Cook includes testing and code review in the workflow.
+# Cook verifies proportionally; independent review is risk-triggered.
 
 # Documentation update
 /ck:docs
@@ -374,10 +390,10 @@ Then add your MCP servers, below are some examples:
 - **DRY**: Don't Repeat Yourself - eliminate code duplication
 
 ### Code Quality
-- All code changes go through automated review
-- Comprehensive testing is mandatory
+- Small changes get a targeted check; broad changes get wider tests and review
+- Verification is based on fresh tool/test evidence, without duplicate self-check loops
 - Security considerations are built-in
-- Performance optimization is continuous
+- Performance work is driven by measurements and requirements
 
 ### Documentation
 - Documentation evolves with code changes
@@ -395,17 +411,15 @@ Then add your MCP servers, below are some examples:
 
 ### Starting a New Feature
 ```bash
-# Research and plan
-claude "I need to implement user authentication with OAuth2"
-# Planner agent creates comprehensive plan
+# Small, clear feature: inspect, implement, and run a targeted check inline
+claude "Add the existing OAuth provider's logout callback"
 
-# Follow the plan
-claude "Implement the authentication plan"
-# Implementation follows the detailed plan
+# Cross-cutting feature: create a durable plan when coordination helps
+/ck:plan "implement OAuth2 across the API, web app, and migration layer"
+/ck:cook /absolute/path/to/plans/YYMMDD-HHMM-oauth2/plan.md
 
-# Ensure quality
-claude "Review and test the authentication system"
-# Testing and code review agents validate the implementation
+# High-risk boundary: request an independent security-focused review
+/ck:code-review "review the OAuth2 trust boundaries"
 ```
 
 ### Debugging Issues
@@ -414,24 +428,19 @@ claude "Review and test the authentication system"
 claude "Debug the slow database queries"
 # Debugger agent analyzes logs and performance
 
-# Create solution
-claude "Optimize the identified query performance issues"
-# Implementation follows debugging recommendations
-
-# Validate fix
-claude "Test query performance improvements"
-# Tester agent validates the optimization
+# Diagnose, fix, and verify with measured query evidence
+/ck:fix "optimize the confirmed query bottleneck"
 ```
 
 ### Project Maintenance
 ```bash
 # Check project health
 claude "What's the current project status?"
-# Project manager provides comprehensive status
+# Project manager reports the tracked state without expanding scope
 
 # Update documentation
 claude "Sync documentation with recent changes"
-# Docs manager updates all relevant documentation
+# Only affected public/setup documentation is updated
 
 # Plan next sprint
 claude "Plan the next development phase"
@@ -481,7 +490,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Learn More
 
 ### Claude Code Resources
-- [Claude Code Documentation](https://claude.ai/code)
+- [Claude Code Documentation](https://code.claude.com/docs/en/overview)
 
 ### Community
 - [ClaudeKit Community](https://claudekit.cc/discord)
@@ -491,7 +500,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Support
 - [Issue Tracker](https://github.com/anthropic/claude-code/issues)
 - [Feature Requests](https://github.com/anthropic/claude-code/discussions/categories/ideas)
-- [Documentation](https://docs.claude.ai/code)
+- [Documentation](https://code.claude.com/docs/en/overview)
 
 ---
 

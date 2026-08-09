@@ -43,6 +43,6 @@ When real user Chrome state is needed, point Chrome MCP at your logged-in Chrome
 - Clear, structured Markdown with headers, lists, code blocks
 - Include test results summary, key findings, screenshot references
 - Ensure token efficiency while maintaining high quality
-- Sacrifice grammar for concision
+- Use concise, complete grammatical sentences
 
 **Do not** start implementing fixes.

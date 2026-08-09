@@ -105,7 +105,7 @@ List affected files with:
 - Fully respect the `./docs/development-rules.md` file.
 
 ### Writing Style
-**IMPORTANT:** Sacrifice grammar for concision
+**IMPORTANT:** Be concise while preserving clear, complete grammar
 - Focus clarity over eloquence
 - Use bullets and lists
 - Short sentences

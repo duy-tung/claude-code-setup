@@ -8,7 +8,7 @@ Standard content structures for each markdown document type. See SKILL.md Rule 4
 - Frontmatter (`---`) for metadata when consumed by tools/automation
 - Sections ordered: context → content → next steps
 - Tables for structured data, lists for sequences
-- Sacrifice grammar for concision
+- Use concise, complete grammatical sentences
 - List unresolved questions at end
 
 ## Plan (plan.md)

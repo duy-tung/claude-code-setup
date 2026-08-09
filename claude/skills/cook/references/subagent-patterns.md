@@ -1,108 +1,179 @@
-# Subagent Patterns
+# Conditional Subagent Patterns
 
-Standard patterns for spawning and using subagents in cook workflows.
+Subagents are optional specialists with independent deliverables. Do the work
+inline when delegation would add coordination overhead without new evidence.
+Small, clear work normally uses no subagents. Across ordinary cook workflows,
+run no more than three workers concurrently.
 
-## Task Tool Pattern
-```
-Task(subagent_type="[type]", prompt="[task description]", description="[brief]")
-```
+## Delegation Gate
 
-## Research Phase
-```
-Task(subagent_type="researcher", prompt="Research [topic]. Report ≤150 lines.", description="Research [topic]")
-```
-- Use multiple researchers in parallel for different topics
-- Keep reports ≤150 lines with citations
+Delegate only when at least one condition holds:
 
-## Scout Phase
-```
-Task(subagent_type="Explore", prompt="Find files related to [feature] in codebase", description="Scout [feature]")
-```
-- Use `/ck:scout ext` (preferred) or `/ck:scout` (fallback)
+- independent workstreams can proceed without overlapping ownership;
+- a novel or version-sensitive question needs separate research;
+- a broad/high-risk change benefits from independent domain evidence;
+- a difficult test or diagnosis can run independently while implementation continues;
+- the user explicitly requests parallel execution.
 
-## Planning Phase
-```
-Task(subagent_type="planner", prompt="Create implementation plan based on reports: [reports]. Save to [path]", description="Plan [feature]")
-```
-- Input: researcher and scout reports
-- Output: `plan.md` + `phase-XX-*.md` files
+Do not create a planner → implementer → tester → reviewer → docs chain by
+default. A worker should own a concrete artifact, file set, experiment, or review
+lens. The lead remains responsible for integrating evidence and resolving conflicts.
 
-## UI Implementation
-```
-Task(subagent_type="general-purpose", prompt="Implement [feature] UI per ./docs/design-guidelines.md", description="UI [feature]")
-```
-- For frontend work
-- Follow design guidelines
+## Agent Tool Pattern
 
-## Testing
-```
-Task(subagent_type="tester", prompt="Run test suite for plan phase [phase-name]", description="Test [phase]")
-```
-- Must achieve 100% pass rate
-
-## Debugging
-```
-Task(subagent_type="debugger", prompt="Analyze failures: [details]", description="Debug [issue]")
-```
-- Use when tests fail
-- Provides root cause analysis
-
-## Code Review
+```text
+Agent(subagent_type="[type]", prompt="[bounded deliverable, scope, evidence]", description="[brief]")
 ```
 
-Write reviewer output into `review-decision.json` using
-`claude/skills/_shared/references/workflow-artifacts.md`. Score is advisory.
+Include file ownership and acceptance criteria in the prompt. In shared
+checkouts, assume every worker can see live edits; assign disjoint files and tell
+workers not to overwrite unrelated changes.
 
-## Adversarial Validation
-```
-Task(subagent_type="code-reviewer",
-     prompt="Adversarial validation for [phase]. Disprove implementation claims only. Check acceptance coverage, regression reachability, public contracts, and verification proof. Forbidden: style polish and broad rewrite suggestions. Return JSON-ready fields for adversarial-validation.json: decision, disprovenClaims[], unverifiedClaims[], missingProof[], reachableRegressions[].",
-     description="Adversarial validate [phase]")
-```
-- Trigger for `--auto`, high-risk surfaces, large diffs, and ship/push/PR/deploy.
-- Do not average reviewers. Any evidenced critical issue blocks.
+## Research
 
-## Domain-Risk Review
+```text
+Agent(
+  subagent_type="researcher",
+  prompt="Research [version-sensitive question] from primary sources. Return the decision-relevant facts and citations only.",
+  description="Research [topic]")
 ```
-Task(subagent_type="code-reviewer",
-     prompt="Domain-risk review for [auth|secrets|payments|db|api|deploy|filesystem|production-config]. Return risks to risk-gate.json and blocking findings only.",
-     description="Domain-risk review")
+
+- Use when local code and governing docs cannot answer the question.
+- Parallelize only distinct questions; keep total concurrent fanout at three or less.
+- Skip a separate status report unless findings change the approach or require a decision.
+
+## Scout
+
+```text
+Agent(
+  subagent_type="Explore",
+  prompt="Locate [feature] touchpoints, tests, conventions, and contracts. Do not edit files.",
+  description="Scout [feature]")
 ```
-- Trigger only when the touched files affect the named domain.
-- Keep findings tied to file/line evidence and required verification.
-Task(subagent_type="code-reviewer",
-     prompt="Review changes for [phase] against these required checks: (a) every acceptance criterion met; (b) no regression to business logic in touchpoints/blast-radius from scout; (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars) unless explicitly called out; (d) follows existing patterns from scout; (e) no new lint/type/build errors anywhere. CONTEXT — scout summary: <scout-summary>; acceptance criteria: <acceptance-criteria>. Return score (X/10), critical, warnings, suggestions, and explicitly flag any side effects to trigger HARD-GATE-NO-SIDE-EFFECTS.",
-     description="Review [phase]")
+
+- Prefer targeted inline inspection for localized work.
+- Use `/ck:scout ext` or an Explore worker only for broad discovery that can be
+  usefully isolated.
+
+## Planning
+
+```text
+Agent(
+  subagent_type="planner",
+  prompt="Create a durable implementation plan for [large/complex task] from [evidence]. Save it to [path].",
+  description="Plan [feature]")
 ```
+
+- Use only when a durable plan improves coordination, risk control, or resumability.
+- Do not create plan artifacts for a small, clear change.
+
+## Implementation
+
+```text
+Agent(
+  subagent_type="general-purpose",
+  prompt="Implement [bounded stream]. Own only [files]. Meet [acceptance criteria] and report checks run.",
+  description="Implement [stream]")
+```
+
+- Use for independent sizeable streams, not every frontend task.
+- Assign disjoint ownership; serialize work that shares files or contracts.
+- Launch at most three ordinary workers at once.
+
+## Testing and Debugging
+
+```text
+Agent(
+  subagent_type="tester",
+  prompt="Verify [behavior/risk surface] with [targeted commands]. Return failures with reproducible evidence.",
+  description="Verify [surface]")
+```
+
+```text
+Agent(
+  subagent_type="debugger",
+  prompt="Diagnose [specific failure] without broad edits. Return root cause and the smallest supported fix.",
+  description="Diagnose [failure]")
+```
+
+- Run ordinary targeted checks inline.
+- Delegate when verification is long-running, independent, difficult, or needs a
+  distinct environment/domain lens.
+- Require relevant tests to pass; do not claim a universal pass percentage when
+  unrelated or unavailable suites remain.
+
+## Review and Risk Validation
+
+```text
+Agent(
+  subagent_type="code-reviewer",
+  prompt="Review [bounded diff] against [acceptance criteria]. Check reachable regressions and public contracts. Report only evidenced blockers/warnings with file locations.",
+  description="Review [risk surface]")
+```
+
+Delegate review for broad, difficult, high-risk, or ship-like changes. Otherwise
+review the diff inline. Do not add another worker merely to verify the reviewer.
+When the artifact workflow applies, write the result to `review-decision.json`
+using `../../_shared/references/workflow-artifacts.md`.
+
+### Adversarial Validation
+
+```text
+Agent(
+  subagent_type="code-reviewer",
+  prompt="Disprove the implementation claims for [phase]. Check acceptance coverage, regression reachability, contracts, and verification proof. Return JSON-ready decision, disprovenClaims[], unverifiedClaims[], missingProof[], reachableRegressions[].",
+  description="Adversarially validate [phase]")
+```
+
+Trigger for a structured `--auto` workflow, high-risk surface, large diff, or
+ship/push/PR/deploy action when it adds independent evidence. Do not average
+reviewers; any evidenced critical issue blocks.
+
+### Domain-Risk Review
+
+```text
+Agent(
+  subagent_type="code-reviewer",
+  prompt="Review [auth|secrets|payments|db|api|deploy|filesystem|production-config] risk in [scope]. Return evidence for risk-gate.json and blocking findings only.",
+  description="Review domain risk")
+```
+
+Use only when touched files affect the named domain.
 
 ## Conditional Simplify
-```
-Task(subagent_type="code-simplifier", prompt="Simplify these files while preserving behavior exactly: [file-list]", description="Simplify recent edits")
-```
-- Trigger when live `git diff --numstat HEAD --ignore-all-space` breaches any
-  `simplify.threshold` from `.ck.json` (defaults: 400 LOC / 8 files / 200 single-file LOC)
-- Scope the prompt to `git diff --name-only HEAD`
-- Verify with `git diff --shortstat HEAD -- [file-list]` before/after the subagent;
-  do not rely on the agent's prose summary
-- Skip when `CK_SIMPLIFY_DISABLED=1` or `.ck.json` `simplify.gate.enabled=false`
 
-## Project Management
-Activate the `/ck:project-management` skill (runs at every Finalize — a skill, not a subagent):
-> Run full sync-back in [plan-path]: reconcile completed tasks with all phase files, backfill stale completed checkboxes across all phases, update plan.md status/progress, and report unresolved mappings.
-
-## Documentation
-```
-Task(subagent_type="docs-manager", prompt="Update docs for [phase]. Changed files: [list]", description="Update docs")
+```text
+Agent(
+  subagent_type="code-simplifier",
+  prompt="Simplify only [modified files] while preserving behavior and public contracts exactly.",
+  description="Simplify recent edits")
 ```
 
-## Git Operations
-```
-Task(subagent_type="git-manager", prompt="Stage and commit changes with conventional commit message", description="Commit changes")
-```
+Trigger only when the live diff breaches a configured simplify threshold. Compare
+the scoped diff before and after; do not rely on the worker's prose summary.
+
+## Finalization Specialists
+
+- Activate `/ck:project-management` only when a plan/task artifact was actually
+  used and needs reconciliation.
+- Use `docs-manager` only when public behavior, setup, or operating instructions
+  changed enough to require documentation.
+- Use `git-manager` only when commit/publish is in the requested workflow and
+  delegation has a bounded benefit; routine git operations can remain inline.
+- Journal only noteworthy decisions that will help future work.
+
+These activities are conditional deliverables, not a mandatory finalize fanout.
 
 ## Parallel Execution
+
+```text
+Agent(
+  subagent_type="general-purpose",
+  prompt="Implement [stream] with exclusive ownership of [files]. Do not alter other live changes.",
+  description="Implement [stream]")
 ```
-Task(subagent_type="general-purpose", prompt="Implement [phase-file] with file ownership: [files]", description="Implement phase [N]")
-```
-- Launch multiple for parallel phases
-- Include file ownership boundaries
+
+- Prove streams are independent before launching them.
+- Declare file ownership and integration boundaries.
+- Use at most three concurrent ordinary workers.
+- Integrate and run one coherent verification bundle after the group returns.

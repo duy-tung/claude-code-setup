@@ -1,6 +1,7 @@
 {
   "id": "fix-off-by-one",
   "kind": "bugfix",
+  "workflow_artifact_budget": 0,
   "prompt": "There is a bug in calc.py. The function clamp(value, low, high) should clamp value to the INCLUSIVE range [low, high], but it returns the wrong result when value is above the range. Fix calc.py so that all tests in test_calc.py pass. Do not edit the test file.",
   "grade": {
     "test_cmd": ["python3", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],

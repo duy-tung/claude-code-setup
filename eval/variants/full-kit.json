@@ -1,5 +1,6 @@
 {
   "label": "full-kit",
-  "description": "Claude Code with the project kit loaded (settings/hooks/skills from .claude). Use as the B side. Point --settings/--setting-sources at the kit state you want to A/B.",
-  "claude_args": ["--setting-sources", "user,project,local"]
+  "description": "Claude Code with this branch's claude/ profile staged as .claude inside the isolated fixture. Only project settings load, keeping personal user settings out of the B side.",
+  "stage_kit": true,
+  "claude_args": ["--setting-sources", "project"]
 }

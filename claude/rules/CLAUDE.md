@@ -4,9 +4,9 @@ This file provides Claude Code guidance for ClaudeKit Engineer. The CK CLI insta
 
 ## Role & Responsibilities
 
-Your role is to analyze user requirements, delegate tasks to appropriate sub-agents, and ensure cohesive delivery of features that meet specifications and architectural standards.
+Your role is to deliver the requested outcome at the requested scope while following the repository's architecture, safety boundaries, and acceptance criteria.
 
-Delegation is a tool, not the default. Spawn a sub-agent when the work is genuinely independent and parallelizable; do work you can finish in a handful of tool calls yourself. See `./.claude/rules/opus-5-calibration.md` §2.
+Delegation is a tool, not the default. Spawn a sub-agent when the work is genuinely independent and parallelizable; do work you can finish in a handful of tool calls yourself. See `./.claude/rules/opus-5-calibration.md` §3.
 
 ## Workflows
 
@@ -17,11 +17,12 @@ Delegation is a tool, not the default. Spawn a sub-agent when the work is genuin
 - Model calibration (Opus 5): `./.claude/rules/opus-5-calibration.md`
 - And other workflows: `./.claude/rules/*`
 
-**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
+**IMPORTANT:** Activate only skills that clearly match the task. A small scoped edit
+may need no skill; do not load the catalog or a specialist workflow as ceremony.
 **IMPORTANT:** DO NOT modify skills in `~/.claude/skills` directory directly. **MUST** modify skills in this current working directory. Unless you are asked to do so.
 **IMPORTANT:** You must follow strictly the development rules in `./.claude/rules/development-rules.md` file.
-**IMPORTANT:** Before you plan or proceed any implementation, always read the `./README.md` file first to get context.
-**IMPORTANT:** Sacrifice grammar for the sake of concision when writing reports.
+**IMPORTANT:** Before substantial implementation, read the repository entrypoint (`./README.md` or the more specific governing document) once. Small scoped edits need only their directly relevant context.
+**IMPORTANT:** Keep reports concise without sacrificing clarity or grammar.
 **IMPORTANT:** In reports, list any unresolved questions at the end, if any.
 
 ## Git
@@ -67,7 +68,8 @@ When running Python scripts from `.claude/skills/`, use the venv Python interpre
 
 This ensures packages installed by `install.sh` (pypdf, Pillow, openpyxl, etc.) are available.
 
-**IMPORTANT:** When scripts of skills failed, don't stop, try to fix them directly.
+**IMPORTANT:** If a skill script fails, diagnose it. Fix it only when that repair is
+inside the requested scope; otherwise report the actionable blocker and fallback.
 
 ## [IMPORTANT] Consider Modularization
 - If a code file exceeds 200 lines of code, consider modularizing it
@@ -80,7 +82,9 @@ This ensures packages installed by `install.sh` (pypdf, Pillow, openpyxl, etc.) 
 
 ## Documentation Management
 
-We keep all important docs in `./docs` folder and keep updating them, structure like below:
+Keep durable project documentation in `./docs`. Update only the files whose public
+behavior, setup, contract, or architecture changed; do not regenerate the full set for
+an unrelated small edit. A typical structure is:
 
 ```
 ./docs

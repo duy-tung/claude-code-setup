@@ -1,221 +1,133 @@
-# Agent Teams -- Overview & Architecture
+# Agent Teams -- Canonical Runtime Semantics
 
-> **Canonical source:** https://code.claude.com/docs/en/agent-teams
-> **Version captured:** Claude Code v2.1.80 (March 2026)
-> **Update policy:** Re-fetch canonical URL when Claude Code releases new Agent Teams features.
+> Canonical source: https://code.claude.com/docs/en/agent-teams
+> Compatibility baseline: Claude Code 2.1.178+ implicit teams
+> Claude Opus 5 baseline: Claude Code 2.1.219+
+> Reviewed: 2026-08-09
 
-This is a **self-contained knowledge base** -- AI agents should NOT need to re-fetch the URL.
+This reference records only the runtime contracts CK depends on. Re-check the canonical source when Claude Code changes Agent Teams.
 
 ## Overview
 
-Agent Teams coordinate multiple Claude Code instances working together. One session acts as the team lead, coordinating work, assigning tasks, and synthesizing results. Teammates work independently, each in its own context window, and communicate directly with each other.
+Agent Teams coordinate multiple Claude Code sessions through one lead, named teammates, a shared task list, and direct inter-agent messaging. Each teammate has an independent context window and receives project context plus its spawn prompt; it does not receive the lead's conversation history.
 
-Unlike subagents (run within a single session, report back only), teammates are full independent sessions you can interact with directly.
+Use teams when independent workstreams need to exchange findings or coordinate. Prefer a single session or ordinary subagent for sequential work, same-file edits, or routine tasks where coordination cost exceeds the benefit.
 
-## When to Use
+## Enablement and Version
 
-Best for tasks where parallel exploration adds real value:
-
-- **Research and review**: multiple teammates investigate different aspects, share and challenge findings
-- **New modules or features**: teammates each own a separate piece without conflicts
-- **Debugging with competing hypotheses**: test different theories in parallel
-- **Cross-layer coordination**: changes spanning frontend, backend, tests -- each owned by different teammate
-
-**Not suitable for:** sequential tasks, same-file edits, work with many dependencies.
-
-### Subagents vs Agent Teams
-
-| | Subagents | Agent Teams |
-|---|---|---|
-| **Tool** | `Agent` (formerly `Task`) | `Agent` + `TeamCreate`/`TaskCreate`/`SendMessage` |
-| **Context** | Own context window sized by the session model; results return to caller | Own full Claude Code instance + context |
-| **Communication** | Report back to parent only | Message each other directly via SendMessage |
-| **Coordination** | Parent manages all work | Shared task list, self-coordination |
-| **Isolation** | Optional `isolation: "worktree"` | Each teammate = separate session |
-| **Model** | Any (haiku/sonnet/opus per agent) | Session's Opus model, same for all teammates |
-| **Max parallel** | ~10 simultaneous | Depends on system resources |
-| **Best for** | Focused tasks, result-only | Complex work requiring discussion |
-| **Token cost** | Lower | Higher (each teammate = separate instance) |
-| **Status** | Production (stable) | Experimental (requires opt-in flag) |
-
-## Enable
-
-Still experimental -- requires opt-in:
+Agent Teams remain experimental. Enable them in the shell or project/user settings:
 
 ```json
-{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
 ```
 
-Set in shell environment or settings.json.
+Check the runtime before diagnosing team behavior:
 
-## How Teams Start
+```text
+claude --version
+```
 
-Two paths:
-1. **You request**: describe task + ask for agent team. Claude creates based on instructions.
-2. **Claude proposes**: suggests team if task benefits from parallel work.
+CK targets Claude Code 2.1.219 or newer so the same installation also supports Claude Opus 5. Account and runtime policy can still make Agent Teams unavailable after the flag is set.
 
-Both require your confirmation. Claude won't create a team without approval.
+## Implicit Lifecycle
+
+Every enabled session has one implicit, session-scoped team. Spawn named teammates directly with `Agent`; there is no setup call before the first spawn.
+
+At completion, request shutdown from every active teammate. Claude Code owns the session team lifecycle and resource cleanup. Do not hand-edit runtime team/task directories.
 
 ## Architecture
 
-| Component | Role |
-|-----------|------|
-| **Team lead** | Main session -- creates team, spawns teammates, coordinates |
-| **Teammates** | Separate Claude Code instances with own context windows |
-| **Task list** | Shared work items at `~/.claude/tasks/{team-name}/` |
-| **Mailbox** | Messaging system for inter-agent communication |
+| Component | Responsibility |
+|-----------|----------------|
+| Lead | Decomposes work, assigns tasks, resolves ownership, and synthesizes results |
+| Named teammate | Runs an independent Claude Code context and performs one bounded workstream |
+| Shared task list | Tracks ownership, dependencies, and task state |
+| Direct messaging | Delivers messages between specifically named participants |
 
-Storage:
-- **Team config**: `~/.claude/teams/{team-name}/config.json` (members array with name, agent ID, type)
-- **Task list**: `~/.claude/tasks/{team-name}/`
+Task dependency changes are automatic: completing a blocker makes dependent tasks claimable.
 
-Task dependencies managed automatically -- completing a blocking task unblocks dependents without manual intervention.
+## Spawn Contract
 
-## Tools API Surface
-
-### Agent Tool (spawn teammates)
-
-The `Agent` tool (formerly `Task`, renamed v2.1.63) spawns teammates:
-
-```
+```text
 Agent(
-  subagent_type: string,       # Agent specialization
-  description: string,         # Short task summary (3-5 words)
-  prompt: string,              # Full instructions for teammate
-  model: "opus",               # Alias — resolves to the current Opus release
-  run_in_background: true,     # Non-blocking spawn
-  isolation: "worktree"        # Optional: git worktree isolation
+  subagent_type: "researcher",
+  name: "api-researcher",
+  description: "research API constraints",
+  prompt: "bounded task, deliverable, constraints, file ownership, context",
+  model: "sonnet",
+  run_in_background: true
 )
 ```
 
-**Built-in subagent types:** `general-purpose`, `Explore`, `Plan`, `researcher`, `general-purpose`, `code-reviewer`, `debugger`, `tester`, `planner`, `docs-manager`, `brainstormer`, and more.
+- `name` makes the background agent addressable as a teammate.
+- `run_in_background: true` allows concurrent work.
+- `model` is optional and may differ by teammate. A referenced agent definition can also provide its model.
+- Mixed-model teams are supported. Select models according to task difficulty, quality evals, latency, and cost.
+- Teammates inherit the lead's effort level by default. Model selection and effort are separate controls.
+- A custom agent's instruction body and supported restrictions apply when that agent type is used as a teammate.
 
-**Custom subagents:** Define in `.claude/agents/` with frontmatter (name, description, tools, model).
+## Shared Checkout
 
-### TeamCreate
+Teammates operate in the same checkout. Parallel writers therefore need exclusive file ownership:
 
-Create team + task list. Params: `team_name`, `description`.
+- Put explicit file or directory boundaries in each implementation task.
+- Give shared manifests, schemas, generated indexes, and lockfiles to one integrator.
+- Make tasks sequential when ownership cannot be separated safely.
+- Stop and reassign before editing when an unexpected overlap appears.
+- Read-only research and review can overlap freely.
 
-### TeamDelete
+Agent Teams coordinate collaborators; they do not provide per-teammate filesystem isolation.
 
-Remove team/task dirs. **Takes NO parameters** -- just call `TeamDelete` with empty params. Fails if active teammates still exist.
+## Task Surface
 
-### SendMessage Types
-
-| Type | Purpose |
+| Tool | Purpose |
 |------|---------|
-| `message` | DM to one teammate (requires `recipient`) |
-| `broadcast` | Send to ALL teammates (use sparingly -- costs scale with N) |
-| `shutdown_request` | Ask teammate to gracefully exit |
-| `shutdown_response` | Teammate approves/rejects shutdown (requires `request_id`) |
-| `plan_approval_response` | Lead approves/rejects teammate plan (requires `request_id`) |
+| `TaskCreate` | Create a bounded item with acceptance criteria and ownership |
+| `TaskUpdate` | Assign, claim, block, complete, or reassign work |
+| `TaskGet` | Read full details and dependency relationships |
+| `TaskList` | Read compact team progress |
 
-**Resume pattern:** `SendMessage(to: "<agent-name>")` resumes an idle teammate.
+Task states are `pending`, `in_progress`, and `completed`. Claiming is synchronized so two teammates do not claim the same task simultaneously.
 
-### Task System Fields
+## Direct Messaging and Shutdown
 
-| Field | Values/Purpose |
-|-------|---------------|
-| `status` | `pending` -> `in_progress` -> `completed` (or `deleted`) |
-| `owner` | Agent name assigned to task |
-| `blocks` | Task IDs this task blocks (read via TaskGet) |
-| `blockedBy` | Task IDs that must complete first (read via TaskGet) |
-| `addBlocks` | Set blocking relations (write via TaskUpdate) |
-| `addBlockedBy` | Set dependency relations (write via TaskUpdate) |
-| `metadata` | Arbitrary key-value pairs |
-| `subject` | Brief imperative title |
-| `description` | Full requirements and context |
+- Address a teammate by its stable name.
+- Send one direct message to each intended recipient.
+- Messages arrive automatically; recipients do not need an inbox polling loop.
+- An idle teammate can resume when it receives another direct instruction.
+- Send a shutdown request separately to each active teammate at the end.
+- A teammate can finish a critical operation before approving shutdown; report delays rather than deleting state.
 
-Task claiming uses file locking to prevent race conditions.
-Task dependencies resolve automatically -- completing a blocker unblocks dependents.
+## Hooks and Progress
 
-## Hook Events
+Agent Teams expose task-completion and teammate-idle lifecycle events. Use them for reactive progress handling:
 
-### TaskCompleted
+1. Spawn independent teammates and create their tasks.
+2. React to completion/idle events and inbound messages.
+3. Use `TaskList` only to reconcile unclear state or recover after missed events.
+4. Do not poll on a fixed timer.
 
-Fires when teammate calls `TaskUpdate` with `status: "completed"`.
+Hooks can enforce task-quality gates, but routine tasks should not accumulate redundant verification passes.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `task_id` | string | Completed task ID |
-| `task_subject` | string | Task title |
-| `task_description` | string | Full task description |
-| `teammate_name` | string | Who completed it |
-| `team_name` | string | Team name |
+## Context, Models, and Permissions
 
-### TeammateIdle
+Each teammate loads project instructions, available skills, and configured tool integrations, then receives the lead's spawn prompt. Include task-specific constraints and deliverables in that prompt because the lead's conversation is not copied.
 
-Fires after `SubagentStop` for team members.
+Teammates start with the lead's permission settings. Keep per-teammate prompts free of secrets because prompts and tool activity can be retained in logs or session state.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `teammate_name` | string | Idle teammate name |
-| `team_name` | string | Team name |
+## Cost Guidance
 
-### Event Lifecycle
+Token use grows with the number and lifetime of active teammates. Keep teams small, scope prompts tightly, shut down completed teammates, and use lower-cost models when evals show that quality holds. A team is usually not cost-effective for one focused or sequential task.
 
-```
-SubagentStart(worker) -> TaskCompleted(task) -> SubagentStop(worker) -> TeammateIdle(worker)
-```
+## Known Constraints
 
-TaskCompleted fires BEFORE SubagentStop/TeammateIdle.
-
-## Worktree Isolation
-
-For implementation teams, the `isolation: "worktree"` parameter on the Agent tool gives each teammate:
-- **Own git worktree** -- isolated working directory, staging area, HEAD
-- **Own branch** -- auto-created feature branch
-- **No file conflicts** -- multiple devs can edit same files independently
-- **Shared .git** -- common config, refs visible to all
-
-After completion, lead merges worktree branches. This is the recommended pattern for parallel code changes.
-
-## Agent Memory
-
-Agents can declare `memory` in frontmatter for persistent cross-session learning.
-
-| Scope | Location | Persists across |
-|-------|----------|-----------------|
-| `user` | `~/.claude/agent-memory/<name>/` | All projects |
-| `project` | `.claude/agent-memory/<name>/` | Sessions in same project |
-
-First 200 lines of `MEMORY.md` auto-injected into system prompt.
-
-## Task(agent_type) Restrictions
-
-Limit which sub-agents an agent can spawn:
-
-```yaml
-tools: Read, Grep, Bash, Task(Explore)
-```
-
-This agent can only spawn `Explore` sub-agents. Restricts recursive spawning and cost escalation.
-
-## Context & Communication
-
-Each teammate loads: CLAUDE.md, MCP servers, skills, agents. Receives spawn prompt from lead. Lead's conversation history does NOT carry over.
-
-- **Automatic message delivery** -- no polling needed
-- **Idle notifications** -- teammates notify lead when turn ends
-- **Shared task list** -- all agents see status and claim work
-
-## Permissions
-
-Teammates inherit lead's permission settings at spawn. If lead uses `--dangerously-skip-permissions`, all teammates do too. Can change individually after spawning but not at spawn time.
-
-## Token Usage
-
-Scales with active teammates. Worth it for research/review/features. Single session more cost-effective for routine tasks. Every teammate runs the session's Opus model -- no mixed-model teams currently supported, so cost scales at Opus rates per teammate.
-
-## Limitations
-
-- **Uniform model**: every teammate runs the session's Opus model (no mixed-model teams)
-- **No session resumption**: `/resume` and `/rewind` don't restore in-process teammates
-- **Task status can lag**: teammates may not mark tasks completed; check manually
-- **Shutdown can be slow**: finishes current request first
-- **One team per session**: clean up before starting new one
-- **No nested teams**: only lead manages team
-- **Lead is fixed**: can't promote teammate or transfer leadership
-- **Permissions at spawn**: all inherit lead's mode; changeable after but not at spawn time
-- **Split panes**: require tmux or iTerm2 only
-- **VSCode unsupported**: Agent Teams requires CLI terminal
+- Experimental availability can vary by account/runtime.
+- Teammates share the checkout, so same-file parallel writes are unsafe.
+- Each teammate has its own context and does not inherit lead conversation history.
+- Task state can lag if a teammate fails to update its task.
+- Shutdown may wait for an in-flight response or tool call.
+- The lead remains responsible for ownership, synthesis, and incomplete work.

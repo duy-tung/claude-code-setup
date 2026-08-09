@@ -2,19 +2,22 @@
 
 ## When to Update Docs
 
-MUST update project documentation in `./docs` when:
+Update the affected project documentation in `./docs` when the change modifies a
+user-visible setup/behavior contract, public interface, durable architecture decision,
+or release/milestone state. Do not create documentation work for a small internal edit
+that leaves those surfaces unchanged.
 
 | Trigger | Which Docs | Action |
 |---------|-----------|--------|
-| Phase status changes | project-roadmap.md | Update progress %, milestone status |
-| Major feature complete | project-roadmap.md, codebase-summary.md | Add feature, update architecture |
-| Bug fix (significant) | project-roadmap.md | Document fix, severity, impact |
-| Security patch | project-roadmap.md, system-architecture.md | Record improvement |
+| Committed phase or milestone status changes | project-roadmap.md | Update progress or milestone status |
+| User-visible feature or release completes | changelog or owning guide | Document behavior and migration/setup impact |
+| User-visible significant bug fix | changelog or owning guide | Document impact when users need to act or know |
+| Security patch changes public guidance | changelog or system-architecture.md | Record safe remediation guidance |
 | API contract changes | system-architecture.md, code-standards.md | Update endpoints, schemas |
 | Architecture decision | system-architecture.md | Document decision + rationale |
 | Scope/timeline change | project-roadmap.md | Adjust phases, dates |
-| Dependencies updated | system-architecture.md | Record version changes |
-| Breaking changes | code-standards.md | Document migration path |
+| Dependency requirement changes setup/compatibility | owning setup or architecture guide | Record requirement and impact |
+| Breaking changes | owning guide, code-standards.md | Document migration path |
 
 ## Documentation Files
 
@@ -32,7 +35,7 @@ MUST update project documentation in `./docs` when:
 ## Update Protocol
 
 1. **Read current state:** Always read target doc before editing
-2. **Analyze reports:** Review agent reports in plan reports directory
+2. **Gather evidence:** Use implementation output or active-plan reports when they exist
 3. **Update content:** Modify progress %, statuses, dates, descriptions
 4. **Cross-reference:** Ensure consistency across docs
 5. **Validate:** Verify dates, versions, references accurate
@@ -47,10 +50,11 @@ MUST update project documentation in `./docs` when:
 
 ## Delegation Pattern
 
-Use `docs-manager` subagent for documentation updates:
+Use `docs-manager` only for a broad, independently owned documentation pass. Make a
+small, tightly scoped update inline.
 
 ```
-Task(
+Agent(
   subagent_type: "docs-manager",
   prompt: "Update ./docs for [changes]. Work context: [path]",
   description: "Update docs"

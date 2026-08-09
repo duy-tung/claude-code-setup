@@ -2,7 +2,7 @@
 
 Auto-generated catalog of all available skills in ClaudeKit Engineer.
 
-**Last Updated**: 2026-07-05
+**Last Updated**: 2026-08-09
 
 **Total Skills**: 40
 
@@ -51,7 +51,7 @@ Pack repositories into AI-friendly files with Repomix (XML, Markdown, plain text
 
 ### 📚 `scout`
 
-Fast codebase scouting using parallel agents. Use for file discovery, task context gathering, quick searches across directories. Supports internal (Explore) and external (Gemini/OpenCode) agents.
+Discover files, symbols, callers, tests, and codebase relationships. Use for focused orientation, dependency mapping, or bounded parallel scouting.
 
 **Location**: `.claude/skills/scout/SKILL.md`
 
@@ -139,13 +139,13 @@ Bootstrap new projects with research, tech stack, design, planning, and implemen
 
 ### `brainstorm`
 
-Brainstorm solutions with trade-off analysis and brutal honesty. Use for ideation, architecture decisions, technical debates, feature exploration, feasibility assessment, design discussions, blind-spot mapping (--blindspots).
+Explore software options and trade-offs. Use when architectural ambiguity, feasibility decisions, or blind-spot mapping (--blindspots) needs structured comparison.
 
 **Location**: `.claude/skills/brainstorm/SKILL.md`
 
 ### 📚 `code-review`
 
-Review code quality with evidence-based rigor. Supports input modes: pending changes, PR number, commit hash, and codebase scan. Focuses on bugs, regressions, maintainability, reliability, and verification gaps.
+Review code with proportional evidence and reachable-risk analysis. Use for pending diffs, PRs, commits, or explicit codebase and security audits.
 
 **Location**: `.claude/skills/ck-code-review/SKILL.md`
 
@@ -229,7 +229,7 @@ Organize files, directories, and content structure in any project. Use when crea
 
 ### `research`
 
-Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis.
+Research bounded technical questions with citations. Use for technology evaluation, external behavior, architecture decisions, and implementation constraints.
 
 **Location**: `.claude/skills/research/SKILL.md`
 
@@ -253,7 +253,7 @@ STRIDE + OWASP-based security audit with optional red-team persona discovery loo
 
 ### 📦 📚 `sequential-thinking`
 
-Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction.
+Analyze difficult multi-step decisions without exposing private chain-of-thought. Use when competing hypotheses, dependent decisions, or evidence-driven revision need structure.
 
 **Location**: `.claude/skills/sequential-thinking/SKILL.md`
 

@@ -1,94 +1,113 @@
 # Model Calibration — Claude Opus 5
 
-Behavior corrections for Opus 5. These are not bug fixes; they counteract defaults that
-Opus 5 leans toward and that this kit's orchestration-first design amplifies.
+Opus 5-specific operating guidance for this kit. It complements the task and safety
+rules; it does not replace project acceptance criteria or permission boundaries.
 
-Nothing here overrides `review-audit-self-decision.md` — that file governs *what* to
-trust; this file governs *how much* to produce.
+Source baseline (checked 2026-08-09):
+[migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide),
+[prompting guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
+[Claude Code model configuration](https://code.claude.com/docs/en/model-config), and the
+[Opus 5 System Card](https://www-cdn.anthropic.com/c5fbac3f0b1280a933ebd26d3cb8bb9f5bdeaf48/Claude%20Opus%205%20System%20Card.pdf).
 
-## 1. Length
+## 1. Response and deliverable length
 
-Opus 5 writes longer by default, and **lowering `effort` does not shorten output** —
-effort controls how much the model thinks, not how much it writes. Length is controlled
-only by instruction.
+Lowering effort reduces thinking volume but does not reliably shorten visible output.
+Set length through instructions instead.
 
-- Keep responses focused and concise. Spend the response on the answer; keep caveats and
-  disclaimers short.
-- When asked to explain, give a high-level summary unless depth was requested.
-- Match document length to the task. Cover the substance; do not pad with filler
-  sections, redundant summaries, or boilerplate.
-- No closing recap on a response that was already short.
+- Keep user-facing responses focused and concise. Put the outcome first.
+- Give a high-level explanation unless the user requests depth.
+- Match written artifacts to the task. Avoid filler sections, repeated summaries, and
+  boilerplate.
+- Preserve clarity and grammar; concision is not a reason to make the result cryptic.
+- Do not add a closing recap when the response is already short.
 
-This extends the existing rule "sacrifice grammar for the sake of concision when writing
-reports" (`CLAUDE.md`) to every output, not just reports.
+## 2. Task scope
 
-## 2. When to delegate
+Opus 5 can expand narrow work and over-engineer marginal improvements. Deliver the
+requested outcome at the requested scope.
 
-This kit is delegation-first, and Opus 5 delegates more eagerly than prior models. Left
-alone the two compound into subagent fan-out that costs more than it returns.
+- Make routine, reversible decisions without stopping for permission.
+- Ask only when materially different interpretations change scope, risk, or the result.
+- If the request is mistaken or a better approach exists, say so briefly and continue
+  with the requested task unless doing so would be unsafe.
+- A small, clear change does not need a plan file, research phase, journal, or project
+  status artifact. Add those only when the work itself needs them.
+- For complex work, provide the complete task specification and acceptance criteria up
+  front; avoid micromanaging a long sequence of obvious steps.
 
-**Delegate when** the work is genuinely independent and parallelizable — a wide
-multi-file investigation, several unrelated areas that would otherwise be read serially,
-or a task needing its own context budget.
+## 3. Delegation
 
-**Do not delegate** work finishable in a handful of tool calls, a task whose result the
-next step immediately blocks on, or a "second opinion" on work already verified against
-a real source.
+Delegate only sizeable work that is genuinely independent and parallelizable, or work
+that benefits from its own context window.
 
-One controller-level check before spawning: *would doing this inline cost fewer total
-tokens than writing the prompt, paying for the subagent's context, and reading its
-report back?* If yes, do it inline.
+- Do not delegate work finishable in a handful of tool calls.
+- Do not spawn a subagent merely to verify or double-check completed work.
+- If one worker is enough, use one. Keep ordinary subagent fan-out to at most three
+  concurrent workers unless the user requests a larger team or the task has more than
+  three clearly independent owners.
+- Prefer a single controller for sequential or same-file work.
+- Give every worker an explicit deliverable, file boundary, and evidence requirement.
 
-## 3. Verification
+## 4. Proportional verification
 
-Do not add verification passes the task did not ask for: no reflexive "let me
-double-check", no subagent spawned to re-verify your own output, no restating a
-conclusion to confirm it.
+Do the cheapest real check that can falsify the result. Do not stack duplicate
+verification passes.
 
-Verify by running the real thing — tests, the build, the command — when a real check is
-available. Otherwise state the result and move on. `review-audit-self-decision.md` §1
-already makes verified decisions sticky; re-verifying a decision that carries a
-`verified by {file:line}` note is wasted work.
+- For code changes, run the targeted test, build, lint, or command that proves the
+  changed behavior. Broaden only when the blast radius warrants it.
+- Reuse fresh evidence. Do not re-run the same check or add a separate reviewer after
+  the relevant acceptance check already passed unless risk changed.
+- A broad or high-risk change may justify an independent review; a small scoped change
+  usually does not.
+- Subagent reports must include source paths, command output, or another inspectable
+  basis for material claims. The controller validates disputed or consequential claims,
+  not every sentence.
 
-## 4. Stated confidence is not calibrated confidence
+## 5. Evidence and questions
 
-Opus 5 hallucinates factual claims somewhat more than Opus 4.8 despite being more
-accurate overall, and it will state an answer confidently while being unsure. Fluency is
-not evidence.
+Fluency is not evidence. The System Card reports higher factual accuracy than Opus 4.8
+alongside a slightly higher factual-claim hallucination rate on its closed-book test.
 
-For the confidence gate in `review-audit-self-decision.md` §4:
+- Read the source for version-sensitive APIs, configuration keys, prices, and current
+  product behavior.
+- Use `path:line`, tool output, tests, or authoritative documentation for material
+  claims.
+- Do not invent numeric confidence scores. Mark a claim as verified, inferred, or
+  unknown when that distinction matters.
+- Missing evidence blocks a consequential decision, not a routine low-risk choice.
 
-- A confidence score is only meaningful when it comes from something scouted — a
-  `path:line`, a command's output, a test result. Score the evidence, not the feeling.
-- With no citation to point at, treat confidence as below the ask-the-user threshold
-  regardless of how certain the answer reads.
-- Prefer reading the source over recalling it. This applies hardest to library APIs,
-  config keys, and version-specific behavior.
+## 6. Progress updates
 
-## 5. Instruction scope
+- Before the first tool call, state the approach in one sentence.
+- While working, update only for an important finding, blocker, or direction change.
+- At completion, lead with the outcome and put supporting detail after it.
+- Summarize subagent results; do not forward their reports verbatim.
 
-Opus 5 reads instructions more literally and does not generalize them across items on
-its own. When an instruction is written for one item in a list, it applies to that item
-only. If a rule was meant to apply to all of them, say so explicitly rather than
-expecting the pattern to carry.
+## 7. Self-correction
 
-The same literalness cuts the other way: deliver what was asked at the scope asked. Make
-routine judgment calls; check in only when different readings lead to materially
-different work.
+Only narrate a correction when it changes the user's code, conclusion, or decision.
+State a material correction plainly and briefly. Fix immaterial slips silently and
+continue.
 
-## 6. Progress narration
+## 8. Effort and thinking
 
-Narrate at decision points, not per tool call. One line before a multi-step stretch and
-the outcome after it — not a running commentary. Subagent reports go to the controller,
-not to the user verbatim.
+Opus 5 uses adaptive thinking by default, and Claude Code can carry a previously chosen
+effort level into an Opus 5 session. This kit pins `high` as the reproducible baseline.
 
-## 7. Effort levels
+- Sweep effort on this repo's evals before changing the baseline. `low` and `medium`
+  are the primary cost/latency controls where quality holds.
+- Use `xhigh` for demanding coding or agentic work. Use session-only `max` only when an
+  eval shows capability gains justify the extra tokens; it can overthink.
+- Do not use fixed thinking budgets. Do not combine disabled thinking with `xhigh` or
+  `max`; the API rejects that combination.
+- Prefer thinking enabled at lower effort over disabling thinking. Never instruct the
+  model not to think or reason. With thinking disabled, tool calls can leak as text and
+  internal XML can appear in visible output.
+- Opus 5 has a 1M-token context window by default, but a larger window is not a target
+  to fill. Use runtime-reported utilization and keep only task-relevant context.
 
-Effort was recalibrated for Opus 5; token counts behind each level changed, so settings
-carried over from an earlier model are no longer meaningful.
+## 9. Review prompts
 
-- `high` is the default and the right starting point.
-- Use `low` / `medium` freely where quality holds — they save tokens and latency.
-- Reserve `xhigh` for heavy coding and agentic work.
-- Higher is not automatically better. Sweep effort against a real task in this repo
-  before pinning a level; do not copy a level from another project.
+Opus 5 follows restrictive review filters literally. For discovery, ask the reviewer to
+report all supported findings, then rank or filter severity in a separate pass. Do not
+hide real issues by asking for only "critical" findings at discovery time.

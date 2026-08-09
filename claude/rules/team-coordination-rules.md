@@ -1,90 +1,68 @@
 # Team Coordination Rules
 
-> These rules only apply when operating as a teammate within an Agent Team.
-> They have no effect on standard sessions or subagent workflows.
+These rules apply only while operating as a named teammate in an Agent Team.
 
-Rules for agents operating as teammates within an Agent Team.
+## Runtime Contract
 
-## File Ownership (CRITICAL)
+- The team is implicit and session-scoped; start from the assigned task without a setup step.
+- All teammates share the current checkout and can see each other's file changes immediately.
+- Models may differ by teammate. Use the model selected by the lead or agent definition.
+- Effort inherits from the lead by default.
+- Claude Code owns session-team resource cleanup after teammates shut down.
 
-- Each teammate MUST own distinct files — no overlapping edits
-- Define ownership via glob patterns in task descriptions: `File ownership: src/api/*, src/models/*`
-- Lead resolves ownership conflicts by restructuring tasks or handling shared files directly
-- Tester owns test files only; reads implementation files but never edits them
-- If ownership violation detected: STOP and report to lead immediately
+## File Ownership (Critical)
 
-## Git Safety
+- Edit only the files or directories explicitly assigned to this task.
+- Read-only overlap is allowed; writable overlap is not.
+- Treat manifests, schemas, generated indexes, and lockfiles as shared files owned by one integrator unless the task says otherwise.
+- If an unassigned file must change, stop before editing and message the lead.
+- If another teammate changed an owned file unexpectedly, stop and resolve ownership with the lead.
+- A tester may edit only its assigned test paths; reading implementation files does not grant write ownership.
 
-- Prefer git worktrees for implementation teams — each dev in own worktree eliminates conflicts
-- Never force-push from a teammate session
-- Commit frequently with descriptive messages
-- Pull before push to catch merge conflicts early
-- If working in a git worktree, commit/push to the worktree branch — not main or dev
+## Version-Control Safety
 
-## Communication Protocol
+- Never assume private filesystem or version-control state.
+- Do not discard, overwrite, stage, or commit another teammate's changes.
+- Do not use broad staging commands when concurrent edits are present.
+- Commit or push only when the task or lead explicitly assigns that responsibility.
+- Never force-push or rewrite shared history.
 
-- Use `SendMessage(type: "message")` for peer DMs — always specify recipient by name
-- Use `SendMessage(type: "broadcast")` ONLY for critical blocking issues affecting entire team
-- Mark tasks completed via `TaskUpdate` BEFORE sending completion message to lead
-- Include actionable findings in messages, not just "I'm done"
-- Never send structured JSON status messages — use plain text
+## Communication
 
-## CK Stack Conventions
-
-### Report Output
-- Save reports to `{CK_REPORTS_PATH}` (injected via hook, fallback: `plans/reports/`)
-- Naming: `{type}-{date}-{slug}.md` where type = your role (researcher, reviewer, debugger)
-- Sacrifice grammar for concision. List unresolved questions at end.
-
-### Commit Messages
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
-- No AI references in commit messages
-- Keep commits focused on actual code changes
-
-### Docs Sync (Implementation Teams Only)
-- After completing implementation tasks, lead MUST evaluate docs impact
-- State explicitly: `Docs impact: [none|minor|major]`
-- If impact: update `docs/` directory or note in completion message
+- Address teammates by stable name, not runtime ID.
+- Send one direct message per intended recipient.
+- Include evidence, affected files, and the requested action; avoid status-only messages.
+- Mark the shared task completed before sending the final completion message.
+- Inbound messages arrive automatically; do not poll an inbox or task list on a fixed timer.
 
 ## Task Claiming
 
-- Claim lowest-ID unblocked task first (earlier tasks set up context for later ones)
-- Check `TaskList` after completing each task for newly unblocked work
-- Set task to `in_progress` before starting work
-- If all tasks blocked, notify lead and offer to help unblock
+- Set a claimed task to `in_progress` before work begins.
+- Claim only unassigned, unblocked work that matches your role and does not overlap active file ownership.
+- After completion, inspect the shared task list only when deciding whether another eligible task exists.
+- If all work is blocked, message the relevant owner directly, then escalate to the lead if needed.
 
-## Plan Approval Flow
+## Plan Approval
 
-When `plan_mode_required` is set:
-1. Research and plan your approach (read-only — no file edits)
-2. Send plan via `ExitPlanMode` — this triggers approval request to lead
-3. Wait for lead's `plan_approval_response`
-4. If rejected: revise based on feedback, resubmit
-5. If approved: proceed with implementation
+When plan approval is required:
 
-## Conflict Resolution
+1. Research and plan without editing files.
+2. Submit the plan with concrete file ownership, risks, and verification.
+3. Wait for the lead's approval response.
+4. Revise from specific feedback if rejected.
+5. Begin edits only after approval.
 
-- If two teammates need the same file: escalate to lead immediately
-- If a teammate's plan is rejected twice: lead takes over that task
-- If findings conflict between reviewers: lead synthesizes and documents disagreement
-- If blocked by another teammate's incomplete work: message them directly first, escalate to lead if unresponsive
+## Reports and Documentation
 
-## Shutdown Protocol
+- Save requested reports to `{CK_REPORTS_PATH}`; fallback: `plans/reports/`.
+- Use `{type}-{date}-{slug}.md` naming unless the task supplies another path.
+- Keep findings concise and list unresolved questions.
+- For implementation, state `Docs impact: none|minor|major` and explain any required follow-up.
 
-- Approve shutdown requests unless mid-critical-operation
-- Always mark current task as completed before approving shutdown
-- If rejecting shutdown, explain why concisely
-- Extract `requestId` from shutdown request JSON and pass to `shutdown_response`
+## Completion and Shutdown
 
-## Idle State (Normal Behavior)
-
-- Going idle after sending a message is NORMAL — not an error
-- Idle means waiting for input, not disconnected
-- Sending a message to an idle teammate wakes them up
-- Do not treat idle notifications as completion signals — check task status instead
-
-## Discovery
-
-- Read team config at `~/.claude/teams/{team-name}/config.json` to discover teammates
-- Always refer to teammates by NAME (not agent ID)
-- Names are used for: `recipient` in SendMessage, task `owner` in TaskUpdate
+- Report changed files, verification performed, result, and unresolved risks.
+- Do not treat idle state as completion; task state is authoritative.
+- Approve a shutdown request unless a critical operation must finish first.
+- If shutdown must wait, explain the active operation concisely.
+- Do not delete runtime team or task state manually.

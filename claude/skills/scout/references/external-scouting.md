@@ -82,11 +82,13 @@ Spawn all in single message for parallel execution.
 
 User: "Find database migration files"
 
-Spawn 3 parallel Bash agents via Task tool:
+For a broad search with three independent scopes, issue up to three Agent calls
+together. For this localized example, start with one search and fan out only if
+the first pass leaves material gaps:
 ```
-Task 1 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search db/, migrations/ for migration files' 2>&1"
-Task 2 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search lib/, src/ for database schema files' 2>&1"
-Task 3 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search config/ for database configuration' 2>&1"
+Agent 1 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search db/, migrations/ for migration files' 2>&1"
+Agent 2 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search lib/, src/ for database schema files' 2>&1"
+Agent 3 (Bash): "Run: timeout 120 gemini -y -m gemini-3-flash-preview --prompt 'Search config/ for database configuration' 2>&1"
 ```
 
 ## Reading File Content

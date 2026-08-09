@@ -1,180 +1,120 @@
 ---
 name: ck:research
-description: "Web/Gemini-sourced technical research producing a cited report — analyze architectures, evaluate technologies, gather requirements. Use for technology evaluation, external best-practices research, solution design, scalability/security/maintainability analysis."
+description: "Research bounded technical questions with citations. Use for technology evaluation, external behavior, architecture decisions, and implementation constraints."
 user-invocable: true
-when_to_use: "Invoke for deep technical research before implementation."
+when_to_use: "Invoke when current or external technical evidence is needed before a decision or implementation."
 category: utilities
 keywords: [research, evaluation, analysis, solutions]
 license: MIT
 argument-hint: "[topic]"
 metadata:
   author: claudekit
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Research
 
-## Research Methodology
+Answer the assigned technical question with current, cited evidence. Stay within
+the requested scope; do not turn a narrow lookup into a general technology survey.
 
-Always honoring **YAGNI**, **KISS**, and **DRY** principles.
-**Be honest, be brutal, straight to the point, and be concise.**
+## 1. Define the Decision
 
-### Phase 1: Scope Definition
+Extract:
 
-First, you will clearly define the research scope by:
-- Identifying key terms and concepts to investigate
-- Determining the recency requirements (how current must information be)
-- Establishing evaluation criteria for sources
-- Setting boundaries for the research depth
+- the question or decision the research must support;
+- project/user constraints and options already in scope;
+- recency and source-authority requirements;
+- the smallest set of claims that would change the outcome.
 
-### Phase 2: Systematic Information Gathering
+Ask one focused question only when missing information would materially change the
+research direction. Otherwise make a conservative assumption and state it.
 
-You will employ a multi-source research strategy:
+## 2. Gather Proportional Evidence
 
-1. **Search Strategy**:
-   - **Gemini Toggle**: Check `.claude/.ck.json` (or `~/.claude/.ck.json`) for `skills.research.useGemini` (default: `false`). If `false` or absent, skip Gemini and use WebSearch directly.
-   - **Gemini Model**: Read from `.claude/.ck.json`: `gemini.model` (default: `gemini-3-flash-preview`)
-   - If `useGemini` is `true`: first validate Gemini CLI works: `command -v gemini >/dev/null 2>&1 && cd /tmp && timeout 15 gemini -y -m <gemini.model> --prompt "ping" >/dev/null 2>&1`. If validation fails or times out, fall back to WebSearch and warn: "Gemini CLI unavailable or auth failed, using WebSearch."
-   - If validation passes, execute research from a temp dir to avoid project GEMINI.md interception (note: global `~/.gemini/GEMINI.md` still loads): `cd /tmp && timeout 180 gemini -y -m <gemini.model> --prompt "...your search prompt..." 2>&1`. Check exit code — if non-zero or output contains `GaxiosError`, `RESOURCE_EXHAUSTED`, `MODEL_CAPACITY_EXHAUSTED`, `PERMISSION_DENIED`, or `UNAUTHENTICATED`, fall back to WebSearch for that query and warn: "Gemini CLI failed, falling back to WebSearch." Save successful output using `Report:` path from `## Naming` section (including all citations).
-   - If `useGemini` is disabled or `gemini` bash command is not available, use `WebSearch` tool.
-   - Run multiple `gemini` bash commands or `WebSearch` tools in parallel to search for relevant information.
-   - Craft precise search queries with relevant keywords
-   - Include terms like "best practices", "2024", "latest", "security", "performance"
-   - Search for official documentation, GitHub repositories, and authoritative blogs
-   - Prioritize results from recognized authorities (official docs, major tech companies, respected developers)
-   - **IMPORTANT:** You are allowed to perform at most **5 researches (max 5 tool calls)**, user might request less than this amount, **strictly respect it**, think carefully based on the task before performing each related research topic.
+Prefer primary sources: official documentation, specifications, release notes,
+maintainer repositories, and first-party advisories. A primary source can support
+a direct stable fact; triangulate recommendations, disputed claims, and material
+benchmarks with independent evidence.
 
-2. **Deep Content Analysis**:
-   - When you found a potential Github repository URL, use Context7 MCP to read its docs.
-   - Focus on official documentation, API references, and technical specifications
-   - Analyze README files from popular GitHub repositories
-   - Review changelog and release notes for version-specific information
+Use no more than five research tool calls, and fewer when the answer is already
+supported. Search independent queries in parallel only when it saves time without
+duplicating the same question.
 
-3. **Video Content Research**:
-   - Prioritize content from official channels, recognized experts, and major conferences
-   - Focus on practical demonstrations and real-world implementations
+### Optional Gemini CLI
 
-4. **Cross-Reference Validation**:
-   - Verify information across multiple independent sources
-   - Check publication dates to ensure currency
-   - Identify consensus vs. controversial approaches
-   - Note any conflicting information or debates in the community
+Read `.claude/.ck.json` or `~/.claude/.ck.json`:
 
-### Phase 3: Analysis and Synthesis
+- `skills.research.useGemini` defaults to `false`;
+- `gemini.model` defaults to `gemini-3-flash-preview`.
 
-You will analyze gathered information by:
-- Identifying common patterns and best practices
-- Evaluating pros and cons of different approaches
-- Assessing maturity and stability of technologies
-- Recognizing security implications and performance considerations
-- Determining compatibility and integration requirements
+When enabled, validate the CLI first:
 
-### Phase 4: Report Generation
-
-**Notes:**
-- Research reports are saved using `Report:` path from `## Naming` section.
-- If `## Naming` section is not available, ask main agent to provide the output path.
-
-You will create a comprehensive markdown report with the following structure:
-
-```markdown
-# Research Report: [Topic]
-
-## Executive Summary
-[2-3 paragraph overview of key findings and recommendations]
-
-## Research Methodology
-- Sources consulted: [number]
-- Date range of materials: [earliest to most recent]
-- Key search terms used: [list]
-
-## Key Findings
-
-### 1. Technology Overview
-[Comprehensive description of the technology/topic]
-
-### 2. Current State & Trends
-[Latest developments, version information, adoption trends]
-
-### 3. Best Practices
-[Detailed list of recommended practices with explanations]
-
-### 4. Security Considerations
-[Security implications, vulnerabilities, and mitigation strategies]
-
-### 5. Performance Insights
-[Performance characteristics, optimization techniques, benchmarks]
-
-## Comparative Analysis
-[If applicable, comparison of different solutions/approaches]
-
-## Implementation Recommendations
-
-### Quick Start Guide
-[Step-by-step getting started instructions]
-
-### Code Examples
-[Relevant code snippets with explanations]
-
-### Common Pitfalls
-[Mistakes to avoid and their solutions]
-
-## Resources & References
-
-### Official Documentation
-- [Linked list of official docs]
-
-### Recommended Tutorials
-- [Curated list with descriptions]
-
-### Community Resources
-- [Forums, Discord servers, Stack Overflow tags]
-
-### Further Reading
-- [Advanced topics and deep dives]
-
-## Appendices
-
-### A. Glossary
-[Technical terms and definitions]
-
-### B. Version Compatibility Matrix
-[If applicable]
-
-### C. Raw Research Notes
-[Optional: detailed notes from research process]
+```bash
+command -v gemini >/dev/null 2>&1 && cd /tmp && timeout 15 gemini -y -m <gemini.model> --prompt "ping" >/dev/null 2>&1
 ```
 
-## Quality Standards
+Run successful research from a temporary directory to avoid project-local
+instruction interception:
 
-You will ensure all research meets these criteria:
-- **Accuracy**: Information is verified across multiple sources
-- **Currency**: Prioritize information from the last 12 months unless historical context is needed
-- **Completeness**: Cover all aspects requested by the user
-- **Actionability**: Provide practical, implementable recommendations
-- **Clarity**: Use clear language, define technical terms, provide examples
-- **Attribution**: Always cite sources and provide links for verification
+```bash
+cd /tmp && timeout 180 gemini -y -m <gemini.model> --prompt "<bounded question>" 2>&1
+```
 
-## Special Considerations
+Fall back to WebSearch when validation fails, the command exits non-zero, or output
+contains `GaxiosError`, `RESOURCE_EXHAUSTED`, `MODEL_CAPACITY_EXHAUSTED`,
+`PERMISSION_DENIED`, or `UNAUTHENTICATED`. State the fallback briefly.
 
-- When researching security topics, always check for recent CVEs and security advisories
-- For performance-related research, look for benchmarks and real-world case studies
-- When investigating new technologies, assess community adoption and support levels
-- For API documentation, verify endpoint availability and authentication requirements
-- Always note deprecation warnings and migration paths for older technologies
+## 3. Evaluate
 
-## Output Requirements
-**IMPORTANT:** Invoke "/ck:project-organization" skill to organize the outputs.
+For each material claim:
 
-Your final report must:
-1. Be saved using the `Report:` path from `## Naming` section with a descriptive filename
-2. Include a timestamp of when the research was conducted
-3. Provide clear section navigation with a table of contents for longer reports
-4. Use code blocks with appropriate syntax highlighting
-5. Include diagrams or architecture descriptions where helpful (in mermaid or ASCII art)
-6. Conclude with specific, actionable next steps
+- assess source authority and publication/version date;
+- distinguish documented facts from inference;
+- note conflicts, deprecations, compatibility constraints, and adoption risk only
+  when they affect the requested decision;
+- compare only the options and dimensions in scope;
+- avoid unsupported benchmark or popularity conclusions.
 
-**IMPORTANT:** Sacrifice grammar for the sake of concision when writing reports.
-**IMPORTANT:** In reports, list any unresolved questions at the end, if any.
+Use these evidence labels:
 
-**Remember:** You are not just collecting information, but providing strategic technical intelligence that enables informed decision-making. Your research should anticipate follow-up questions and provide comprehensive coverage of the topic while remaining focused and practical.
+- `verified`: directly supported by cited primary or executable evidence;
+- `inferred`: a reasoned conclusion from the cited evidence;
+- `unknown`: evidence is unavailable, conflicting, or outside the research budget.
+
+Provide a concise reasoning summary, not private chain-of-thought or confidence
+scores.
+
+## 4. Output
+
+Return a concise cited answer inline by default. Create a markdown report only when
+the user requests an artifact or a multi-session/multi-owner handoff will consume
+one. If required, use the `Report:` path from the injected `## Naming` section;
+otherwise do not ask for a path.
+
+Use only applicable sections:
+
+```markdown
+# Research: [Question]
+
+## Recommendation or Answer
+[Direct conclusion]
+
+## Material Evidence
+- [Verified/inferred claim with citation]
+
+## Trade-offs
+[Only decision-relevant comparisons]
+
+## Unknowns and Limits
+[Residual uncertainty]
+
+## Sources
+- [Descriptive link]
+```
+
+Include the research date when freshness matters. Add code, diagrams, security
+advisories, compatibility matrices, or implementation steps only when requested or
+necessary to support the decision.
+
+Write concise, clear, grammatical output. Do not implement code or expand the
+requested deliverable into adjacent research.

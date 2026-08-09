@@ -84,5 +84,5 @@ Repeat key points if they're frequently missed.
 
 - General knowledge Claude already has
 - Tool documentation (teach workflows, not what tools do)
-- Verbose explanations (sacrifice grammar for concision)
+- Verbose explanations (prefer concise, clear, grammatical instructions)
 - Duplicated content between SKILL.md and references

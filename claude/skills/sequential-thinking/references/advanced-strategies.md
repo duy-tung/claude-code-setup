@@ -1,79 +1,43 @@
-# Advanced Sequential Thinking Strategies
+# Advanced Decision Strategies
 
-Additional sophisticated patterns for complex scenarios.
+## Decisions under uncertainty
 
-## Uncertainty Management
+Separate facts from assumptions and look for a robust choice:
 
-Handle incomplete information systematically.
+| State | Evidence | Action |
+|---|---|---|
+| Verified | Requirement A is contractual | Reject options that violate A |
+| Inferred | Traffic may double this year | Prefer reversible capacity choices |
+| Unknown | Provider failure behavior | Run one failure-mode probe before committing |
 
-```
-Thought 2/7: Need to decide X
-Thought 3/7: Insufficient data—two scenarios possible
-Thought 4/7 [SCENARIO A if P true]: Analysis for A
-Thought 4/7 [SCENARIO B if P false]: Analysis for B
-Thought 5/7: Decision that works for both scenarios
-Thought 6/7: Or determine critical info needed
-Thought 7/7 [FINAL]: Robust solution or clear info requirement
-```
+If one missing fact changes the decision, ask for or measure that fact. Otherwise
+make the safest reversible choice and label the inference.
 
-**Use for**: Decisions under uncertainty, incomplete requirements.
+## Cascading revision
 
-**Strategies**:
-- Find solution robust to uncertainty
-- Identify minimal info needed to resolve
-- Make safe assumptions with clear documentation
+When a foundational assumption changes:
 
-## Revision Cascade Management
+1. state the new evidence;
+2. list only downstream conclusions whose validity changed;
+3. retain conclusions still supported independently;
+4. recompute the decision from the corrected foundation;
+5. summarize the resulting scope or risk change.
 
-Handle revisions that invalidate multiple subsequent thoughts.
+## Recover from a stalled analysis
 
-```
-Thought 1/8: Foundation assumption
-Thought 2/8: Build on Thought 1
-Thought 3/8: Further build
-Thought 4/8: Discover Thought 1 invalid
-Thought 5/8 [REVISION of Thought 1]: Corrected foundation
-Thought 6/8 [REASSESSMENT]: Which of 2-3 still valid?
-  - Thought 2: Partially valid, needs adjustment
-  - Thought 3: Completely invalid
-Thought 7/8: Rebuild from corrected Thought 5
-Thought 8/8 [FINAL]: Solution on correct foundation
-```
+If repeated inspection produces no new evidence, do not add more narrative.
+Identify the missing discriminator, run the smallest relevant experiment, consult
+an authoritative source, or report the concrete blocker.
 
-**Key**: After major revision, explicitly assess downstream impact.
+## Multiple constraints
 
-## Meta-Thinking Calibration
+Build a constraint table and eliminate infeasible options:
 
-Monitor and adjust thinking process itself.
+| Option | Security | Latency | Operations | Viable |
+|---|---:|---:|---:|---:|
+| X | pass | fail | pass | no |
+| Y | pass | pass | unknown | pending probe |
+| Z | pass | pass | pass | yes |
 
-```
-Thought 5/9: [Regular thought]
-Thought 6/9 [META]: Past 3 thoughts circling without progress
-  Analysis: Missing key information
-  Adjustment: Need to research X before continuing
-Thought 7/9: Research findings on X
-Thought 8/9: Now can proceed with informed decision
-Thought 9/9: [Resume productive path]
-```
-
-**Use when**: Stuck, circling, or unproductive pattern noticed.
-**Action**: Pause, identify issue, adjust strategy.
-
-## Parallel Constraint Satisfaction
-
-Handle multiple independent constraints simultaneously.
-
-```
-Thought 2/10: Solution must satisfy A, B, C
-Thought 3/10 [CONSTRAINT A]: Solutions satisfying A: {X, Y, Z}
-Thought 4/10 [CONSTRAINT B]: Solutions satisfying B: {Y, Z, W}
-Thought 5/10 [CONSTRAINT C]: Solutions satisfying C: {X, Z}
-Thought 6/10 [INTERSECTION]: Z satisfies all
-Thought 7/10: Verify Z feasible
-Thought 8/10 [BRANCH if infeasible]: Relax which constraint?
-Thought 9/10: Decision on constraint relaxation if needed
-Thought 10/10 [FINAL]: Optimal solution given constraints
-```
-
-**Use for**: Optimization problems, multi-criteria decisions.
-**Pattern**: Analyze independently → Find intersection → Verify feasibility.
+Verify feasibility once at the relevant boundary. Revisit a constraint only when
+new evidence or the requested scope changes it.

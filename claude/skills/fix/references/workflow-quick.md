@@ -1,92 +1,49 @@
 # Quick Workflow
 
-Fast scout-diagnose-fix-verify cycle for simple issues.
+Use an inline scout → diagnose → fix → verify cycle for a deterministic,
+low-risk issue. No plan artifact, task tree, or mode question is needed.
 
-## Steps
+## 1. Targeted Scout and Diagnosis
 
-### Step 1: Scout (Minimal)
-Locate affected file(s) and their direct dependencies only.
-- Read error message → identify file path
-- Check direct imports/dependencies of affected file
-- Skip full codebase mapping
+In one short pass:
 
-**Output:** `✓ Step 1: Scouted - [file], [N] direct deps`
+1. Capture the smallest reproducible failure, including the exact command or
+   observable symptom.
+2. Locate the failing line, its local convention, and the nearest relevant check.
+3. Trace far enough to confirm the cause rather than patching the displayed
+   symptom.
+4. Note direct dependents only when the changed contract or behavior reaches them.
 
-### Step 2: Diagnose (Abbreviated)
-Activate `ck:debug` skill. Activate `ck:sequential-thinking` for structured analysis.
+Use direct reads and searches by default. Activate `ck:debug` or delegate only if
+the failure stops being quick or competing hypotheses emerge.
 
-- Read error message/logs
-- **Capture pre-fix state:** Record exact error output (this is your verification baseline)
-- Identify root cause (usually obvious for simple issues)
-- Skip parallel hypothesis testing for trivial cases
+## 2. Fix
 
-**Output:** `✓ Step 2: Diagnosed - Root cause: [brief description]`
+- Make the smallest coherent change that addresses the confirmed root cause.
+- Preserve public contracts unless the request explicitly changes one.
+- Follow the local pattern and avoid opportunistic cleanup.
+- If evidence reveals a broader or riskier surface, reclassify to Standard or Deep.
 
-### Step 3: Fix & Verify
-Implement the fix directly.
-- Make minimal changes
-- Follow existing patterns
+## 3. Proportional Evidence Bundle
 
-**Parallel Verification:**
-Launch `Bash` agents in parallel:
-```
-Task("Bash", "Run typecheck", "Verify types")
-Task("Bash", "Run lint", "Verify lint")
-```
+Run one coherent set of checks inline:
 
-**Before/After comparison:** Re-run the EXACT command from pre-fix state capture. Compare output.
+1. Re-run the original repro or the closest executable equivalent.
+2. Run the narrowest relevant regression test, typecheck, lint, or build check.
+3. Inspect the final diff and direct dependents for unintended contract changes.
+4. Add a regression test or guard when it has lasting value; a deterministic
+   compiler/linter check can itself be the regression proof.
 
-See `references/parallel-exploration.md` for patterns.
+Do not launch separate Bash or reviewer agents for routine quick fixes. Use an
+independent reviewer only if the change becomes broad, difficult to reason about,
+or high risk.
 
-**Output:** `✓ Step 3: Fixed - [N] files, verified (types/lint passed)`
+## 4. Report
 
-### Step 4: Review + Prevent
-Use `code-reviewer` subagent for quick review with explicit side-effect sweep.
+Report the root cause, changed files, fresh checks, and remaining risk. Label
+claims `verified`, `inferred`, or `unknown`; do not provide a confidence score.
 
-Prompt: "Quick review of fix for [issue]. Check: (a) acceptance criteria met, (b) no regression to business logic in blast-radius from Step 1 scout, (c) no breaking changes to public contracts (signatures, schemas, APIs, env vars), (d) follows existing patterns, (e) no new lint/type/build errors. Score X/10. Explicitly flag any side effects."
-
-See HARD-GATE-NO-SIDE-EFFECTS in SKILL.md — on reviewer-flagged regression → `AskUserQuestion` with 2-4 options (revert / narrow / update dependents / accept).
-
-**Prevention (abbreviated for Quick):**
-- Type errors/lint: type system IS the test → regression test optional
-- Bug fixes: add at least 1 test covering the fixed scenario
-- Still require before/after comparison of verification output
-
-**Review handling:** See `references/review-cycle.md`
-
-**Output:** `✓ Step 4: Review [score]/10 - [prevention measures]`
-
-### Step 5: Report
-Report summary to user (root cause, files changed, prevention).
-
-**Output:** `✓ Step 5: Reported`
-
-### Step 6: Finalize (every fix, quick mode included)
-1. **Activate `/ck:project-management` skill** → sync plan/task status if fix is part of a plan, update progress, hydrate Claude Tasks.
-2. Spawn `docs-manager` subagent if API/behavior changed.
-3. `TaskUpdate` to mark Claude Tasks complete.
-4. Spawn `git-manager` subagent to commit.
-5. Run `/ck:journal` to log decisions.
-
-**Output:** `✓ Step 6: Finalized - sync-back complete, committed, journaled`
-
-## Skills/Subagents Activated
-
-| Step | Skills/Subagents |
-|------|------------------|
-| 1 | `ck:scout` (minimal) or direct file read |
-| 2 | `ck:debug`, `ck:sequential-thinking` |
-| 3 | Parallel `Bash` for verification |
-| 4 | `code-reviewer` subagent |
-| 5 | Report |
-| 6 | `/ck:project-management`, `docs-manager`, `git-manager`, `/ck:journal` |
-
-**Extra:** `ck:context-engineering` if dealing with AI/LLM code
-
-## Notes
-
-- Skip if review fails → escalate to Standard workflow
-- Total steps: 6
-- No planning phase needed
-- Pre-fix state capture still applies (even for quick fixes) — it is the verification baseline
-- Step 6 finalize runs for every fix, quick mode included — `/ck:project-management` is part of it
+Sync an existing plan only if one already owns the fix. Update documentation only
+for changed public behavior or operating instructions. Journal only a noteworthy
+technical decision. Ask before commit/push/deploy unless authority was already
+granted.

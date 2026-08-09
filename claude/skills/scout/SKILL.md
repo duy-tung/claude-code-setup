@@ -1,8 +1,8 @@
 ---
 name: ck:scout
-description: "Fast codebase scouting using parallel agents. Use for file discovery, task context gathering, quick searches across directories. Supports internal (Explore) and external (Gemini/OpenCode) agents."
+description: "Discover files, symbols, callers, tests, and codebase relationships. Use for focused orientation, dependency mapping, or bounded parallel scouting."
 user-invocable: true
-when_to_use: "Invoke for fast file discovery and codebase orientation."
+when_to_use: "Invoke for file discovery, codebase orientation, or dependency mapping before broader changes."
 category: dev-tools
 keywords: [codebase, scouting, file-discovery, search]
 argument-hint: "[search-target] [ext]"
@@ -13,91 +13,89 @@ metadata:
 
 # Scout
 
-Fast, token-efficient codebase scouting using parallel agents to find files needed for tasks.
+Find the minimum code context needed for the task. Direct search is the default;
+agents are reserved for genuinely independent broad discovery.
 
 ## Arguments
-- Default: Scout using built-in Explore subagents in parallel (`./references/internal-scouting.md`)
-- `ext`: Scout using external Gemini/OpenCode CLI tools in parallel (`./references/external-scouting.md`)
 
-## When to Use
+- Default: use targeted Glob/Grep/Read or `rg` directly.
+- `ext`: use the external Gemini/OpenCode workflow in
+  `references/external-scouting.md` for an explicitly broad search where it adds
+  useful independent coverage.
 
-- Beginning work on feature spanning multiple directories
-- User mentions needing to "find", "locate", or "search for" files
-- Starting debugging session requiring file relationships understanding
-- User asks about project structure or where functionality lives
-- Before changes that might affect multiple codebase parts
+## Scale Gate
 
-## Quick Start
+- **Small/clear target:** search directly with exact symbols, filenames, extensions,
+  or likely directories; read the matching implementation and nearest test/caller;
+  return paths inline and stop.
+- **Standard cross-directory target:** begin with direct search, then use one Explore
+  worker only if a distinct dependency surface remains unclear.
+- **Broad orientation, migration, or explicit codebase audit:** split only independent
+  areas across workers. Keep ordinary concurrent fanout at three or less.
 
-1. Analyze user prompt to identify search targets
-2. Use a wide range of Grep and Glob patterns to find relevant files and estimate scale of the codebase
-3. Spawn parallel agents with divided directories
-4. Collect results into concise report
+Do not create scout tasks, scan every directory, invoke project organization, or
+write a report artifact for a small lookup.
 
-## Configuration
+## Direct Search Workflow
 
-Read from `.claude/.ck.json`:
-- `gemini.model` - Gemini model (default: `gemini-3-flash-preview`)
+1. Extract concrete search targets from the request: symbol, behavior, config key,
+   route, test name, or file type.
+2. Start narrow and evidence-driven:
 
-## Workflow
+   ```bash
+   rg -n "<symbol|route|config-key>" <likely-paths>
+   rg --files <likely-paths> | rg "<name|extension>"
+   ```
 
-### 1. Analyze Task
-- Parse user prompt for search targets
-- Identify key directories, patterns, file types, lines of code
-- Determine optimal SCALE value of subagents to spawn
+3. Read only enough matching code to identify ownership, direct callers, tests, and
+   public contracts relevant to the task.
+4. Broaden patterns or directories only when the first result leaves a material gap.
+5. Return concise paths and why they matter. Include unresolved questions only when
+   they affect the next decision.
 
-### 2. Divide and Conquer
-- Split codebase into logical segments per agent
-- Assign each agent specific directories or patterns
-- Ensure no overlap, maximize coverage
+## Conditional Parallel Workflow
 
-### 3. Register Scout Tasks
-- **Skip if:** Agent count ≤ 2 (overhead exceeds benefit)
-- **Skip if:** Task tools unavailable (VSCode extension) — use `TodoWrite` instead
-- `TaskList` first — check for existing scout tasks in session
-- If not found, `TaskCreate` per agent with scope metadata
-- See `references/task-management-scouting.md` for patterns and examples
+Use parallel scouting only when there are two or more independent search domains
+whose results can be integrated without overlap.
 
-### 4. Spawn Parallel Agents
-Load appropriate reference based on decision tree:
-- **Internal (Default):** `references/internal-scouting.md` (Explore subagents)
-- **External:** `references/external-scouting.md` (Gemini/OpenCode)
+1. Define a bounded deliverable and directory/pattern ownership for each worker.
+2. Choose the applicable reference:
+   - `references/internal-scouting.md` for Explore workers.
+   - `references/external-scouting.md` only when `ext` was requested or external
+     search has a clear advantage.
+3. Launch no more than three ordinary workers concurrently.
+4. Register Claude Tasks only when coordinating two or more meaningful workers and
+   the task tools are available. Otherwise track the scopes inline.
+5. Integrate file-backed findings; do not forward duplicate worker summaries.
 
-**Notes:**
-- `TaskUpdate` each task to `in_progress` before spawning its agent (skip if Task tools unavailable)
-- Prompt detailed instructions for each subagent with exact directories or files it should read
-- Scope each subagent's prompt to what the subtask needs — not because context is scarce, but because a focused prompt gets a focused answer
-- Amount of subagents to-be-spawned depends on the current system resources available and amount of files to be scanned
-- Each subagent must return a detailed summary report to a main agent
+If workstreams overlap in the same directory or dependency chain, prefer one
+controller or sequential searches rather than artificial parallelism.
 
-### 5. Collect Results
-**IMPORTANT:** Invoke "/ck:project-organization" skill to organize the outputs.
+## Evidence and Output
 
-- Timeout: 3 minutes per agent (skip non-responders)
-- `TaskUpdate` completed tasks; log timed-out agents in report (skip if Task tools unavailable)
-- Aggregate findings into single report
-- List unresolved questions at end
-
-## Report Format
+For a small scout, respond inline:
 
 ```markdown
-# Scout Report
-
-## Relevant Files
-- `path/to/file.ts` - Brief description
-- ...
-
-## Unresolved Questions
-- Any gaps in findings
+- `path/to/file.ts:line` — owns the requested behavior
+- `path/to/file.test.ts:line` — nearest regression test
 ```
+
+For a broad requested audit, a reusable report may include relevant files,
+relationships, search coverage, and material unknowns. Create that artifact only when
+the user/plan needs it; project organization is not a finalize prerequisite.
+
+Distinguish verified paths/symbols from inferred relationships. Do not invent numeric
+confidence.
 
 ## References
 
-- `references/internal-scouting.md` - Using Explore subagents
-- `references/external-scouting.md` - Using Gemini/OpenCode CLI
-- `references/task-management-scouting.md` - Claude Task patterns for scout coordination
+- `references/internal-scouting.md` - Explore worker patterns for broad independent scopes
+- `references/external-scouting.md` - Gemini/OpenCode workflow for explicit `ext` searches
+- `references/task-management-scouting.md` - Task coordination for multi-worker scouting
 
 ## Workflow Position
 
-**Typically precedes:** `/ck:debug` (debug after scouting), `/ck:fix` (fix after locating code), `/ck:code-review` (scout edge cases before review)
-**Related:** `/ck:debug` (investigate after scouting), `/ck:brainstorm` (explore after scouting)
+**Typically precedes:** `/ck:debug`, `/ck:fix`, or a broad `/ck:code-review` when
+dependency discovery is actually needed.
+
+**Related:** `/ck:brainstorm` for design exploration.

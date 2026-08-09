@@ -2,13 +2,16 @@
 
 **Project Name**: ClaudeKit Engineer
 **Version**: 2.19.1
-**Last Updated**: 2026-06-16
+**Last Updated**: 2026-08-09
 **Status**: Active Development
 **Repository**: https://github.com/duy-tung/claude-code-setup
 
 ## Executive Summary
 
-ClaudeKit Engineer is a comprehensive boilerplate template that revolutionizes software development by integrating AI-powered Claude Code workflows into the development workflow. It provides a complete orchestration framework where specialized AI agents collaborate to handle planning, implementation, testing, code review, documentation, and project management.
+ClaudeKit Engineer is a scale-aware Claude Code setup kit. Small, clear work stays in
+the main session; specialized agents and durable artifacts are activated only when
+planning, research, testing, review, documentation, or project coordination has a
+meaningful independent deliverable.
 
 ## Project Purpose
 
@@ -18,15 +21,15 @@ Enable developers to build professional software projects faster and with higher
 ### Mission
 Provide a production-ready template that:
 - Accelerates development velocity through AI-powered agent collaboration
-- Enforces best practices and coding standards automatically
-- Maintains comprehensive documentation that evolves with code
-- Ensures code quality through automated testing and review
+- Applies project standards with workflows proportional to task size and risk
+- Keeps affected user-facing and architectural documentation aligned with code
+- Uses targeted verification by default and independent review when risk warrants it
 - Streamlines git workflows with professional commit standards
 
 ### Value Proposition
-- **10x Faster Planning**: Parallel researcher agents explore solutions simultaneously
-- **Consistent Quality**: Automated code review and testing on every change
-- **Zero Documentation Debt**: Docs update automatically with code changes
+- **Fast Small Changes**: Inspect, edit, run a targeted check, and report without orchestration overhead
+- **Risk-Calibrated Quality**: Broaden tests and independent review only when the blast radius warrants it
+- **Focused Documentation**: Update user-visible setup, public contracts, durable architecture, and release guidance when affected
 - **Professional Git History**: Clean, conventional commits without AI attribution
 - **Reduced Context Switching**: Specialized agents handle specific concerns
 
@@ -64,11 +67,12 @@ Provide a production-ready template that:
 - **Planning Agents**: Research, architecture, technical decisions
 - **Implementation Agents**: Code generation, feature development
 - **Quality Agents**: Testing, code review, security analysis
-- **Documentation Agents**: Auto-updating docs, API references
+- **Documentation Agents**: Broad, independently owned docs and API-reference updates
 - **Management Agents**: Project tracking, progress monitoring, git operations
 
 **Orchestration Patterns**:
-- **Sequential Chaining**: Planning → Implementation → Testing → Review → Deploy
+- **Scale First**: Small clear work stays inline with one targeted evidence bundle
+- **Sequential Chaining**: Substantial dependent stages only
 - **Parallel Execution**: Multiple researchers exploring different approaches
 - **Query Fan-Out**: Simultaneous investigation of technical solutions
 
@@ -81,7 +85,7 @@ Provide a production-ready template that:
 
 ### 2. Skill-Routed Entry Points (post-v2.17 migration)
 
-`/ck:*` entry points are now backed by user-invocable **skills** under `claude/skills/`, not by a separate command parser. Each skill ships frontmatter (`name:`, `description:`, `user-invocable: true`) and is validated locally by `claude/scripts/validate-skill-frontmatter.py` and `claude/scripts/validate-skill-crossrefs.py` (the kit ships no CI of its own).
+`/ck:*` entry points are now backed by user-invocable **skills** under `claude/skills/`, not by a separate command parser. Each skill ships frontmatter (`name:`, `description:`, `user-invocable: true`) and is validated by `claude/scripts/validate-skill-frontmatter.py` and `claude/scripts/validate-skill-crossrefs.py`; `.github/workflows/verify.yml` runs the combined gate on pull requests and pushes to `main`.
 
 **Core Development Entry Points**:
 - `/ck:plan` - Research and create implementation plans (`--deep` for major refactors, `--tdd` for tests-first plans)
@@ -123,7 +127,8 @@ Command behavior is implemented via skill directories:
 - Semantic versioning (MAJOR.MINOR.PATCH) maintained by hand in `package.json` and `claude/metadata.json`
 - Conventional commits as a convention (the `/ck:git` skill writes them; nothing enforces them)
 - `metadata.json` `deletions[]` contract so the CLI installer removes retired files on user upgrade
-- No CI, automated changelog, GitHub release automation, or NPM publishing — all removed in the lean refactor
+- CI verifies pull requests and `main`; changelog generation, releases, version
+  bumps, and NPM publishing remain manual
 
 **Commit Types** (convention for choosing the manual version bump):
 - `feat:` → Minor version bump
@@ -133,7 +138,9 @@ Command behavior is implemented via skill directories:
 
 ### 5. Local Quality Gates
 
-No git hooks or CI enforce these — contributors run them manually before committing (see `claude/rules/quality-gates.md`):
+Contributors run these locally before committing, and the GitHub Actions verify
+workflow reruns the repository gate on pull requests and pushes to `main` (see
+`init.sh`):
 - `python3 claude/scripts/validate-skill-frontmatter.py`
 - `python3 claude/scripts/validate-skill-crossrefs.py claude/skills/`
 - `npm test` and `python3 eval/tier0_static.py`
@@ -155,14 +162,15 @@ No git hooks or CI enforce these — contributors run them manually before commi
 - Provide skill discovery via `/ck:find-skills` and the routing rules
 
 **FR3: Documentation Management**
-- Auto-generate codebase summaries with repomix
-- Keep docs synchronized with code changes
-- Maintain project roadmap and changelog
-- Update API documentation automatically
+- Generate codebase summaries with repomix when a broad documentation pass needs one
+- Update docs when user-visible setup/behavior or a public contract changes
+- Maintain roadmap and changelog for actual release, milestone, scope, or timeline changes
+- Record durable architecture and API changes in their owning documents
 
 **FR4: Quality Assurance**
 - Run tests before commits
-- Perform code review automatically
+- Run targeted checks for small changes and broaden them for shared or high-risk surfaces
+- Perform independent code review when size, unfamiliarity, or risk warrants it
 - Check type safety and compilation
 - Validate security best practices
 
@@ -258,7 +266,8 @@ No git hooks or CI enforce these — contributors run them manually before commi
 **2. Skill Routing System** (replaces the original Command System as of v2.17)
 - Frontmatter-driven skill registry (`name:`, `description:`, `user-invocable: true`)
 - Domain + workflow routing rules (`claude/rules/skill-domain-routing.md`, `skill-workflow-routing.md`)
-- Cross-reference, description, and frontmatter validators run as local manual gates (no CI — see `claude/rules/quality-gates.md`)
+- Cross-reference, description, frontmatter, Opus policy, eval-harness, statusline,
+  and worktree checks run through `npm run verify` locally and in GitHub Actions
 - `metadata.deletions[]` to retire stale commands/skills on user upgrade
 
 **3. Workflow Engine**
@@ -330,19 +339,19 @@ No git hooks or CI enforce these — contributors run them manually before commi
 
 ### UC2: Implement New Feature
 **Actor**: Developer
-**Goal**: Add feature with full workflow
+**Goal**: Add a feature with a workflow proportional to its complexity and risk
 **Flow**:
-1. Run `/ck:cook "add user authentication"` or `/ck:cook "refactor auth middleware" --tdd`
-2. Planner creates implementation plan
-3. Researcher agents explore auth solutions
-4. Developer reviews and approves plan
-5. AI implements code
-6. AI writes comprehensive tests
-7. AI performs code review
-8. AI updates documentation
-9. AI commits with conventional message
+1. Assess scope, uncertainty, and blast radius.
+2. For a small clear feature, inspect relevant files, implement inline, run a targeted
+   check, and inspect the diff.
+3. For a multi-component or risky feature, use `/ck:plan` or `/ck:cook` and add bounded
+   research only when an external decision must be resolved.
+4. Broaden tests or add an independent review when contracts, security, data,
+   concurrency, or broad fan-out make it worthwhile.
+5. Update affected user-facing, public-contract, architecture, or release docs.
+6. Commit or publish only through an explicitly requested git/ship workflow.
 
-**Outcome**: Feature complete with tests, docs, and clean git history
+**Outcome**: Feature complete with proportional evidence and no unrelated artifacts
 
 ### UC3: Debug Production Issue
 **Actor**: Developer
@@ -351,13 +360,12 @@ No git hooks or CI enforce these — contributors run them manually before commi
 1. Run `/ck:debug "API timeout errors"`
 2. Debugger agent analyzes logs and system
 3. Root cause identified
-4. Fix plan created
-5. AI implements solution
-6. Tests validate fix
-7. Code review confirms quality
-8. Commit and deploy
+4. AI implements the narrowest complete solution
+5. The original reproduction or targeted regression test validates the fix
+6. Add a plan, independent review, documentation, or publish step only when risk or the
+   requested workflow requires it
 
-**Outcome**: Bug fixed with comprehensive testing and documentation
+**Outcome**: Bug fixed with evidence matched to its blast radius
 
 ### UC4: Manage Commits and Deployments
 **Actor**: Developer
@@ -377,14 +385,13 @@ No git hooks or CI enforce these — contributors run them manually before commi
 **Goal**: Ensure docs are current
 **Flow**:
 1. Run `/ck:docs update`
-2. Docs manager scans codebase
-3. Generates fresh summary with repomix
-4. Identifies outdated sections
-5. Updates API docs, guides, architecture
-6. Validates naming conventions
-7. Creates update report
+2. Resolve the exact target and the source evidence it documents
+3. Update a small target inline, or delegate a broad independent pass to docs-manager
+4. Use repomix only when the broad pass needs a new codebase summary
+5. Update only affected guides, contracts, architecture, or release state
+6. Validate affected links, names, and examples once
 
-**Outcome**: Documentation synchronized with code
+**Outcome**: Affected documentation synchronized without unrelated regeneration
 
 ## Constraints & Limitations
 
@@ -437,14 +444,16 @@ No git hooks or CI enforce these — contributors run them manually before commi
 ### Phase 1: Foundation (Complete - v1.0–v1.8)
 - ✅ Core agent framework
 - ✅ Slash command system (later replaced by skills in Phase 2)
-- ✅ Automated releases (CI later removed in the lean refactor; versioning is now manual)
+- ✅ Automated releases in the original framework (release/versioning is now manual;
+  current CI is verification-only)
 - ✅ Skills library (initial)
 - ✅ Documentation system
 
 ### Phase 2: Enhancement + Commands→Skills Migration (Complete - v2.x through v2.18)
 - ✅ Skills expansion, later slimmed to a focused 40-skill catalog
 - ✅ Commands→Skills migration (v2.17)
-- ✅ Skill validation gates: cross-ref, description, frontmatter (v2.18; later moved from CI to local manual gates)
+- ✅ Skill validation gates: cross-ref, description, frontmatter (v2.18;
+  available locally and in verification CI)
 - ✅ Windows parity + hook safety (v2.18.x)
 - ✅ Preview Dashboard
 - ✅ Cross-platform performance optimization

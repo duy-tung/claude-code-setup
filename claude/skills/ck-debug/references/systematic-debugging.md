@@ -1,6 +1,8 @@
 # Systematic Debugging
 
-Four-phase debugging framework that ensures root cause investigation before attempting fixes.
+Four-phase debugging framework that establishes root cause evidence before fixes.
+Scale each phase to the issue: a deterministic local failure may combine phases in
+one short pass; a broad incident needs a durable evidence chain.
 
 ## The Iron Law
 
@@ -12,7 +14,8 @@ If haven't completed Phase 1, cannot propose fixes.
 
 ## The Four Phases
 
-Must complete each phase before proceeding to next.
+Cover each phase to the depth needed by the risk and uncertainty. Do not create
+separate artifacts merely to prove that a phase occurred.
 
 ### Phase 1: Root Cause Investigation
 
@@ -32,8 +35,8 @@ Must complete each phase before proceeding to next.
 **Find pattern before fixing:**
 
 1. **Find Working Examples** - Locate similar working code in same codebase
-2. **Compare Against References** - Read reference implementation COMPLETELY, understand fully before applying
-3. **Identify Differences** - List every difference however small, don't assume "that can't matter"
+2. **Compare Against References** - Read the portions needed to understand the relevant contract and pattern before applying it
+3. **Identify Differences** - Check differences that could explain the symptom; broaden only when evidence warrants it
 4. **Understand Dependencies** - What other components, settings, config, environment needed?
 
 ### Phase 3: Hypothesis and Testing
@@ -49,9 +52,10 @@ Must complete each phase before proceeding to next.
 
 **Fix root cause, not symptom:**
 
-1. **Create Failing Test Case** - Simplest reproduction, automated if possible, MUST have before fixing
+1. **Preserve the Reproduction** - Capture the simplest executable repro; add an
+   automated failing test when a suitable harness exists and the test has lasting value
 2. **Implement Single Fix** - Address root cause identified, ONE change, no "while I'm here" improvements
-3. **Verify Fix** - Test passes? No other tests broken? Issue actually resolved?
+3. **Verify Fix** - Original repro passes, affected tests pass, and the issue is actually resolved
 4. **If Fix Doesn't Work**
    - STOP. Count: How many fixes tried?
    - If < 3: Return to Phase 1, re-analyze with new information
@@ -67,7 +71,7 @@ If catch yourself thinking:
 - "Quick fix for now, investigate later"
 - "Just try changing X and see if it works"
 - "Add multiple changes, run tests"
-- "Skip the test, I'll manually verify"
+- "Skip executable verification and rely on intuition"
 - "It's probably X, let me fix that"
 - "I don't fully understand but this might work"
 - "One more fix attempt" (when already tried 2+)
@@ -79,10 +83,14 @@ If catch yourself thinking:
 - "Is that not happening?" - Assumed without verifying
 - "Will it show us...?" - Should have added evidence gathering
 - "Stop guessing" - Proposing fixes without understanding
-- "Ultrathink this" - Question fundamentals, not just symptoms
+- "Question the fundamentals" - Revisit the diagnosis or architecture, not just symptoms
 - "We're stuck?" (frustrated) - Approach isn't working
 
 **When see these:** STOP. Return to Phase 1.
+
+Report the decisive evidence, hypotheses tested, revisions, and conclusion as a
+concise reasoning summary. Do not expose private chain-of-thought, assign thinking
+levels, or use numeric confidence as proof.
 
 ## Common Rationalizations
 
@@ -93,10 +101,7 @@ If catch yourself thinking:
 | "Just try this first, then investigate" | First fix sets pattern. Do right from start |
 | "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem |
 
-## Real-World Impact
+## Outcome
 
-From debugging sessions:
-- Systematic approach: 15-30 minutes to fix
-- Random fixes approach: 2-3 hours of thrashing
-- First-time fix rate: 95% vs 40%
-- New bugs introduced: Near zero vs common
+A successful investigation leaves a reproducible baseline, a root cause supported
+by evidence, a focused fix, and fresh proportional verification.

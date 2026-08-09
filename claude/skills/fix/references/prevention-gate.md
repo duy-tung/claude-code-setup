@@ -1,89 +1,49 @@
 # Prevention Gate
 
-After fixing a bug, prevent the same class of issues from recurring. This step runs for every fix.
+Add the narrowest durable protection that is valuable for the diagnosed bug class.
+Prevention is proportional; do not add ceremony or unrelated defensive layers.
 
-## Core Principle
+## Choose the Useful Protection
 
-A fix without prevention is incomplete. The same bug pattern WILL recur if you only patch the symptom.
+| Root cause | Useful protection |
+|------------|-------------------|
+| Behavior regression | Focused test that fails before and passes after the fix |
+| Type or lint defect | The relevant compiler/linter check; add a runtime test only if behavior also matters |
+| Invalid external input | Boundary validation and a focused invalid-input test |
+| Wrong internal state/contract | Type/contract guard at the earliest correct boundary |
+| Environment-sensitive operation | Explicit environment guard or startup validation |
+| Hard-to-observe incident | Targeted diagnostic context without noisy permanent logging |
+| External dependency failure | Timeout, bounded retry, fallback, or explicit error as the contract requires |
 
-## Prevention Requirements (Check All That Apply)
+A regression test is strongly preferred when it can distinguish the defect and
+has lasting value. When no suitable harness exists, use the closest executable
+check and report that limitation as `unknown` or residual risk; do not create an
+arbitrary assertion merely to satisfy a checkbox.
 
-### 1. Regression Test (ALWAYS required)
+## Proportional Evidence Bundle
 
-Every fix ships with a test that:
-- **Fails** without the fix applied (proves the test catches the bug)
-- **Passes** with the fix applied (proves the fix works)
+Before completion, collect one coherent bundle:
 
-```
-If no test framework exists:
-  → Add inline verification or assertion at minimum
-  → Note in report: "No test framework — added runtime assertion"
-```
+- the exact pre-fix repro or closest executable equivalent rerun fresh;
+- a before/after result;
+- focused regression coverage or the relevant deterministic type/lint check;
+- checks for the demonstrated blast radius and direct contracts;
+- applicable lint/type/build checks at the narrowest meaningful scope;
+- final-diff inspection for unrelated changes and side effects.
 
-### 2. Defense-in-Depth Validation (When applicable)
+Broaden checks for shared contracts, cross-module behavior, or high-risk changes.
+Parallelize only long independent checks. Generate `verification.json` or review
+artifacts only when a selected workflow/CI gate consumes them.
 
-Apply layered validation from `ck:debug` defense-in-depth technique:
+## Evidence Summary
 
-| Layer | Apply When | Example |
-|-------|-----------|---------|
-| **Entry point validation** | Fix involves user/external input | Reject invalid input at API boundary |
-| **Business logic validation** | Fix involves data processing | Assert data makes sense for operation |
-| **Environment guards** | Fix involves env-sensitive operations | Prevent dangerous ops in wrong context |
-| **Debug instrumentation** | Fix was hard to diagnose | Add logging/context capture for forensics |
-
-**Rule:** Not every fix needs all 4 layers. Apply what's relevant. But ALWAYS consider each.
-
-### 3. Type Safety (When applicable)
-
-| Scenario | Prevention |
-|----------|-----------|
-| Null/undefined caused the bug | Add strict null checks, use `??` or `?.` |
-| Wrong type passed | Add type guard or runtime validation |
-| Missing property | Add required field to interface/type |
-| Implicit any | Add explicit types |
-
-### 4. Error Handling (When applicable)
-
-| Scenario | Prevention |
-|----------|-----------|
-| Unhandled promise rejection | Add `.catch()` or try/catch |
-| Missing error boundary | Add error boundary component |
-| Silent failure | Add explicit error logging |
-| No fallback for external dependency | Add timeout + fallback |
-
-## Verification Checklist (Before Completing Step 5)
-
-```
-□ Pre-fix state captured? (error messages, test output)
-□ Fix applied to ROOT CAUSE (not symptom)?
-□ Fresh verification run? (exact same commands as pre-fix)
-□ Before/after comparison documented?
-□ Regression test added? (fails without fix, passes with fix)
-□ Defense-in-depth layers considered? (applied where relevant)
-□ No new warnings/errors introduced?
-□ Parallel verification passed? (typecheck + lint + build + test)
-□ `verification.json` updated with summarized command proof?
-□ `review-decision.json` and `risk-gate.json` pass artifact validator?
+```markdown
+Root cause protection: [test/guard/check and why]
+Verified: [fresh commands and results]
+Inferred: [supported conclusions without a direct executable check]
+Unknown: [unverified surface or residual risk]
 ```
 
-## Output Format
-
-```
-Prevention measures applied:
-- Regression test: [test file:line] — covers [specific scenario]
-- Guard added: [file:line] — [description of guard]
-- Type safety: [file:line] — [what was strengthened]
-- Error handling: [file:line] — [what was added]
-
-Before/After comparison:
-- Before: [exact error/failure]
-- After: [exact success output]
-```
-
-## Quick Mode Prevention
-
-For trivial issues (type errors, lint), abbreviated prevention:
-- Regression test: optional (type system IS the test)
-- Parallel verification: typecheck + lint only
-- Defense-in-depth: skip (not applicable for type fixes)
-- Still require before/after comparison of typecheck output
+If verification reveals a clear in-scope reversible regression, repair it and
+rerun the bundle. Ask the user only for a material scope, contract, authority, or
+regression-acceptance choice.

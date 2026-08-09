@@ -1,123 +1,60 @@
 # Standard Workflow
 
-Full pipeline for moderate complexity issues. Uses native Claude Tasks for phase tracking.
+Use this workflow for a moderate fix with a confirmed but multi-file root cause,
+or when a quick investigation uncovers meaningful uncertainty.
 
-## Task Setup (Before Starting)
+## Tracking
 
-Create all phase tasks upfront with dependencies. See `references/task-orchestration.md`.
+Use a small task list only when it improves visibility or coordinates independent
+work. A typical sequence is `investigate → implement → verify → finalize`;
+do not create separate tasks for every tool or report.
 
-```
-T1 = TaskCreate(subject="Scout codebase",        activeForm="Scouting codebase")
-T2 = TaskCreate(subject="Diagnose root cause",    activeForm="Diagnosing root cause")
-T3 = TaskCreate(subject="Implement fix",          activeForm="Implementing fix",    addBlockedBy=[T1, T2])
-T4 = TaskCreate(subject="Verify + prevent",       activeForm="Verifying fix",       addBlockedBy=[T3])
-T5 = TaskCreate(subject="Code review",            activeForm="Reviewing code",      addBlockedBy=[T4])
-T6 = TaskCreate(subject="Finalize",               activeForm="Finalizing",          addBlockedBy=[T5])
-```
+## 1. Scout and Diagnose
 
-## Steps
+1. Capture the smallest reproducible failure and expected behavior.
+2. Map the symptom, direct call chain, related tests, and recent relevant changes.
+3. Form explicit hypotheses and test the cheapest discriminating evidence first.
+4. Trace the confirmed chain back to the root cause and identify the demonstrated
+   blast radius.
 
-### Step 1: Scout Codebase
-`TaskUpdate(T1, status="in_progress")`
+Inspect directly first. Use `ck:debug`, focused exploration workers, or structured
+reasoning only when the uncertainty warrants their coordination cost. See
+`diagnosis-protocol.md`.
 
-**Skill chain:**
-1. Activate `ck:scout` skill OR launch 2-3 parallel `Explore` subagents.
-2. Map: affected files, module boundaries, dependencies, related tests, recent git changes.
+## 2. Implement
 
-**Pattern:** In SINGLE message, launch 2-3 Explore agents:
-```
-Task("Explore", "Find [area1] files related to issue", "Scout area1")
-Task("Explore", "Find [area2] patterns/usage", "Scout area2")
-Task("Explore", "Find [area3] tests/dependencies", "Scout area3")
-```
+- Fix the confirmed root cause with a minimal, cohesive diff.
+- Follow existing patterns and preserve contracts unless a contract change is
+  intentional and authorized.
+- If the implementation surface differs materially from the diagnosis, record the
+  new evidence and reassess scope before continuing.
 
-See `references/parallel-exploration.md` for patterns.
+## 3. Proportional Evidence Bundle
 
-`TaskUpdate(T1, status="completed")`
-**Output:** `✓ Step 1: Scouted [N] areas - [M] files, [K] tests found`
+Collect one bundle that contains:
 
-### Step 2: Diagnose Root Cause
-`TaskUpdate(T2, status="in_progress")`
+1. the original repro rerun and before/after result;
+2. focused regression coverage;
+3. checks for affected modules and demonstrated dependents;
+4. applicable lint, type, or build checks at the narrowest meaningful scope;
+5. final-diff inspection for contract and side-effect risk.
 
-**Skill chain:**
-1. **Capture pre-fix state:** Record exact error messages, failing test output, stack traces.
-2. Activate `ck:debug` skill. Use `debugger` subagent if needed.
-3. Activate `ck:sequential-thinking` — form hypotheses through structured reasoning.
-4. Spawn parallel `Explore` subagents to test hypotheses against codebase evidence.
-5. If 2+ hypotheses fail → escalate with `ck:sequential-thinking`.
-6. Trace backward to root cause (not just symptom location).
+Broaden to repository-wide checks only for shared contracts or a repository-wide
+blast radius. Parallelize long independent checks only when it saves real time.
+Add an independent reviewer when the diff is broad, hard to reason about, or high
+risk; otherwise review inline.
 
-See `references/diagnosis-protocol.md` for full methodology.
+If a check fails, return to diagnosis. Repair an obvious in-scope regression; ask
+the user only when resolution needs a material scope, contract, authority, or
+regression-acceptance decision. Stop and question the architecture after three
+failed fix attempts.
 
-`TaskUpdate(T2, status="completed")`
-**Output:** `✓ Step 2: Diagnosed - Root cause: [summary], Evidence: [brief], Scope: [N files]`
+## 4. Finalize
 
-### Step 3: Implement Fix
-`TaskUpdate(T3, status="in_progress")` — auto-unblocked when T1 + T2 complete.
+Report outcome, root cause, changed files, evidence, and unresolved risks using
+`verified`, `inferred`, and `unknown`. Sync an existing plan when relevant, update
+docs only for changed public behavior or operations, and journal only a durable
+lesson. Ask before commit/push/deploy unless already authorized.
 
-Fix the ROOT CAUSE per diagnosis findings. Not symptoms.
-
-- Use `ck:sequential-thinking` for complex logic
-- Minimal changes. Follow existing patterns.
-- If implementation diverges from the diagnosis (different root-cause surface, extra affected file), record the deviation in one line — expected vs. found vs. what you did — pick the conservative option, keep going, and include the deviations in the Step 6 summary.
-
-`TaskUpdate(T3, status="completed")`
-**Output:** `✓ Step 3: Implemented - [N] files changed`
-
-### Step 4: Verify + Prevent
-`TaskUpdate(T4, status="in_progress")`
-
-**Skill chain:**
-1. **Iron-law verify:** Re-run the EXACT commands from pre-fix state capture. Compare before/after.
-2. **Regression test:** Add/update test(s) covering the fixed issue. Test MUST fail without fix, pass with fix.
-3. **Side-effect sweep (HARD-GATE-NO-SIDE-EFFECTS):** Walk each dependent caller of changed functions from Step 1 blast-radius. Run tests in modules that share files/contracts. Confirm public contracts (signatures, schemas, APIs, env vars) unchanged. See SKILL.md HARD-GATE-NO-SIDE-EFFECTS.
-4. **Defense-in-depth:** Apply prevention layers where applicable (see `references/prevention-gate.md`).
-5. **Parallel verification:** Launch `Bash` agents:
-```
-Task("Bash", "Run typecheck", "Verify types")
-Task("Bash", "Run lint", "Verify lint")
-Task("Bash", "Run build", "Verify build")
-Task("Bash", "Run tests", "Verify tests")
-```
-
-**On regression / side effect:** `AskUserQuestion` with 2-4 concrete options (revert / narrow scope / update dependents / accept). Never silently patch.
-
-**If verification fails:** Loop back to Step 2 (re-diagnose). Max 3 attempts.
-
-`TaskUpdate(T4, status="completed")`
-**Output:** `✓ Step 4: Verified + Prevented - [before/after], [N] tests added, [M] guards`
-
-### Step 5: Code Review
-`TaskUpdate(T5, status="in_progress")`
-Use `code-reviewer` subagent.
-
-See `references/review-cycle.md` for mode-specific handling.
-
-`TaskUpdate(T5, status="completed")`
-**Output:** `✓ Step 5: Review [score]/10 - [status]`
-
-### Step 6: Finalize
-`TaskUpdate(T6, status="in_progress")`
-- Report summary: root cause, changes, prevention measures, confidence score
-- Activate `ck:project-management` for task sync-back and plan status updates
-- Update docs if needed via `docs-manager`
-- Ask to commit via `git-manager` subagent
-- Run `/ck:journal`
-
-`TaskUpdate(T6, status="completed")`
-**Output:** `✓ Step 6: Complete - [action]`
-
-## Skills/Subagents Activated
-
-| Step | Skills/Subagents |
-|------|------------------|
-| 1 | `ck:scout` OR parallel `Explore` subagents |
-| 2 | `ck:debug`, `ck:sequential-thinking`, `debugger` subagent, parallel `Explore` |
-| 3 | `ck:sequential-thinking` (complex logic) |
-| 4 | `tester` subagent, parallel `Bash` verification |
-| 5 | `code-reviewer` subagent |
-| 6 | `ck:project-management`, `git-manager`, `docs-manager` subagents |
-
-**Rules:** Don't skip steps. Validate before proceeding. One phase at a time.
-**Frontend:** Use Chrome MCP / `chrome-devtools-mcp` or any relevant project-native browser tests to verify.
-**Visual Assets:** Use an image-generation tool to generate visual assets, and a vision/multimodal model to analyze and verify them.
+For UI work, include the smallest useful visual/browser check. For AI/LLM code,
+consider `ck:context-engineering` when context behavior is part of the defect.

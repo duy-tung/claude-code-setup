@@ -39,22 +39,22 @@ Red flags: changing a numeric threshold user picked, removing a column/field use
 
 Rule of thumb: if unsure whether a cut reverses user intent, ask. Cost of 1 clarifying question ≪ cost of silent regression at demo.
 
-## 4. Scout-First, Ask-Second (Confidence Score)
+## 4. Scout First, Ask on Material Ambiguity
 
-For any question answerable by grep/read on the codebase:
+For questions answerable from the repository, inspect the live source before asking the
+user. Use evidence states instead of subjective confidence percentages:
 
-1. **Scout first:** grep, read live code, check current state.
-2. **Self-rate confidence (0–100%):**
-   - **≥ ~85%** → answer directly with `path:line` citation.
-   - **< 85%** → ask user.
-3. **Only ask when:**
-   - Confidence < 85% (missing data, ambiguous).
-   - Real conflict between 2+ sources (not a stale note already verified).
-   - Anomaly requiring user judgment (business decision, UX trade-off, scope expansion).
-   - High-reversibility risk (destructive op, breaking change, deploy-affecting).
+- **Verified:** supported by a `path:line`, command result, test, or authoritative source.
+- **Inferred:** the evidence supports the conclusion but does not state it directly;
+  label the inference when it affects a decision.
+- **Unknown:** required evidence is missing or two current sources genuinely conflict.
 
-Anti-pattern: asking what grep can answer in 5s.
-Good pattern: scout → "verified at `file:line`, confidence 95%, applying X" — verified + concise.
+Answer directly when the evidence is sufficient. Ask only when the unknown changes
+scope, user intent, a business/UX decision, or a hard-to-reverse action. Make routine,
+reversible choices without a blocking question.
+
+Anti-patterns: asking what grep can answer, narrating a numeric confidence score, or
+treating fluent recall as evidence.
 
 ## 5. Code Comments & Artifact Naming — No Plan References
 
