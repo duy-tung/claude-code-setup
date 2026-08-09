@@ -270,7 +270,7 @@ Before recommending `/ck:cook`, re-read `plan.md` and every `phase-*.md` file. S
 If unresolved contradictions remain, report them and ask the user. Do not recommend cook until the whole-plan consistency sweep reports zero unresolved contradictions.
 
 ## Output Requirements
-**IMPORTANT:** Invoke "/ck:project-organization" skill to organize the outputs.
+Invoke `/ck:project-organization` when the plan artifacts land outside the configured plans directory or the layout has drifted — not as a routine follow-up to every plan.
 
 - DO NOT implement code - only create plans
 - Respond with plan file path and summary

@@ -203,3 +203,55 @@ test('behavior eval prompts do not pre-seed legacy self-verification', () => {
     );
   }
 });
+
+// The per-file allowlist above predates this sweep and only covers the skills the
+// migration happened to touch. These checks scan every shipped skill instead, so a
+// newly added or previously unaudited skill cannot reintroduce the patterns.
+// document-skills/ is excluded: it is vendored Anthropic content, and diverging
+// from upstream there costs more than it buys.
+function shippedSkillFiles() {
+  return markdownFiles('claude/skills')
+    .filter((file) => !file.includes(`${path.sep}document-skills${path.sep}`));
+}
+
+test('no shipped skill opens with unconditional delegation', () => {
+  // "Use the X subagent to ..." as an instruction, rather than a conditional that
+  // says when delegating beats doing the work inline.
+  const unconditionalDelegation = /^\s*Use the `?[\w-]+`? (?:subagent|agent) to /mi;
+  const files = shippedSkillFiles();
+  assert.ok(files.length > 30, `expected the full skill tree, found ${files.length} files`);
+
+  for (const file of files) {
+    assert.doesNotMatch(read(file), unconditionalDelegation, `${file} delegates unconditionally`);
+  }
+});
+
+test('no shipped skill chains another skill unconditionally', () => {
+  const unconditionalChain = /\*\*IMPORTANT:?\*\*\s*Invoke\s+"?\/ck:/i;
+  for (const file of shippedSkillFiles()) {
+    assert.doesNotMatch(read(file), unconditionalChain, `${file} chains a skill unconditionally`);
+  }
+});
+
+test('no shipped skill performs multi-persona role theater', () => {
+  // Personas as sections to fill produce padded answers on Opus 5; the same
+  // angles work as lenses to check.
+  const personaTheater = /You orchestrate (?:four|three|five|several|\d+) (?:specialized )?\w+/i;
+  for (const file of shippedSkillFiles()) {
+    assert.doesNotMatch(read(file), personaTheater, `${file} scaffolds persona role-play`);
+  }
+});
+
+test('recalibrated skills keep their delegation and output guidance conditional', () => {
+  const ask = read('claude/skills/ask/SKILL.md');
+  assert.match(ask, /lenses|angles to check/i);
+  assert.match(ask, /Match depth to the question/i);
+  assert.doesNotMatch(ask, /comprehensive breakdown/i);
+
+  const journal = read('claude/skills/journal/SKILL.md');
+  assert.match(journal, /Write them inline when the session already holds the relevant context/i);
+  assert.match(journal, /not as a routine follow-up/i);
+
+  const xia = read('claude/skills/xia/SKILL.md');
+  assert.match(xia, /read it inline when/i);
+});

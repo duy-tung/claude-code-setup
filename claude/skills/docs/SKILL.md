@@ -15,7 +15,7 @@ metadata:
 
 Analyze codebase and manage project documentation through scouting, analysis, and structured doc generation.
 
-**IMPORTANT:** Invoke "/ck:project-organization" skill to organize the outputs.
+Invoke `/ck:project-organization` when the outputs land outside the configured directory or the layout has drifted — not as a routine follow-up.
 
 ## Default (No Arguments)
 

@@ -13,9 +13,10 @@ metadata:
 
 # Journal
 
-Use the `journal-writer` subagent to explore the memories and recent code changes, and write some journal entries.
-Journal entries should be concise and focused on the most important events, key changes, impacts, and decisions.
-Keep journal entries in the `./docs/journals/` directory.
+Write journal entries covering the most important events, key changes, impacts, and decisions.
+Keep journal entries in the `./docs/journals/` directory, and keep them concise.
+
+Write them inline when the session already holds the relevant context — that is the common case, and it costs less than briefing a worker on work you just did. Delegate to the `journal-writer` subagent when the entry needs history you do not have loaded: a long back-catalog of prior entries, or a wide sweep of changes across sessions you were not part of.
 
 ## Entry Format (memory quality)
 
@@ -24,7 +25,7 @@ Keep journal entries in the `./docs/journals/` directory.
 - Before appending, check existing entries on the same topic: update or consolidate instead of duplicating.
 - Delete or amend notes proven wrong; a stale lesson is worse than none.
 
-**IMPORTANT:** Invoke "/ck:project-organization" skill to organize the outputs.
+Invoke `/ck:project-organization` when the entry lands outside `./docs/journals/` or the journal directory has drifted out of shape — not as a routine follow-up to every entry.
 
 ## Workflow Position
 
