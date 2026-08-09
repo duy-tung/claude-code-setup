@@ -19,6 +19,10 @@ const RECENT_INJECTION_TTL_MS = 5 * 60 * 1000;
 const PENDING_INJECTION_TTL_MS = 30 * 1000;
 const WARN_THRESHOLD = 70;
 const CRITICAL_THRESHOLD = 90;
+// Transcript-fallback dedup keys off this heading, so the two must stay in sync.
+// A session upgrading mid-flight may re-inject the reminder once; that is cheaper
+// than keeping the retired pre-Opus-5 heading alive as a compatibility string.
+const MODULARIZATION_HEADING = '## Modularization (when the change adds or grows code files)';
 const {
   loadConfig,
   resolvePlanPath,
@@ -181,7 +185,7 @@ function wasTranscriptRecentlyInjected(transcriptPath, scopeKey = null) {
   try {
     if (!transcriptPath || !fs.existsSync(transcriptPath)) return false;
     const tail = fs.readFileSync(transcriptPath, 'utf-8').split('\n').slice(-150);
-    const hasReminderMarker = tail.some(line => line.includes('[IMPORTANT] Consider Modularization'));
+    const hasReminderMarker = tail.some(line => line.includes(MODULARIZATION_HEADING));
     if (!hasReminderMarker) return false;
     if (!scopeKey) return true;
 
@@ -593,7 +597,7 @@ function buildRulesSection({ devRulesPath, skillsVenv, plansPath, docsPath }) {
 
   lines.push(`- When skills' scripts fail, report the failure unless the current task explicitly authorizes fixing skill code; only then fix and rerun.`);
   lines.push(`- Follow **YAGNI (You Aren't Gonna Need It) - KISS (Keep It Simple, Stupid) - DRY (Don't Repeat Yourself)** principles`);
-  lines.push(`- Sacrifice grammar for the sake of concision when writing reports.`);
+  lines.push(`- Match report length to what the task needs. Cut filler sections, repeated summaries, and boilerplate — not grammar or clarity.`);
   lines.push(`- In reports, list any unresolved questions at the end, if any.`);
   lines.push(`- IMPORTANT: Ensure token consumption efficiency while maintaining high quality.`);
   lines.push(``);
@@ -607,13 +611,13 @@ function buildRulesSection({ devRulesPath, skillsVenv, plansPath, docsPath }) {
  */
 function buildModularizationSection() {
   return [
-    `## **[IMPORTANT] Consider Modularization:**`,
+    MODULARIZATION_HEADING,
     `- Check existing modules before creating new`,
     `- Analyze logical separation boundaries (functions, classes, concerns)`,
     `- Prefer kebab-case for JS/TS/shell; respect language conventions (Python/Go/Rust use snake_case, C#/Java use PascalCase)`,
     `- Write descriptive code comments`,
-    `- After modularization, continue with the main task only when the current request authorizes implementation; advisory/report-only tasks should report the recommendation.`,
-    `- When not to modularize: Markdown files, plain text files, bash scripts, configuration files, environment variables files, etc.`,
+    `- Restructuring is in scope only when the request covers it; advisory/report-only tasks should report the recommendation instead of applying it.`,
+    `- Skip entirely for: small or localized edits, Markdown, plain text, shell scripts, configuration, and environment files.`,
     ``
   ];
 }
@@ -813,6 +817,9 @@ function buildReminderContext({ sessionId, config, staticEnv, configDirName = '.
 // ═══════════════════════════════════════════════════════════════════════════
 
 module.exports = {
+  // Injected-heading constants (exported so tests and dedup logic cannot drift)
+  MODULARIZATION_HEADING,
+
   // Main entry points
   buildReminderContext,
   buildReminder,

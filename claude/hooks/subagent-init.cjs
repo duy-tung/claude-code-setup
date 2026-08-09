@@ -171,18 +171,23 @@ async function main() {
 
     // Core rules (minimal)
     lines.push(`## Rules`);
-    lines.push(`- Reports → ${reportsPath}`);
+    lines.push(`- Reports (when written) → ${reportsPath}`);
     lines.push(`- YAGNI / KISS / DRY`);
-    lines.push(`- Concise, list unresolved Qs at end`);
+    lines.push(`- Match length to the task; keep prose clear. List unresolved Qs at end`);
+    lines.push(`- Back material claims with file:line, command output, or another inspectable source`);
     // Python venv rules (if venv exists)
     if (skillsVenv) {
       lines.push(`- Python scripts in .claude/skills/: Use \`${skillsVenv}\``);
       lines.push(`- Never use global pip install`);
     }
 
-    // Naming templates (computed directly for reliable injection)
+    // Naming templates (computed directly for reliable injection).
+    // Conditional by design: presenting a report path unconditionally reads as
+    // "a report file is expected", which pushes a written artifact onto tasks
+    // whose deliverable is just the findings in the response.
     lines.push(``);
-    lines.push(`## Naming`);
+    lines.push(`## Naming (only when this task's deliverable is a written report or plan)`);
+    lines.push(`- Return findings in your response by default; write a file only when the task asks for one.`);
     lines.push(`- Report: ${path.join(reportsPath, `${agentType}-${namePattern}-report.md`)}`);
     lines.push(`- For workflow reports, insert a descriptive purpose before -report, e.g. ${agentType}-${namePattern}-red-team-plan-review-report.md`);
     lines.push(`- Avoid generic report names like red-team-review.md, review.md, report.md, or notes.md`);
