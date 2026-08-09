@@ -9,6 +9,20 @@ Rules for contributors and AI agents working on the claudekit-engineer repo. The
 > and statusline tests, Opus 5 policy checks, and clean-worktree assertions.
 > Passing CI does not waive the metadata-deletion contract below.
 
+## Opus 5 Prompt Policy (tree-wide, enforced by tests)
+
+`claude/hooks/__tests__/opus-5-alignment-policy.test.cjs` is the prompt-behavior contract. It no longer works from a hardcoded file list — it scans **every** shipped skill, agent, rule, and doc, so a newly added file is covered the moment it lands. It checks for:
+
+- pre-Opus-5 scaffolding in **hook sources** as well as Markdown (the injected text is what the model actually reads)
+- unconditional delegation openers, unconditional `/ck:` skill chaining, multi-persona role theater
+- over-verification and self-scoring: self-recheck instructions, "subagent to verify", restrictive review filters, numeric confidence scores
+
+**Prohibitions do not trip the guard.** `claude/hooks/__tests__/lib/prompt-policy.cjs` reports a phrase only when it reads as an *instruction*: it ignores clause-level negation ("do not double-check"), Markdown soft wrapping that separates a negation from its phrase, and whole sections under an `## Anti-patterns`-style heading. This matters — a guard that fires on the rule banning the behavior gets silenced by deleting the correct rule.
+
+When a check fires, **fix the prose**. Only add to `PROMPT_POLICY_EXEMPTIONS` when the phrase is genuinely domain logic (re-running a test after a fix, re-measuring a noisy metric, re-reading stale third-party output), and state why in a comment. A companion test fails when an exemption stops matching, so stale entries cannot accumulate. A growing exemption list means the pattern is wrong, not that the exceptions are.
+
+**Affected files:** `claude/hooks/__tests__/opus-5-alignment-policy.test.cjs`, `claude/hooks/__tests__/lib/prompt-policy.cjs`
+
 ## Metadata Deletions (MANDATORY)
 
 When renaming or deleting ANY file under `claude/` directory (skills, hooks, agents, scripts), you MUST add the old relative path to `claude/metadata.json` `deletions[]` array. This tells the CLI installer to remove stale files from user machines during upgrade. Forgetting this leaves orphaned files that cause conflicts.
