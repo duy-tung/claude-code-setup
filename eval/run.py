@@ -69,6 +69,14 @@ RESULT_SUBTYPES = {
 # Share of total output tokens below which a non-requested model reads as
 # Claude Code's own bookkeeping rather than a fallback doing the task.
 AUXILIARY_OUTPUT_SHARE_MAX = 0.10
+# What each arm spends to reach the same outcome. Solve rate saturates on this
+# task class, so these are the metrics that can still separate two variants.
+EFFICIENCY_METRICS = (
+    ("num_turns", "turns", "{:.2f}"),
+    ("output_chars", "output chars", "{:.0f}"),
+    ("cost_usd", "cost $", "{:.3f}"),
+    ("agent_ms", "latency ms", "{:.0f}"),
+)
 WORKFLOW_ARTIFACT_NAME_RE = re.compile(
     r"(?:^|[-_])(plan|report|summary|journal)(?:[-_][^.]*)?\.(?:md|txt|json|ya?ml)$",
     re.I,
@@ -672,6 +680,64 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
                        "A significantly better" if bb > cc and p < 0.05 else
                        "no significant difference")
             print(f"    Verdict: {verdict}")
+
+    # Efficiency comparison.
+    #
+    # Solve rate cannot separate these variants: a capable model clears this
+    # task class in both arms, so the interesting question is what each arm
+    # SPENDS to get there. Restricted to pairs where both arms are valid and
+    # both solved — comparing effort across different outcomes compares nothing.
+    if len(variants) == 2:
+        a, b = variants[0]["label"], variants[1]["label"]
+        indexed = {(r["variant"], r["task"], r["run"]): r for r in records}
+        comparable = []
+        for task_id in task_ids:
+            for i in range(runs):
+                ra, rb = indexed.get((a, task_id, i)), indexed.get((b, task_id, i))
+                if not (ra and rb):
+                    continue
+                if not (ra.get("run_valid", True) and rb.get("run_valid", True)):
+                    continue
+                if not (ra.get("solved") and rb.get("solved")):
+                    continue
+                comparable.append((task_id, ra, rb))
+
+        print(f"\nEfficiency  ({b} − {a}), pairs where both arms solved: {len(comparable)}")
+        if not comparable:
+            print("    NOT COMPUTED — no pair had a valid solve on both sides.")
+        else:
+            # "lower" is reported over non-tied pairs, which is what the sign
+            # test actually uses. Printing it over all pairs would understate a
+            # real effect whenever a metric ties often, as integer turn counts do.
+            header = (f"    {'metric':<14}{a[:9]:>10}{b[:9]:>10}"
+                      f"{'med Δ':>10}{'med Δ%':>9}{'lower':>10}{'ties':>6}{'sign p':>9}")
+            print(header)
+            for field, label, fmt in EFFICIENCY_METRICS:
+                va = [(ra.get(field) or 0) for _, ra, _ in comparable]
+                vb = [(rb.get(field) or 0) for _, _, rb in comparable]
+                diffs = [y - x for x, y in zip(va, vb)]
+                rel = [((y - x) / x * 100) for x, y in zip(va, vb) if x]
+                lower, higher, p = stats.sign_test(diffs)
+                ties = len(diffs) - lower - higher
+                print(f"    {label:<14}{fmt.format(_mean(va) or 0):>10}"
+                      f"{fmt.format(_mean(vb) or 0):>10}"
+                      f"{stats.median(diffs):>+10.2f}"
+                      f"{stats.median(rel):>+8.0f}%"
+                      f"{f'{lower}/{lower + higher}':>10}{ties:>6}{p:>9.4f}")
+
+            if len(task_ids) > 1:
+                print("    per task (median Δ% — negative favours "
+                      f"{b}):")
+                for task_id in task_ids:
+                    rows = [(ra, rb) for t, ra, rb in comparable if t == task_id]
+                    if not rows:
+                        continue
+                    cells = []
+                    for field, label, _ in EFFICIENCY_METRICS:
+                        rel = [((rb.get(field) or 0) - (ra.get(field) or 0))
+                               / (ra.get(field) or 1) * 100 for ra, rb in rows]
+                        cells.append(f"{label}={stats.median(rel):+.0f}%")
+                    print(f"      {task_id:<26} n={len(rows)}  " + "  ".join(cells))
 
     print(f"\nResults → {out_file}")
     ok, issues = assess_suite(records, mode)

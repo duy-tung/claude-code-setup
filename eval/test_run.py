@@ -19,7 +19,8 @@ from unittest.mock import patch
 EVAL_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(EVAL_DIR))
 import effort_sweep  # noqa: E402
-import run as eval_run  # noqa: E402
+import run as eval_run
+import stats  # noqa: E402
 
 
 def record(**overrides) -> dict:
@@ -778,3 +779,34 @@ class PairedComparisonValidityTests(unittest.TestCase):
         self.assertIn("pairs compared = 1", out)
         self.assertIn("no significant difference", out)
 
+
+
+class SignTestTests(unittest.TestCase):
+    def test_drops_ties_and_reports_them_separately(self):
+        # Integer turn counts tie often; counting ties as evidence either way
+        # would understate a real effect.
+        below, above, p = stats.sign_test([-1, -1, -1, 0, 0, 1])
+        self.assertEqual((below, above), (3, 1))
+        self.assertLess(p, 1.0)
+
+    def test_all_ties_is_no_evidence(self):
+        self.assertEqual(stats.sign_test([0, 0, 0]), (0, 0, 1.0))
+
+    def test_unanimous_direction_is_significant(self):
+        _below, above, p = stats.sign_test([1.0] * 30)
+        self.assertEqual(above, 30)
+        self.assertLess(p, 0.001)
+
+    def test_is_unmoved_by_a_single_runaway_pair(self):
+        # One task answering ten times its usual length moves a mean and must
+        # not move the count-based verdict.
+        balanced = [-1, -1, 1, 1]
+        with_outlier = [-1, -1, 1, 10_000]
+        self.assertEqual(stats.sign_test(balanced), stats.sign_test(with_outlier))
+
+
+class MedianTests(unittest.TestCase):
+    def test_odd_and_even_lengths(self):
+        self.assertEqual(stats.median([3, 1, 2]), 2)
+        self.assertEqual(stats.median([4, 1, 2, 3]), 2.5)
+        self.assertEqual(stats.median([]), 0.0)
