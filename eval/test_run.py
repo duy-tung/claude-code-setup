@@ -810,3 +810,14 @@ class MedianTests(unittest.TestCase):
         self.assertEqual(stats.median([3, 1, 2]), 2)
         self.assertEqual(stats.median([4, 1, 2, 3]), 2.5)
         self.assertEqual(stats.median([]), 0.0)
+
+
+class LatencyClockTests(unittest.TestCase):
+    def test_agent_ms_uses_the_same_clock_as_the_subprocess_timeout(self):
+        # subprocess.run's timeout is monotonic. Measuring latency on the wall
+        # clock let a sleeping machine report hours for a run the timeout never
+        # considered overdue.
+        source = pathlib.Path(eval_run.__file__).read_text()
+        self.assertIn("start = time.monotonic()", source)
+        self.assertIn('metrics["agent_ms"] = int((time.monotonic() - start) * 1000)', source)
+        self.assertNotIn("start = time.time()", source)

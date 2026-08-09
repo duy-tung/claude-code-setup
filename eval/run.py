@@ -73,6 +73,7 @@ AUXILIARY_OUTPUT_SHARE_MAX = 0.10
 # task class, so these are the metrics that can still separate two variants.
 EFFICIENCY_METRICS = (
     ("num_turns", "turns", "{:.2f}"),
+    ("modified_file_count", "files touched", "{:.2f}"),
     ("output_chars", "output chars", "{:.0f}"),
     ("cost_usd", "cost $", "{:.3f}"),
     ("agent_ms", "latency ms", "{:.0f}"),
@@ -261,6 +262,7 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
     metrics = {"subtype": None, "num_turns": None,
                "cost_usd": None, "agent_ms": None, "error": None,
                "output_chars": None, "created_file_count": 0,
+               "modified_files": [], "modified_file_count": 0,
                "workflow_artifact_count": 0,
                "workflow_artifacts": [],
                "workflow_artifact_budget": task.get("workflow_artifact_budget"),
@@ -302,11 +304,18 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                 ),
             )
 
-        baseline_files = {
-            path.relative_to(workdir).as_posix()
+        # Digest, not just names: scope discipline is about which files the
+        # agent decided to touch, and a rename-free edit is invisible to a
+        # name-only snapshot.
+        baseline_digests = {
+            path.relative_to(workdir).as_posix(): path.read_bytes()
             for path in workdir.rglob("*") if path.is_file()
         }
-        start = time.time()
+        baseline_files = set(baseline_digests)
+        # Monotonic, to match the clock subprocess.run's timeout uses. Wall clock
+        # keeps ticking while a machine sleeps, which fabricated a two-hour
+        # "latency" for a run that the timeout never saw as overdue.
+        start = time.monotonic()
 
         if mode == "mock":
             oracle = task["_dir"] / "oracle"
@@ -325,13 +334,25 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                 requested_effort=requested_effort,
             ))
 
-        metrics["agent_ms"] = int((time.time() - start) * 1000)
+        metrics["agent_ms"] = int((time.monotonic() - start) * 1000)
         current_files = {
             path.relative_to(workdir).as_posix()
             for path in workdir.rglob("*") if path.is_file()
         }
         created_files = current_files - baseline_files
         metrics["created_file_count"] = len(created_files)
+
+        # Files the agent edited or deleted, ignoring the staged kit itself.
+        touched = []
+        for relative_path, before in baseline_digests.items():
+            if relative_path.startswith(".claude/"):
+                continue
+            target = workdir / relative_path
+            after = target.read_bytes() if target.is_file() else None
+            if after != before:
+                touched.append(relative_path)
+        metrics["modified_files"] = sorted(touched)
+        metrics["modified_file_count"] = len(touched)
         metrics["workflow_artifacts"] = sorted(
             path for path in created_files
             if is_workflow_artifact(
