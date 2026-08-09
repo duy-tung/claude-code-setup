@@ -22,7 +22,7 @@ Env:
   CK_EVAL_CMD           AI CLI to spawn (default "claude"; e.g. "ccs glm")
   CK_EVAL_CLAUDE_ARGS   extra args appended to the claude invocation
                         (default "--permission-mode bypassPermissions")
-  CK_EVAL_MODEL         pin the model, e.g. "claude-opus-4-8" -> --model <id>
+  CK_EVAL_MODEL         pin the model, e.g. "claude-opus-5" -> --model <id>
   CK_EVAL_EFFORT        pin reasoning effort, e.g. "xhigh" -> --effort <level>
   CK_EVAL_TIMEOUT_SEC   per-run agent timeout (default 180)
 
