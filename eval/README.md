@@ -90,6 +90,45 @@ python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5 \
 
 Results stream to `results/eval-<ts>.ndjson` (git-ignored).
 
+## What the suite has measured
+
+Recorded so we do not re-derive it. Claude Opus 5 at `high` effort, `baseline`
+(no kit) versus `full-kit`, 36 valid pairs across 11 tasks.
+
+**Solve rate cannot separate the variants.** Every task, every run, both arms:
+36/36. Three task designs were tried specifically to break this — intricate
+single-file logic, stateful dispatch semantics, and an eleven-file contract
+migration at 25 turns per run. All three came back tied. On execution-graded,
+fully-specified Python, the model clears the work with or without the kit, so
+solve rate is the wrong instrument here.
+
+**The kit's cost penalty depends on task size, and the split is clean.**
+
+| Task size | n | cost Δ range | median |
+|---|---|---|---|
+| trivial (≤6 turns) | 6 | +94% … +117% | +104% |
+| substantive (>6 turns) | 4 | +43% … +76% | +54% |
+
+The ranges do not overlap, and the relationship strengthens when the single
+25-turn task is removed (r = -0.79 versus -0.47 with it), so it is not an
+artifact of one leverage point. A pooled median of "+96%" is really the trivial
+tasks talking.
+
+Cache accounting explains the mechanism: the kit adds roughly 12,700 tokens of
+one-time cache *creation* per session, against cache *reads* an order of
+magnitude larger. The preamble is cached and amortised, not re-sent per turn, so
+its relative cost falls as a task runs longer.
+
+**Output length separates on substantive tasks only.** Across the two large
+tasks the kit was shorter in 6/6 pairs, median -23% (sign test p = 0.031). Pooled
+across all sizes it is 19/30, p = 0.20 — not established. An earlier read of the
+same data via means suggested -24% overall; a paired test does not support that,
+which is why the runner uses a sign test.
+
+**Turn count favours the kit but is not established.** Median -14% to -17%
+depending on the subset, p between 0.001 and 0.125. Files touched and unrequested
+artifacts are identical in both arms, at zero, on every task measured.
+
 ## Sweep effort
 
 Start at `high`, then measure lower settings for cost/latency and reserve
