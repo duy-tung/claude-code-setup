@@ -125,9 +125,24 @@ across all sizes it is 19/30, p = 0.20 — not established. An earlier read of t
 same data via means suggested -24% overall; a paired test does not support that,
 which is why the runner uses a sign test.
 
-**Turn count favours the kit but is not established.** Median -14% to -17%
-depending on the subset, p between 0.001 and 0.125. Files touched and unrequested
-artifacts are identical in both arms, at zero, on every task measured.
+**On substantive tasks the kit is measurably more efficient, at a price.**
+Pooled across 34 valid pairs on the four tasks above 6 turns:
+
+| metric | baseline | full-kit | median Δ | lower in | sign p |
+|---|---|---|---|---|---|
+| output chars | 1901 | 1333 | **-28%** | 32/34 | <0.0001 |
+| turns | 12.88 | 10.62 | **-13%** | 19/23 non-tied | 0.0026 |
+| cost | $0.41 | $0.61 | **+49%** | 1/34 | <0.0001 |
+| latency | 80.7s | 77.6s | +0% | 17/34 | 1.0000 |
+
+Neither efficiency result rests on one task: turns move -37%, -20%, -14% and
++0% across the four, and output length is shorter in 32 of 34 pairs. Latency is
+genuinely unchanged. Files touched and unrequested artifacts are identical in
+both arms, at zero, on every task measured.
+
+So the trade on work of real size is 28% shorter output and 13% fewer turns for
+49% more spend. On trivial tasks there is no measurable benefit and the cost
+penalty roughly doubles, so the kit is pure overhead there.
 
 ## Sweep effort
 
