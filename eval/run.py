@@ -75,6 +75,8 @@ EFFICIENCY_METRICS = (
     ("num_turns", "turns", "{:.2f}"),
     ("modified_file_count", "files touched", "{:.2f}"),
     ("output_chars", "output chars", "{:.0f}"),
+    ("cache_creation_tokens", "cache created", "{:.0f}"),
+    ("cache_read_tokens", "cache read", "{:.0f}"),
     ("cost_usd", "cost $", "{:.3f}"),
     ("agent_ms", "latency ms", "{:.0f}"),
 )
@@ -263,6 +265,7 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                "cost_usd": None, "agent_ms": None, "error": None,
                "output_chars": None, "created_file_count": 0,
                "modified_files": [], "modified_file_count": 0,
+               "cache_creation_tokens": None, "cache_read_tokens": None,
                "workflow_artifact_count": 0,
                "workflow_artifacts": [],
                "workflow_artifact_budget": task.get("workflow_artifact_budget"),
@@ -532,6 +535,14 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
         "cost_usd": data.get("total_cost_usd"),
         "input_tokens": whole_tree_tokens("inputTokens", "input_tokens"),
         "output_tokens": whole_tree_tokens("outputTokens", "output_tokens"),
+        # A variant that loads a large fixed preamble pays for it once as cache
+        # creation and at a tenth of the rate on every later turn. Without both
+        # numbers, an input-token total cannot say whether an expensive arm is
+        # expensive per session or per turn.
+        "cache_creation_tokens": whole_tree_tokens(
+            "cacheCreationInputTokens", "cache_creation_input_tokens"),
+        "cache_read_tokens": whole_tree_tokens(
+            "cacheReadInputTokens", "cache_read_input_tokens"),
         "output_chars": len(result_text) if isinstance(result_text, str) else None,
         "models": models,  # canonical model IDs for pin verification
         "raw_models": raw_models,  # provider/runtime keys from modelUsage

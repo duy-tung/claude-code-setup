@@ -821,3 +821,31 @@ class LatencyClockTests(unittest.TestCase):
         self.assertIn("start = time.monotonic()", source)
         self.assertIn('metrics["agent_ms"] = int((time.monotonic() - start) * 1000)', source)
         self.assertNotIn("start = time.time()", source)
+
+
+class CacheAccountingTests(unittest.TestCase):
+    def test_records_cache_creation_and_read_separately(self):
+        payload = cli_result(
+            usage={
+                "input_tokens": 12,
+                "output_tokens": 40,
+                "cache_creation_input_tokens": 41946,
+                "cache_read_input_tokens": 8000,
+            },
+            modelUsage={"claude-opus-5": {"outputTokens": 40}},
+        )
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps(payload), stderr=""
+        )
+        with patch.object(eval_run.subprocess, "run", return_value=completed):
+            result = eval_run._invoke_claude(
+                {"prompt": "p"}, {"claude_args": []}, Path("/tmp"),
+                10, False, requested_model="claude-opus-5",
+            )
+        self.assertEqual(result["cache_creation_tokens"], 41946)
+        self.assertEqual(result["cache_read_tokens"], 8000)
+
+    def test_cache_fields_appear_in_the_efficiency_metrics(self):
+        fields = [field for field, _label, _fmt in eval_run.EFFICIENCY_METRICS]
+        self.assertIn("cache_creation_tokens", fields)
+        self.assertIn("cache_read_tokens", fields)
