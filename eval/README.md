@@ -144,6 +144,34 @@ So the trade on work of real size is 28% shorter output and 13% fewer turns for
 49% more spend. On trivial tasks there is no measurable benefit and the cost
 penalty roughly doubles, so the kit is pure overhead there.
 
+### Effort sweep result
+
+Four substantive tasks, three runs each, `full-kit`, model pinned and verified at
+every level:
+
+| effort | solved | turns | output tok | chars | cost | latency |
+|---|---|---|---|---|---|---|
+| low | 12/12 | 5.5 | 1937 | 663 | $0.421 | 34.7s |
+| medium | 12/12 | 6.8 | 2980 | 1006 | $0.472 | 50.4s |
+| high | 12/12 | 9.6 | 4554 | 1230 | $0.592 | 70.6s |
+
+**This does not show that `low` is as good as `high`.** These tasks are solved
+12/12 by every configuration tried, so the sweep has no power to detect a quality
+difference — the same ceiling that defeats the A/B on solve rate defeats it here.
+What it does show is the cost and latency gradient, which is steep and monotonic:
+`low` is 29% cheaper and 51% faster than `high` for an outcome this suite cannot
+distinguish. Behaviour is clean at every level: `behavior_ok` 12/12 and zero
+unrequested artifacts throughout.
+
+The practical reading is that `high` is **unverified rather than refuted** as the
+shipped baseline. It is worth noting alongside the +49% kit cost: running the kit
+at `medium` costs about what the un-kitted baseline costs at `high`, so effort is
+a lever on the kit's cost that does not require cutting kit content. Whether
+quality holds at that setting is exactly what this suite cannot answer.
+
+The `Input tok` column in the sweep report excludes cached tokens and is not the
+real input cost; read `cost` instead.
+
 ## Sweep effort
 
 Start at `high`, then measure lower settings for cost/latency and reserve
