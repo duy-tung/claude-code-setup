@@ -66,6 +66,20 @@ RESULT_SUBTYPES = {
     "error_max_budget_usd",
     "error_max_structured_output_retries",
 }
+# Share of total output tokens below which a non-requested model reads as
+# Claude Code's own bookkeeping rather than a fallback doing the task.
+AUXILIARY_OUTPUT_SHARE_MAX = 0.10
+# What each arm spends to reach the same outcome. Solve rate saturates on this
+# task class, so these are the metrics that can still separate two variants.
+EFFICIENCY_METRICS = (
+    ("num_turns", "turns", "{:.2f}"),
+    ("modified_file_count", "files touched", "{:.2f}"),
+    ("output_chars", "output chars", "{:.0f}"),
+    ("cache_creation_tokens", "cache created", "{:.0f}"),
+    ("cache_read_tokens", "cache read", "{:.0f}"),
+    ("cost_usd", "cost $", "{:.3f}"),
+    ("agent_ms", "latency ms", "{:.0f}"),
+)
 WORKFLOW_ARTIFACT_NAME_RE = re.compile(
     r"(?:^|[-_])(plan|report|summary|journal)(?:[-_][^.]*)?\.(?:md|txt|json|ya?ml)$",
     re.I,
@@ -157,22 +171,67 @@ def matching_models(requested_model: str, actual_models: list[str]) -> list[str]
     return [model for model in actual if model.lower() == requested]
 
 
+def _split_by_work(requested_model: str,
+                   model_output_tokens: dict) -> tuple[dict, dict, int]:
+    """Partition modelUsage into requested vs other, with their output totals."""
+    actual = {
+        str(model): (tokens if isinstance(tokens, (int, float))
+                     and not isinstance(tokens, bool) else 0)
+        for model, tokens in (model_output_tokens or {}).items()
+    }
+    matched = set(matching_models(requested_model, list(actual)))
+    requested = {m: t for m, t in actual.items() if m in matched}
+    other = {m: t for m, t in actual.items() if m not in matched}
+    return requested, other, sum(actual.values())
+
+
+def auxiliary_models(requested_model: str | None,
+                     model_output_tokens: dict) -> list[str]:
+    """Non-requested models tolerated as Claude Code's own bookkeeping."""
+    if not requested_model:
+        return []
+    _, other, total = _split_by_work(requested_model, model_output_tokens)
+    if not other or total <= 0:
+        return []
+    return sorted(m for m, t in other.items()
+                  if t / total <= AUXILIARY_OUTPUT_SHARE_MAX)
+
+
 def model_pin_error(requested_model: str | None,
-                    actual_models: list[str]) -> str | None:
-    """Explain why modelUsage does not prove only the requested model ran."""
+                    model_output_tokens: dict) -> str | None:
+    """Explain why modelUsage does not prove the requested model did the work.
+
+    Presence alone is the wrong test. Claude Code runs a small auxiliary model
+    for its own bookkeeping — summaries, titles — alongside the model doing the
+    task, so a strict "no other model may appear" rule invalidates every run of
+    an un-pinned arm. That is precisely the arm an A/B needs, and invalid runs
+    count as unsolved, so the strict rule manufactures a false effect.
+
+    Judge by work share instead: a model that produced a negligible slice of the
+    output is bookkeeping; one that produced a material slice is a fallback or a
+    stray delegation, which is what this check exists to catch.
+    """
     if not requested_model:
         return None
-    if not actual_models:
+    requested, other, total = _split_by_work(requested_model, model_output_tokens)
+    if not (requested or other):
         return (f"requested model {requested_model!r}, but live result omitted "
                 "modelUsage")
-    matches = matching_models(requested_model, actual_models)
-    if not matches:
+    if not requested:
         return (f"requested model {requested_model!r}, but modelUsage reported "
-                f"{', '.join(actual_models)}")
-    mismatches = sorted(set(actual_models) - set(matches))
-    if mismatches:
+                f"{', '.join(sorted(other))}")
+    if not other:
+        return None
+    if total <= 0:
+        # Nothing to judge share by; stay strict rather than silently passing.
         return (f"requested model {requested_model!r}, but modelUsage also "
-                f"reported {', '.join(mismatches)}")
+                f"reported {', '.join(sorted(other))} with no token attribution")
+    working = sorted(m for m, t in other.items()
+                     if t / total > AUXILIARY_OUTPUT_SHARE_MAX)
+    if working:
+        detail = ", ".join(f"{m} ({other[m] / total:.0%} of output)" for m in working)
+        return (f"requested model {requested_model!r}, but {detail} did a "
+                "material share of the work")
     return None
 
 
@@ -205,12 +264,15 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
     metrics = {"subtype": None, "num_turns": None,
                "cost_usd": None, "agent_ms": None, "error": None,
                "output_chars": None, "created_file_count": 0,
+               "modified_files": [], "modified_file_count": 0,
+               "cache_creation_tokens": None, "cache_read_tokens": None,
                "workflow_artifact_count": 0,
                "workflow_artifacts": [],
                "workflow_artifact_budget": task.get("workflow_artifact_budget"),
                "behavior_ok": True, "behavior_issues": [],
                "protected_file_violations": [],
-               "models": [], "raw_models": [], "model_pin_ok": None,
+               "models": [], "raw_models": [], "model_output_tokens": {},
+               "auxiliary_models": [], "model_pin_ok": None,
                "requested_model": requested_model,
                "requested_effort": requested_effort}
 
@@ -245,11 +307,18 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                 ),
             )
 
-        baseline_files = {
-            path.relative_to(workdir).as_posix()
+        # Digest, not just names: scope discipline is about which files the
+        # agent decided to touch, and a rename-free edit is invisible to a
+        # name-only snapshot.
+        baseline_digests = {
+            path.relative_to(workdir).as_posix(): path.read_bytes()
             for path in workdir.rglob("*") if path.is_file()
         }
-        start = time.time()
+        baseline_files = set(baseline_digests)
+        # Monotonic, to match the clock subprocess.run's timeout uses. Wall clock
+        # keeps ticking while a machine sleeps, which fabricated a two-hour
+        # "latency" for a run that the timeout never saw as overdue.
+        start = time.monotonic()
 
         if mode == "mock":
             oracle = task["_dir"] / "oracle"
@@ -268,13 +337,25 @@ def run_trial(task: dict, variant: dict, mode: str, max_turns: int,
                 requested_effort=requested_effort,
             ))
 
-        metrics["agent_ms"] = int((time.time() - start) * 1000)
+        metrics["agent_ms"] = int((time.monotonic() - start) * 1000)
         current_files = {
             path.relative_to(workdir).as_posix()
             for path in workdir.rglob("*") if path.is_file()
         }
         created_files = current_files - baseline_files
         metrics["created_file_count"] = len(created_files)
+
+        # Files the agent edited or deleted, ignoring the staged kit itself.
+        touched = []
+        for relative_path, before in baseline_digests.items():
+            if relative_path.startswith(".claude/"):
+                continue
+            target = workdir / relative_path
+            after = target.read_bytes() if target.is_file() else None
+            if after != before:
+                touched.append(relative_path)
+        metrics["modified_files"] = sorted(touched)
+        metrics["modified_file_count"] = len(touched)
         metrics["workflow_artifacts"] = sorted(
             path for path in created_files
             if is_workflow_artifact(
@@ -391,12 +472,16 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
     model_usage = raw_model_usage if isinstance(raw_model_usage, dict) else {}
     result_text = data.get("result")
     raw_models = sorted(model_usage.keys())
-    models = sorted({
-        str(details.get("canonicalModel") or raw_model)
-        if isinstance(details, dict) else str(raw_model)
-        for raw_model, details in model_usage.items()
-    })
-    pin_error = model_pin_error(requested_model, models)
+    model_output = {}
+    for raw_model, details in model_usage.items():
+        canonical = (str(details.get("canonicalModel") or raw_model)
+                     if isinstance(details, dict) else str(raw_model))
+        tokens = details.get("outputTokens") if isinstance(details, dict) else None
+        if not isinstance(tokens, (int, float)) or isinstance(tokens, bool):
+            tokens = 0
+        model_output[canonical] = model_output.get(canonical, 0) + tokens
+    models = sorted(model_output)
+    pin_error = model_pin_error(requested_model, model_output)
     process_errors = []
     schema_error = result_message_error(data)
     if schema_error:
@@ -450,9 +535,19 @@ def _invoke_claude(task: dict, variant: dict, workdir: Path,
         "cost_usd": data.get("total_cost_usd"),
         "input_tokens": whole_tree_tokens("inputTokens", "input_tokens"),
         "output_tokens": whole_tree_tokens("outputTokens", "output_tokens"),
+        # A variant that loads a large fixed preamble pays for it once as cache
+        # creation and at a tenth of the rate on every later turn. Without both
+        # numbers, an input-token total cannot say whether an expensive arm is
+        # expensive per session or per turn.
+        "cache_creation_tokens": whole_tree_tokens(
+            "cacheCreationInputTokens", "cache_creation_input_tokens"),
+        "cache_read_tokens": whole_tree_tokens(
+            "cacheReadInputTokens", "cache_read_input_tokens"),
         "output_chars": len(result_text) if isinstance(result_text, str) else None,
         "models": models,  # canonical model IDs for pin verification
         "raw_models": raw_models,  # provider/runtime keys from modelUsage
+        "model_output_tokens": model_output,
+        "auxiliary_models": auxiliary_models(requested_model, model_output),
         "model_pin_ok": pin_error is None if requested_model else None,
         "error": "; ".join(errors) or None,
     }
@@ -561,6 +656,9 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
         print(f"    requested model: {', '.join(requested_models) if requested_models else 'un-pinned'}")
         print(f"    requested effort: {', '.join(requested_efforts) if requested_efforts else 'default'}")
         print(f"    model(s) actually run: {', '.join(models) if models else 'unknown (mock or no modelUsage)'}")
+        aux = sorted({m for r in v_recs for m in (r.get("auxiliary_models") or [])})
+        if aux:
+            print(f"    tolerated as auxiliary (<{AUXILIARY_OUTPUT_SHARE_MAX:.0%} of output): {', '.join(aux)}")
         for task_id in task_ids:
             s = per_task[task_id]
             print(f"    - {task_id}: {sum(s)}/{len(s)} "
@@ -574,26 +672,104 @@ def _print_summary(results, records, variants, task_ids, runs, out_file,
                 )
 
     # Paired A/B comparison (only when exactly two variants).
+    #
+    # An invalid run is counted as unsolved, so comparing across invalid records
+    # manufactures an effect out of discarded data: an arm whose runs were all
+    # invalidated reads as 0% solved and the other arm looks perfect. Pair on
+    # validity first and refuse a verdict when there is nothing valid to compare.
     if len(variants) == 2:
         a, b = variants[0]["label"], variants[1]["label"]
-        diffs, bb, cc = [], 0, 0
+        valid = {(r["variant"], r["task"], r["run"]): r.get("run_valid", True)
+                 for r in records}
+        diffs, bb, cc, dropped = [], 0, 0, 0
         for task_id in task_ids:
             sa, sb = results[a][task_id], results[b][task_id]
-            for x, y in zip(sa, sb):
+            for i, (x, y) in enumerate(zip(sa, sb)):
+                if not (valid.get((a, task_id, i), True)
+                        and valid.get((b, task_id, i), True)):
+                    dropped += 1
+                    continue
                 diffs.append(int(y) - int(x))
                 if x and not y:
                     bb += 1
                 if y and not x:
                     cc += 1
-        point, lo, hi = stats.bootstrap_diff_ci(diffs)
-        p = stats.mcnemar_exact(bb, cc)
+
         print(f"\nPaired A/B  ({b} − {a}):")
-        print(f"    Δ solve-rate = {point:+.3f}  (95% CI [{lo:+.3f}, {hi:+.3f}])")
-        print(f"    McNemar exact p = {p:.4f}  (discordant: {a}-only={bb}, {b}-only={cc})")
-        verdict = ("B significantly better" if cc > bb and p < 0.05 else
-                   "A significantly better" if bb > cc and p < 0.05 else
-                   "no significant difference")
-        print(f"    Verdict: {verdict}")
+        if dropped:
+            print(f"    dropped {dropped} pair(s): one or both runs were invalid")
+        if not diffs:
+            print("    Verdict: NOT COMPUTED — no valid paired runs remain.")
+            print("    Fix the harness validation errors below and re-run; the "
+                  "solve counts above treat every invalid run as unsolved.")
+        else:
+            point, lo, hi = stats.bootstrap_diff_ci(diffs)
+            p = stats.mcnemar_exact(bb, cc)
+            print(f"    pairs compared = {len(diffs)}")
+            print(f"    Δ solve-rate = {point:+.3f}  (95% CI [{lo:+.3f}, {hi:+.3f}])")
+            print(f"    McNemar exact p = {p:.4f}  (discordant: {a}-only={bb}, {b}-only={cc})")
+            verdict = ("B significantly better" if cc > bb and p < 0.05 else
+                       "A significantly better" if bb > cc and p < 0.05 else
+                       "no significant difference")
+            print(f"    Verdict: {verdict}")
+
+    # Efficiency comparison.
+    #
+    # Solve rate cannot separate these variants: a capable model clears this
+    # task class in both arms, so the interesting question is what each arm
+    # SPENDS to get there. Restricted to pairs where both arms are valid and
+    # both solved — comparing effort across different outcomes compares nothing.
+    if len(variants) == 2:
+        a, b = variants[0]["label"], variants[1]["label"]
+        indexed = {(r["variant"], r["task"], r["run"]): r for r in records}
+        comparable = []
+        for task_id in task_ids:
+            for i in range(runs):
+                ra, rb = indexed.get((a, task_id, i)), indexed.get((b, task_id, i))
+                if not (ra and rb):
+                    continue
+                if not (ra.get("run_valid", True) and rb.get("run_valid", True)):
+                    continue
+                if not (ra.get("solved") and rb.get("solved")):
+                    continue
+                comparable.append((task_id, ra, rb))
+
+        print(f"\nEfficiency  ({b} − {a}), pairs where both arms solved: {len(comparable)}")
+        if not comparable:
+            print("    NOT COMPUTED — no pair had a valid solve on both sides.")
+        else:
+            # "lower" is reported over non-tied pairs, which is what the sign
+            # test actually uses. Printing it over all pairs would understate a
+            # real effect whenever a metric ties often, as integer turn counts do.
+            header = (f"    {'metric':<14}{a[:9]:>10}{b[:9]:>10}"
+                      f"{'med Δ':>10}{'med Δ%':>9}{'lower':>10}{'ties':>6}{'sign p':>9}")
+            print(header)
+            for field, label, fmt in EFFICIENCY_METRICS:
+                va = [(ra.get(field) or 0) for _, ra, _ in comparable]
+                vb = [(rb.get(field) or 0) for _, _, rb in comparable]
+                diffs = [y - x for x, y in zip(va, vb)]
+                rel = [((y - x) / x * 100) for x, y in zip(va, vb) if x]
+                lower, higher, p = stats.sign_test(diffs)
+                ties = len(diffs) - lower - higher
+                print(f"    {label:<14}{fmt.format(_mean(va) or 0):>10}"
+                      f"{fmt.format(_mean(vb) or 0):>10}"
+                      f"{stats.median(diffs):>+10.2f}"
+                      f"{stats.median(rel):>+8.0f}%"
+                      f"{f'{lower}/{lower + higher}':>10}{ties:>6}{p:>9.4f}")
+
+            if len(task_ids) > 1:
+                print("    per task (median Δ% — negative favours "
+                      f"{b}):")
+                for task_id in task_ids:
+                    rows = [(ra, rb) for t, ra, rb in comparable if t == task_id]
+                    if not rows:
+                        continue
+                    cells = []
+                    for field, label, _ in EFFICIENCY_METRICS:
+                        rel = [((rb.get(field) or 0) - (ra.get(field) or 0))
+                               / (ra.get(field) or 1) * 100 for ra, rb in rows]
+                        cells.append(f"{label}={stats.median(rel):+.0f}%")
+                    print(f"      {task_id:<26} n={len(rows)}  " + "  ".join(cells))
 
     print(f"\nResults → {out_file}")
     ok, issues = assess_suite(records, mode)

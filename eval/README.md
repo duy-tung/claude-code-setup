@@ -90,6 +90,88 @@ python3 eval/run.py --all --variant-a baseline --variant-b full-kit --runs 5 \
 
 Results stream to `results/eval-<ts>.ndjson` (git-ignored).
 
+## What the suite has measured
+
+Recorded so we do not re-derive it. Claude Opus 5 at `high` effort, `baseline`
+(no kit) versus `full-kit`, 36 valid pairs across 11 tasks.
+
+**Solve rate cannot separate the variants.** Every task, every run, both arms:
+36/36. Three task designs were tried specifically to break this — intricate
+single-file logic, stateful dispatch semantics, and an eleven-file contract
+migration at 25 turns per run. All three came back tied. On execution-graded,
+fully-specified Python, the model clears the work with or without the kit, so
+solve rate is the wrong instrument here.
+
+**The kit's cost penalty depends on task size, and the split is clean.**
+
+| Task size | n | cost Δ range | median |
+|---|---|---|---|
+| trivial (≤6 turns) | 6 | +94% … +117% | +104% |
+| substantive (>6 turns) | 4 | +43% … +76% | +54% |
+
+The ranges do not overlap, and the relationship strengthens when the single
+25-turn task is removed (r = -0.79 versus -0.47 with it), so it is not an
+artifact of one leverage point. A pooled median of "+96%" is really the trivial
+tasks talking.
+
+Cache accounting explains the mechanism: the kit adds roughly 12,700 tokens of
+one-time cache *creation* per session, against cache *reads* an order of
+magnitude larger. The preamble is cached and amortised, not re-sent per turn, so
+its relative cost falls as a task runs longer.
+
+**Output length separates on substantive tasks only.** Across the two large
+tasks the kit was shorter in 6/6 pairs, median -23% (sign test p = 0.031). Pooled
+across all sizes it is 19/30, p = 0.20 — not established. An earlier read of the
+same data via means suggested -24% overall; a paired test does not support that,
+which is why the runner uses a sign test.
+
+**On substantive tasks the kit is measurably more efficient, at a price.**
+Pooled across 34 valid pairs on the four tasks above 6 turns:
+
+| metric | baseline | full-kit | median Δ | lower in | sign p |
+|---|---|---|---|---|---|
+| output chars | 1901 | 1333 | **-28%** | 32/34 | <0.0001 |
+| turns | 12.88 | 10.62 | **-13%** | 19/23 non-tied | 0.0026 |
+| cost | $0.41 | $0.61 | **+49%** | 1/34 | <0.0001 |
+| latency | 80.7s | 77.6s | +0% | 17/34 | 1.0000 |
+
+Neither efficiency result rests on one task: turns move -37%, -20%, -14% and
++0% across the four, and output length is shorter in 32 of 34 pairs. Latency is
+genuinely unchanged. Files touched and unrequested artifacts are identical in
+both arms, at zero, on every task measured.
+
+So the trade on work of real size is 28% shorter output and 13% fewer turns for
+49% more spend. On trivial tasks there is no measurable benefit and the cost
+penalty roughly doubles, so the kit is pure overhead there.
+
+### Effort sweep result
+
+Four substantive tasks, three runs each, `full-kit`, model pinned and verified at
+every level:
+
+| effort | solved | turns | output tok | chars | cost | latency |
+|---|---|---|---|---|---|---|
+| low | 12/12 | 5.5 | 1937 | 663 | $0.421 | 34.7s |
+| medium | 12/12 | 6.8 | 2980 | 1006 | $0.472 | 50.4s |
+| high | 12/12 | 9.6 | 4554 | 1230 | $0.592 | 70.6s |
+
+**This does not show that `low` is as good as `high`.** These tasks are solved
+12/12 by every configuration tried, so the sweep has no power to detect a quality
+difference — the same ceiling that defeats the A/B on solve rate defeats it here.
+What it does show is the cost and latency gradient, which is steep and monotonic:
+`low` is 29% cheaper and 51% faster than `high` for an outcome this suite cannot
+distinguish. Behaviour is clean at every level: `behavior_ok` 12/12 and zero
+unrequested artifacts throughout.
+
+The practical reading is that `high` is **unverified rather than refuted** as the
+shipped baseline. It is worth noting alongside the +49% kit cost: running the kit
+at `medium` costs about what the un-kitted baseline costs at `high`, so effort is
+a lever on the kit's cost that does not require cutting kit content. Whether
+quality holds at that setting is exactly what this suite cannot answer.
+
+The `Input tok` column in the sweep report excludes cached tokens and is not the
+real input cost; read `cost` instead.
+
 ## Sweep effort
 
 Start at `high`, then measure lower settings for cost/latency and reserve

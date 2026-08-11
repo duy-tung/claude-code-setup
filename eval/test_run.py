@@ -2,6 +2,7 @@
 """Stdlib regression tests for the eval runner and effort sweep."""
 from __future__ import annotations
 
+import pathlib
 import contextlib
 import io
 import json
@@ -18,7 +19,8 @@ from unittest.mock import patch
 EVAL_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(EVAL_DIR))
 import effort_sweep  # noqa: E402
-import run as eval_run  # noqa: E402
+import run as eval_run
+import stats  # noqa: E402
 
 
 def record(**overrides) -> dict:
@@ -314,21 +316,37 @@ class RequestedSettingsTests(unittest.TestCase):
 class ModelPinTests(unittest.TestCase):
     def test_fixed_model_requires_exact_model_usage_key(self):
         self.assertIsNone(
-            eval_run.model_pin_error("claude-opus-5", ["claude-opus-5"])
+            eval_run.model_pin_error("claude-opus-5", {"claude-opus-5": 1000})
         )
         self.assertIn(
             "modelUsage reported",
-            eval_run.model_pin_error(
-                "claude-opus-5", ["claude-opus-4-8"]
-            ),
+            eval_run.model_pin_error("claude-opus-5", {"claude-opus-4-8": 1000}),
         )
 
-    def test_fixed_model_rejects_mixed_model_usage(self):
+    def test_rejects_another_model_that_did_material_work(self):
+        # A fallback or stray delegation shows up as real output tokens.
         error = eval_run.model_pin_error(
-            "claude-opus-5", ["claude-opus-5", "claude-haiku-4-5"]
+            "claude-opus-5", {"claude-opus-5": 500, "claude-haiku-4-5": 500}
         )
-        self.assertIn("also reported", error)
+        self.assertIn("material share", error)
         self.assertIn("claude-haiku-4-5", error)
+
+    def test_tolerates_claude_code_bookkeeping_model(self):
+        # Claude Code runs a small model for summaries/titles alongside the
+        # task model. Counting that as a violation invalidates every run of an
+        # un-pinned arm, which is the arm an A/B needs.
+        usage = {"claude-opus-5": 2600, "claude-haiku-4-5": 24}
+        self.assertIsNone(eval_run.model_pin_error("claude-opus-5", usage))
+        self.assertEqual(
+            eval_run.auxiliary_models("claude-opus-5", usage),
+            ["claude-haiku-4-5"],
+        )
+
+    def test_untracked_token_attribution_stays_strict(self):
+        error = eval_run.model_pin_error(
+            "claude-opus-5", {"claude-opus-5": 0, "claude-haiku-4-5": 0}
+        )
+        self.assertIn("no token attribution", error)
 
     def test_alias_matches_family_but_missing_usage_fails(self):
         self.assertEqual(
@@ -337,12 +355,12 @@ class ModelPinTests(unittest.TestCase):
         )
         self.assertIn(
             "omitted modelUsage",
-            eval_run.model_pin_error("opus", []),
+            eval_run.model_pin_error("opus", {}),
         )
         self.assertIn(
-            "also reported",
+            "material share",
             eval_run.model_pin_error(
-                "opus", ["claude-opus-5", "claude-haiku-4-5"]
+                "opus", {"claude-opus-5": 500, "claude-haiku-4-5": 500}
             ),
         )
 
@@ -714,3 +732,120 @@ class EffortSweepTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PairedComparisonValidityTests(unittest.TestCase):
+    """The A/B verdict must never be computed from discarded runs."""
+
+    @staticmethod
+    def _summary(records, results):
+        variants = [{"label": "baseline"}, {"label": "full-kit"}]
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            eval_run._print_summary(
+                results, records, variants, ["t1"], 2,
+                pathlib.Path("out.ndjson"), "claude",
+            )
+        return buffer.getvalue()
+
+    @staticmethod
+    def _rec(variant, run, solved, run_valid):
+        return {"variant": variant, "task": "t1", "run": run, "solved": solved,
+                "run_valid": run_valid, "num_turns": 3, "cost_usd": 0.1,
+                "agent_ms": 100, "output_chars": 10, "behavior_ok": True,
+                "workflow_artifact_count": 0, "requested_model": "claude-opus-5",
+                "requested_effort": "high", "models": ["claude-opus-5"]}
+
+    def test_refuses_a_verdict_when_one_arm_is_entirely_invalid(self):
+        # Reproduces the false "+1.000, B significantly better" result: the
+        # baseline arm solved everything but every run was invalidated, and
+        # invalid runs count as unsolved.
+        records = [self._rec("baseline", i, True, False) for i in range(2)]
+        records += [self._rec("full-kit", i, True, True) for i in range(2)]
+        out = self._summary(records, {"baseline": {"t1": [False, False]},
+                                      "full-kit": {"t1": [True, True]}})
+        self.assertIn("NOT COMPUTED", out)
+        self.assertIn("dropped 2 pair(s)", out)
+        self.assertNotIn("significantly better", out)
+
+    def test_compares_only_the_pairs_where_both_runs_are_valid(self):
+        records = [self._rec("baseline", 0, True, True),
+                   self._rec("baseline", 1, True, False),
+                   self._rec("full-kit", 0, True, True),
+                   self._rec("full-kit", 1, True, True)]
+        out = self._summary(records, {"baseline": {"t1": [True, False]},
+                                      "full-kit": {"t1": [True, True]}})
+        self.assertIn("dropped 1 pair(s)", out)
+        self.assertIn("pairs compared = 1", out)
+        self.assertIn("no significant difference", out)
+
+
+
+class SignTestTests(unittest.TestCase):
+    def test_drops_ties_and_reports_them_separately(self):
+        # Integer turn counts tie often; counting ties as evidence either way
+        # would understate a real effect.
+        below, above, p = stats.sign_test([-1, -1, -1, 0, 0, 1])
+        self.assertEqual((below, above), (3, 1))
+        self.assertLess(p, 1.0)
+
+    def test_all_ties_is_no_evidence(self):
+        self.assertEqual(stats.sign_test([0, 0, 0]), (0, 0, 1.0))
+
+    def test_unanimous_direction_is_significant(self):
+        _below, above, p = stats.sign_test([1.0] * 30)
+        self.assertEqual(above, 30)
+        self.assertLess(p, 0.001)
+
+    def test_is_unmoved_by_a_single_runaway_pair(self):
+        # One task answering ten times its usual length moves a mean and must
+        # not move the count-based verdict.
+        balanced = [-1, -1, 1, 1]
+        with_outlier = [-1, -1, 1, 10_000]
+        self.assertEqual(stats.sign_test(balanced), stats.sign_test(with_outlier))
+
+
+class MedianTests(unittest.TestCase):
+    def test_odd_and_even_lengths(self):
+        self.assertEqual(stats.median([3, 1, 2]), 2)
+        self.assertEqual(stats.median([4, 1, 2, 3]), 2.5)
+        self.assertEqual(stats.median([]), 0.0)
+
+
+class LatencyClockTests(unittest.TestCase):
+    def test_agent_ms_uses_the_same_clock_as_the_subprocess_timeout(self):
+        # subprocess.run's timeout is monotonic. Measuring latency on the wall
+        # clock let a sleeping machine report hours for a run the timeout never
+        # considered overdue.
+        source = pathlib.Path(eval_run.__file__).read_text()
+        self.assertIn("start = time.monotonic()", source)
+        self.assertIn('metrics["agent_ms"] = int((time.monotonic() - start) * 1000)', source)
+        self.assertNotIn("start = time.time()", source)
+
+
+class CacheAccountingTests(unittest.TestCase):
+    def test_records_cache_creation_and_read_separately(self):
+        payload = cli_result(
+            usage={
+                "input_tokens": 12,
+                "output_tokens": 40,
+                "cache_creation_input_tokens": 41946,
+                "cache_read_input_tokens": 8000,
+            },
+            modelUsage={"claude-opus-5": {"outputTokens": 40}},
+        )
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps(payload), stderr=""
+        )
+        with patch.object(eval_run.subprocess, "run", return_value=completed):
+            result = eval_run._invoke_claude(
+                {"prompt": "p"}, {"claude_args": []}, Path("/tmp"),
+                10, False, requested_model="claude-opus-5",
+            )
+        self.assertEqual(result["cache_creation_tokens"], 41946)
+        self.assertEqual(result["cache_read_tokens"], 8000)
+
+    def test_cache_fields_appear_in_the_efficiency_metrics(self):
+        fields = [field for field, _label, _fmt in eval_run.EFFICIENCY_METRICS]
+        self.assertIn("cache_creation_tokens", fields)
+        self.assertIn("cache_read_tokens", fields)

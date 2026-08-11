@@ -468,3 +468,38 @@ test('every prompt-policy exemption still points at a real file and pattern', ()
     }
   }
 });
+
+// ── Agent description budget ────────────────────────────────────────────────
+// Agent descriptions load into every session as routing signals, the same way
+// skill descriptions do, and settings.json already caps those at 512 chars.
+// Five agents had drifted into documentation — bullet lists and <example>
+// blocks inside frontmatter — carrying 2,512 tokens between them while six
+// others did the same routing job in 31 to 60. The body is where detail belongs.
+const AGENT_DESCRIPTION_MAX_CHARS = 512;
+
+test('agent descriptions stay routing signals, not documentation', () => {
+  const files = markdownFiles('claude/agents');
+  assert.ok(files.length > 5, `expected the agent roster, found ${files.length}`);
+
+  let total = 0;
+  const oversized = [];
+  for (const file of files) {
+    const frontmatter = read(file).split('---', 3)[1] || '';
+    const match = frontmatter.match(/^description:\s*([\s\S]*?)(?=^[a-zA-Z_-]+:\s|$)/m);
+    const description = (match ? match[1] : '').replace(/\s+/g, ' ').trim();
+    total += description.length;
+
+    if (description.length > AGENT_DESCRIPTION_MAX_CHARS) {
+      oversized.push(`${path.basename(file)}=${description.length} chars`);
+    }
+    assert.doesNotMatch(
+      description, /<example>/i,
+      `${file} embeds an <example> block in its description; put it in the body`
+    );
+  }
+  assert.deepEqual(
+    oversized, [],
+    `over the ${AGENT_DESCRIPTION_MAX_CHARS}-char routing budget: ${oversized.join(', ')}`
+  );
+  console.log(`    agent descriptions: ${total} chars across ${files.length} agents`);
+});

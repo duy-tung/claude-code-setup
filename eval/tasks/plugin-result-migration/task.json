@@ -1,0 +1,23 @@
+{
+  "id": "plugin-result-migration",
+  "kind": "refactor",
+  "workflow_artifact_budget": 0,
+  "prompt": "This package runs named plugins over a payload. core/base.py already defines a Result type that nothing uses yet: plugins still return raw values and a failing plugin raises. Migrate the package to Result. Target contract: (1) every registered plugin's run(payload) returns a Result — Result.success(value) or Result.failure(message); (2) Result gains an error_step field, defaulting to None; (3) run_pipeline(steps, payload) threads the unwrapped value from one step to the next, returns the final raw value when every step succeeds, and on the first failing step returns that failure Result with error_step set to the failing step's name without running later steps; (4) run_pipeline converts an exception raised by any plugin into a failure Result rather than letting it propagate, so a plugin outside this package that never migrated cannot break the pipeline; (5) core/compat.py legacy_run(name, payload) is a boundary for external callers and must keep its current shape — it returns the plugin's raw value, never a Result, and raises RuntimeError when the plugin fails. Plugins are registered in more than one way, and every registered plugin must satisfy the contract. Make all tests in test_pipeline.py pass. Do not edit the test file.",
+  "grade": {
+    "test_cmd": ["python3", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
+    "fail_to_pass": [
+      "test_pipeline.TestPipeline.test_pipeline_reports_a_failing_step_without_raising",
+      "test_migration_contract.TestEveryRegisteredPluginMigrated.test_every_registered_plugin_returns_a_result",
+      "test_migration_contract.TestPipelineSemantics.test_short_circuits_on_failure_and_names_the_step",
+      "test_migration_contract.TestPipelineSemantics.test_converts_a_raising_plugin_into_a_failure_result",
+      "test_migration_contract.TestLegacyAdapterUnchanged.test_raises_on_plugin_failure"
+    ],
+    "pass_to_pass": [
+      "test_pipeline.TestPipeline.test_single_step",
+      "test_pipeline.TestPipeline.test_chained_steps",
+      "test_pipeline.TestPipeline.test_slugify_is_registered",
+      "test_pipeline.TestPipeline.test_legacy_adapter_returns_raw_value"
+    ],
+    "timeout_sec": 90
+  }
+}
